@@ -3,6 +3,26 @@ import globals from 'globals'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import React, { createContext, useContext } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = 'https://your-supabase-url.supabase.co';
+const supabaseKey = 'your-supabase-anon-key';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+const SupabaseContext = createContext();
+
+export const SupabaseProvider = ({ children }) => {
+  return (
+    <SupabaseContext.Provider value={supabase}>
+      {children}
+    </SupabaseContext.Provider>
+  );
+};
+
+export const useSupabase = () => {
+  return useContext(SupabaseContext);
+};
 
 export default [
   { ignores: ['dist'] },
