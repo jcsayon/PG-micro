@@ -42,25 +42,29 @@ Replace <branch-name> with the branch you want to update (e.g., main or master).
 Resolve Any Conflicts (if applicable)
 If there are merge conflicts, Git will pause and let you resolve them manually. After resolving conflicts, mark the files as resolved and continue:
 
-bash
+```bash
 Copy
 Edit
 git add <conflicted-file>
 git commit
+```
 Verify the Update
 Check if your local files are now updated:
 
-bash
+
+```bash
 Copy
 Edit
 git log --oneline
+```
 This shows the latest commits, confirming your local repository is synced.
 
 Optional: Discard Local Changes Without Committing
 If you don’t need to keep your local changes, you can reset to match the remote repository:
 
-bash
+```bash
 Copy
 Edit
 git reset --hard origin/<branch-name>
+```
 This will overwrite your local changes and make your local branch identical to the remote branch. Use this with caution.

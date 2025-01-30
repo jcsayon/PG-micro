@@ -9,21 +9,29 @@ const Sidebar = () => {
     { name: "Expense Center", path: "/expense-center" },
   ];
 
+ 
+
   return (
-    <aside className="w-64 bg-purple-700 text-white h-screen shadow-lg">
-      <div className="p-4 text-xl font-bold border-b border-purple-600">
-        PG Micro World Computers
-      </div>
-      <nav className="flex flex-col p-4 space-y-2">
-        {links.map((link, index) => (
-          <Link
-            key={index}
-            to={link.path}
-            className="p-3 rounded-md hover:bg-purple-600 transition"
-          >
-            {link.name}
-          </Link>
-        ))}
+    <aside className="w-64 bg-purple-800 text-white p-4">
+      <h2 className="text-2xl font-bold mb-6">PG Micro World Computers</h2>
+      <nav>
+        <ul className="space-y-2">
+          <li>
+            <a href="#" className="block p-2 hover:bg-purple-700 rounded">
+              Home
+            </a>
+          </li>
+          <li>
+            <a href="#" className="block p-2 hover:bg-purple-700 rounded">
+              Account Info
+            </a>
+          </li>
+          <li>
+            <a href="#" className="block p-2 hover:bg-purple-700 rounded">
+              Settings
+            </a>
+          </li>
+        </ul>
       </nav>
     </aside>
   );
