@@ -31,6 +31,11 @@ const Sidebar = () => {
               Settings
             </a>
           </li>
+          <li className="mb-2">
+            <Link to="/inventory" className="block p-2 hover:bg-purple-600 rounded">
+              Inventory
+            </Link>
+          </li>
         </ul>
       </nav>
     </aside>
