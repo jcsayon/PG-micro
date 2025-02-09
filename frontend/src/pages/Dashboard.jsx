@@ -21,7 +21,7 @@ const Dashboard = () => {
       title: "Return-Warranty",
       description: "Handle returns and warranties with ease.",
       icon: "🔄",
-      link: "/return-warranty", // Link to the Return Warranty page
+      link: "/returns", // Link to the Return Warranty page
     },
   ];
 

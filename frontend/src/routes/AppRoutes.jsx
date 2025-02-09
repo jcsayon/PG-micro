@@ -3,9 +3,9 @@ import { Routes, Route} from 'react-router-dom';
 import LoginPage from '../pages/LoginPage';
 import Dashboard from '../pages/Dashboard';
 import InventoryPage from "../pages/InventoryPage";
-import PurchaseOrderPage from "../pages/PurchaseOrderPage";
-import SalesPage from "../pages/SalesPage"; // Create this page
-import ReturnWarrantyPage from "../pages/ReturnWarrantyPage"; // Create this page
+import PurchaseOrderPage from "../pages/PurchaseOrders/PurchaseOrderPage";
+import SalesPage from "../pages/Sales/SalesPage"; // Create this page
+import ReturnWarrantyPage from "../pages/Returns/ReturnWarrantyPage"; // Create this page
 
 const AppRoutes = () => {
     console.log("AppRoutes is rendering"); // Log a message to the console
