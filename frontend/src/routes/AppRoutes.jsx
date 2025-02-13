@@ -1,4 +1,3 @@
-// src/routes/AppRoutes.jsx
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import LoginPage from "../pages/LoginPage";
@@ -16,7 +15,6 @@ import SalesOrderPage from "../pages/Sales/SalesOrderPage";
 // Returns
 import ReturnWarrantyPage from "../pages/Returns/ReturnWarrantyPage";
 //import ViewReturnDetails from "../pages/Returns/ViewReturnDetails"; // Ensure this file exists
-
 
 const AppRoutes = () => {
     console.log("AppRoutes is rendering"); // Log a message to the console
@@ -41,9 +39,7 @@ const AppRoutes = () => {
             <Route path="/return-warranty" element={<ReturnWarrantyPage />} />
             {/* <Route path="/return-warranty/view" element={<ViewReturnDetails />} /> */}
         </Routes>
-
     );
 };
-
 
 export default AppRoutes;
