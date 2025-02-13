@@ -1,7 +1,8 @@
+// src/components/Sidebar_Primary.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 
-const Sidebar = () => {
+const Sidebar_Primary = () => {
   const links = [
     { name: "Home", path: "/dashboard" },
     { name: "Account Info", path: "/account-info" },
@@ -17,24 +18,24 @@ const Sidebar = () => {
       <nav>
         <ul className="space-y-2">
           <li>
-            <a href="#" className="block p-2 hover:bg-purple-700 rounded">
+            <a href="/#" className="block p-2 hover:bg-purple-700 rounded">
               Home
             </a>
           </li>
           <li>
-            <a href="#" className="block p-2 hover:bg-purple-700 rounded">
+            <a href="/#" className="block p-2 hover:bg-purple-700 rounded">
               Account Info
             </a>
           </li>
           <li>
-            <a href="#" className="block p-2 hover:bg-purple-700 rounded">
+            <a href="/#" className="block p-2 hover:bg-purple-700 rounded">
               Settings
             </a>
           </li>
           <li className="mb-2">
-            <Link to="/inventory" className="block p-2 hover:bg-purple-600 rounded">
+            <a href="/inventory" className="block p-2 hover:bg-purple-600 rounded">
               Inventory
-            </Link>
+            </a>
           </li>
         </ul>
       </nav>
@@ -42,4 +43,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default Sidebar_Primary;

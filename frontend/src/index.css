@@ -1,2 +1,29 @@
 @import "tailwindcss";
 
+/* Make the entire app use flexbox */
+.app-container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  /* Style the sidebar */
+  .sidebar {
+    width: 250px;
+    height: 100vh; /* Ensure full height */
+    background: #5A0FC8; /* Keep the purple color */
+    color: white;
+    padding: 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow-y: auto;
+  }
+  
+  /* Content should be pushed right, not overlap sidebar */
+  .content {
+    margin-left: 0px; /* Same as sidebar width */
+    flex-grow: 1; /* Allow content to expand */
+    padding: 20px;
+    overflow: auto;
+  }
+  
