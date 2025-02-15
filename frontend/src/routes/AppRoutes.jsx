@@ -14,6 +14,10 @@ import SalesOrderPage from "../pages/Sales/SalesOrderPage";
 
 // Returns
 import ReturnWarrantyPage from "../pages/Returns/ReturnWarrantyPage";
+import ReturnFormPage from "../pages/Returns/ReturnsFormPage";
+import ReturnDetailsPage from "../pages/Returns/ReturnDetailsPage"; // Ensure this file exists
+
+
 //import ViewReturnDetails from "../pages/Returns/ViewReturnDetails"; // Ensure this file exists
 
 const AppRoutes = () => {
@@ -37,6 +41,8 @@ const AppRoutes = () => {
 
             {/* For Returns */}
             <Route path="/return-warranty" element={<ReturnWarrantyPage />} />
+            <Route path="/returnform" element={<ReturnFormPage />} />
+            <Route path="/return-details" element={<ReturnDetailsPage />} />
             {/* <Route path="/return-warranty/view" element={<ViewReturnDetails />} /> */}
         </Routes>
     );

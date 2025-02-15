@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Sidebar_Primary from "../../components/SideBar_Primary";
 
 const PurchaseOrderPage = () => {
   const navigate = useNavigate();
@@ -27,10 +28,15 @@ const PurchaseOrderPage = () => {
   });
 
   return (
-    <div className="p-6">
+    <div className="flex">
+    {/* Sidebar */}
+    <Sidebar_Primary />
+
+    {/* Main Content */}
+    <div className="flex-grow ml-64 p-6 bg-gray-50 min-h-screen">
       {/* Page Header */}
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-purple-600">Issued Purchase Order</h1>
+        <h1 className="text-2xl font-bold text-purple-600">Issued Purchase Orders</h1>
         <div className="flex gap-4">
           <button
             className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
@@ -48,7 +54,7 @@ const PurchaseOrderPage = () => {
       </div>
 
       <p className="text-gray-500 mb-6">
-        Form pages are used to collect or verify information to users, and basic forms are common in scenarios where there are fewer data items.
+        Form pages are used to collect or verify information from users, and basic forms are common when there are fewer data items.
       </p>
 
       {/* Filters */}
@@ -136,7 +142,8 @@ const PurchaseOrderPage = () => {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default PurchaseOrderPage;
