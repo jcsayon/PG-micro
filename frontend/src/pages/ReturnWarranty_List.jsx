@@ -36,6 +36,7 @@ const ReturnWarranty_List = () => {
                   <th className="p-3">Order ID</th>
                   <th className="p-3">Date</th>
                   <th className="p-3">Customer</th>
+                  <th className="p-3">Company</th>
                   <th className="p-3">Status</th>
                   <th className="p-3">Total</th>
                   <th className="p-3">Actions</th>
@@ -47,6 +48,7 @@ const ReturnWarranty_List = () => {
                     <td className="p-3">#{1234 + index}</td>
                     <td className="p-3">2023-01-0{index + 1}</td>
                     <td className="p-3">John Doe</td>
+                    <td className="p-3">PG Micro</td>
                     <td className="p-3"><span className="bg-purple-300 px-2 py-1 rounded">Return Received</span></td>
                     <td className="p-3">${(index + 1) * 25}.00</td>
                     <td className="p-3 text-blue-500 cursor-pointer">

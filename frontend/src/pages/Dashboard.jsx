@@ -5,7 +5,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const systemCards = [
-    { title: "Sales", description: "Track and manage sales.", icon: "📈", link: "/sales" },
+    { title: "Sales", description: "Track and manage sales.", icon: "📈", link: "/sales-list" },
     { title: "Purchase Order", description: "Manage purchase orders.", icon: "📋", link: "/purchase-order-list" },
     { title: "Return-Warranty", description: "Handles returns and warranties.", icon: "🔄", link: "/return-warranty-list" },
   ];
