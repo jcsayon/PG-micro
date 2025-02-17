@@ -6,8 +6,8 @@ const Dashboard = () => {
 
   const systemCards = [
     { title: "Sales", description: "Track and manage sales.", icon: "📈", link: "/sales" },
-    { title: "Purchase Order", description: "Manage purchase orders.", icon: "📋", link: "/purchase-orders" },
-    { title: "Return-Warranty", description: "Handle returns & warranties.", icon: "🔄", link: "/return-warranty" },
+    { title: "Purchase Order", description: "Manage purchase orders.", icon: "📋", link: "/purchase-order-list" },
+    { title: "Return-Warranty", description: "Handles returns and warranties.", icon: "🔄", link: "/return-warranty-list" },
   ];
 
   return (

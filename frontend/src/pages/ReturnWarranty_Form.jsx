@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Sidebar_Secondary from "../components/Sidebar_Secondary"; // Importing the sidebar
 
-const ReturnFormPage = () => {
+const ReturnWarranty_Form = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [reason, setReason] = useState("");
 
@@ -146,4 +146,4 @@ const ReturnFormPage = () => {
   );
 };
 
-export default ReturnFormPage;
+export default ReturnWarranty_Form;

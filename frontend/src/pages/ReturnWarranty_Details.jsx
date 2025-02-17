@@ -1,8 +1,9 @@
+// frontend/src/components/ReturnWarranty_Details.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar_Secondary from "../components/Sidebar_Secondary";
 
-const ReturnDetailsPage = () => {
+const ReturnWarranty_Details = () => {
   const navigate = useNavigate();
 
   const returnData = {
@@ -113,7 +114,7 @@ const ReturnDetailsPage = () => {
           <div className="mt-6 flex justify-between">
             <button
               className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400"
-              onClick={() => navigate("/return-warranty")}
+              onClick={() => navigate("/return-warranty-list")}
             >
               Cancel
             </button>
@@ -127,4 +128,4 @@ const ReturnDetailsPage = () => {
   );
 };
 
-export default ReturnDetailsPage;
+export default ReturnWarranty_Details;

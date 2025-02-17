@@ -1,12 +1,12 @@
 import React from "react";
-import Sidebar from "../components/Sidebar";
+import Sidebar_Primary from "../components/Sidebar";
 import Header from "../components/Header";
 
 const DashboardLayout = ({ children }) => {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <Sidebar />
+      <Sidebar_Primary />
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         <Header />

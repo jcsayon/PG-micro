@@ -3,7 +3,7 @@ import React from 'react';
 import Sidebar_Secondary from '../components/Sidebar_Secondary';
 import { useNavigate } from "react-router-dom";
 
-const ReturnWarrantyPage = () => {
+const ReturnWarranty_List = () => {
   const navigate = useNavigate(); // Define navigate
   return (
     <div className="flex h-screen">
@@ -50,7 +50,7 @@ const ReturnWarrantyPage = () => {
                     <td className="p-3"><span className="bg-purple-300 px-2 py-1 rounded">Return Received</span></td>
                     <td className="p-3">${(index + 1) * 25}.00</td>
                     <td className="p-3 text-blue-500 cursor-pointer">
-                      <button onClick={() => navigate(`/return-details`)}>View Details</button>
+                      <button onClick={() => navigate(`/return-warranty-details`)}>View Details</button>
                     </td>
                   </tr>
                 ))}
@@ -63,4 +63,4 @@ const ReturnWarrantyPage = () => {
   );
 };
 
-export default ReturnWarrantyPage;
+export default ReturnWarranty_List;
