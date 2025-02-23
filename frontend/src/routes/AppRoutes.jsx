@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 // Import Pages
@@ -21,11 +21,19 @@ import ReturnsFormPage from "../pages/Returns/ReturnsFormPage";
 import ReturnDetailsPage from "../pages/Returns/ReturnDetailsPage"; 
 
 const AppRoutes = () => {
-  // Simulated Authentication State (For Testing)
+  // Load authentication state from sessionStorage
   const [auth, setAuth] = useState({
-    isAuthenticated: false,
-    role: null, // Change this manually to "Admin", "Inventory", "Sales", or "Returns" for testing
+    isAuthenticated: sessionStorage.getItem("isAuthenticated") === "true",
+    role: sessionStorage.getItem("userRole") || null,
   });
+
+  useEffect(() => {
+    // Update state when session storage changes
+    setAuth({
+      isAuthenticated: sessionStorage.getItem("isAuthenticated") === "true",
+      role: sessionStorage.getItem("userRole") || null,
+    });
+  }, []);
 
   // Protected Route Component
   const ProtectedRoute = ({ element, allowedRoles }) => {
