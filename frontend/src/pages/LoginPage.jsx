@@ -1,15 +1,39 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+// Temporary User Data for Testing
+const tempUsers = [
+  { email: "admin@pgmicro.com", password: "admin123", role: "Admin" },
+  { email: "employee@pgmicro.com", password: "employee123", role: "Employee" },
+];
+
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
-    navigate("/dashboard");
+    setError("");
+
+    // Check if user exists in tempUsers
+    const user = tempUsers.find(
+      (u) => u.email === email && u.password === password
+    );
+
+    if (user) {
+      // Store user session (Temporary Storage)
+      sessionStorage.setItem("isAuthenticated", "true");
+      sessionStorage.setItem("userRole", user.role);
+      sessionStorage.setItem("userEmail", user.email);
+
+      alert(`Welcome, ${user.role}! Redirecting to Dashboard...`);
+      navigate("/dashboard"); // Redirect to dashboard
+    } else {
+      setError("Invalid email or password!");
+    }
   };
 
   return (
@@ -31,78 +55,48 @@ const LoginPage = () => {
             Login
           </a>
           <a
-            href="#"
+            href="/signup"
             className="text-gray-500 hover:text-purple-600 hover:border-purple-600 border-b-2"
           >
             Sign Up
           </a>
         </div>
 
+        {error && <p className="text-red-500 text-center mt-4">{error}</p>}
+
         <form className="space-y-6 mt-6" onSubmit={handleLogin}>
           {/* Email Field */}
-          <div>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-purple-500">
-                {/* Updated Email Icon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
-                  />
-                </svg>
-              </span>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="username or email"
-              />
-            </div>
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-purple-500">
+              📧
+            </span>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full pl-10 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              placeholder="username or email"
+            />
           </div>
 
           {/* Password Field */}
-          <div>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-purple-500">
-                {/* Updated Password Icon */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </span>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="password"
-              />
-            </div>
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-purple-500">
+              🔑
+            </span>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full pl-10 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              placeholder="password"
+            />
           </div>
 
           {/* Remember Me */}
@@ -120,10 +114,7 @@ const LoginPage = () => {
                 Remember me
               </label>
             </div>
-            <a
-              href="#"
-              className="text-sm text-purple-500 hover:text-purple-400"
-            >
+            <a href="#" className="text-sm text-purple-500 hover:text-purple-400">
               Forgot your password?
             </a>
           </div>
