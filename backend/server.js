@@ -1,17 +1,19 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const authRoutes = require("./routes/authRoutes"); // Authentication
-const inventoryRoutes = require("./routes/inventoryRoutes"); // Inventory Management
+
+// ✅ Ensure you import the routes correctly
+const authRoutes = require("./routes/authRoutes"); 
+const inventoryRoutes = require("./routes/inventoryRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
-app.use(cors()); // Allow frontend requests
+app.use(cors()); 
 
-// Routes
+// ✅ Use routes correctly
 app.use("/api/auth", authRoutes);
 app.use("/api/inventory", inventoryRoutes);
 

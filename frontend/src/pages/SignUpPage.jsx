@@ -1,10 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = 'https://skzjcvdwoveuczvshzka.supabase.co'
-const supabaseKey = process.env.SUPABASE_KEY
-const supabase = createClient(supabaseUrl, supabaseKey)
+import { supabase } from "../config/supabaseClient";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -15,22 +11,17 @@ const SignUpPage = () => {
     role: "Employee", // Default role
   });
 
-  // Temporary user storage
-  const [tempUsers, setTempUsers] = useState([]);
-
   const handleChange = (e) => {
     setUser({ ...user, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // TEMPORARY: Add user to local state for testing
-    setTempUsers([...tempUsers, user]);
-    console.log("Temporary Users:", tempUsers);
 
-    // Uncomment below for Supabase integration
-    /*
+    // TEMPORARY: Add user to local state for testing
+    console.log("Temporary Signup Data:", user);
+
+    // ✅ Supabase Integration
     const { data, error } = await supabase.auth.signUp({
       email: user.email,
       password: user.password,
@@ -39,15 +30,16 @@ const SignUpPage = () => {
     if (error) {
       alert("Error signing up: " + error.message);
     } else {
-      // Store user role in database
-      await supabase.from("Users").insert([{ email: user.email, role: user.role }]);
-      alert("Sign-up successful!");
+      // ✅ Store user role in Supabase database (Table: `profiles`)
+      await supabase.from("profiles").insert([{ 
+        email: user.email, 
+        name: user.name, 
+        role: user.role 
+      }]);
+
+      alert("Sign-up successful! Redirecting to Dashboard...");
       navigate("/dashboard");
     }
-    */
-
-    alert("Temporary Sign-Up Successful! (Database connection is commented out)");
-    navigate("/dashboard");
   };
 
   return (
