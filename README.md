@@ -71,6 +71,6 @@ This will overwrite your local changes and make your local branch identical to t
 
 Add Tailwind css
 ```bash
-cd <frontend>
+cd frontend
 npm install tailwindcss @tailwindcss/vite
 ```
