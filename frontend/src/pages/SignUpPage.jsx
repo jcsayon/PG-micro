@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import { createClient } from "@supabase/supabase-js"; // Uncomment this when enabling Supabase
+import { createClient } from '@supabase/supabase-js'
 
-// const supabaseUrl = "https://your-supabase-url.supabase.co"; // Replace with your Supabase URL
-// const supabaseAnonKey = "your-anon-key"; // Replace with your Supabase API Key
-// const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseUrl = 'https://skzjcvdwoveuczvshzka.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 const SignUpPage = () => {
   const navigate = useNavigate();
