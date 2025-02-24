@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-
+//updated
 // Import Pages
 import LoginPage from "../pages/LoginPage";
 import SignUpPage from "../pages/SignUpPage";
