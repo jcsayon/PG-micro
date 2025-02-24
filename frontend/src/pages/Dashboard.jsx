@@ -1,8 +1,9 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../layouts/DashboardLayout";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
   const navigate = useNavigate();
 
   const systemCards = [
