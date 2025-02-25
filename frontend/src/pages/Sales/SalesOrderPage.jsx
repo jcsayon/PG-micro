@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import SalesDashboardLayout from '../../layouts/SalesDashboardLayout';
+import ModuleLayout from '../../layouts/ModuleLayout';
 
 const SalesOrderPage = () => {
   const [order, setOrder] = useState({
@@ -32,7 +32,7 @@ const SalesOrderPage = () => {
   };
 
   return (
-    <SalesDashboardLayout>
+    <ModuleLayout>
       <div className="p-6 bg-gray-100 min-h-screen flex flex-col w-full">
         <div className="w-full bg-white p-6 rounded-lg shadow-lg">
           <h1 className="text-2xl font-bold text-purple-700 mb-6">New Sales Order</h1>
@@ -70,7 +70,7 @@ const SalesOrderPage = () => {
           <button onClick={handleSubmit} className="w-full bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition text-lg font-semibold">Submit Order</button>
         </div>
       </div>
-    </SalesDashboardLayout>
+    </ModuleLayout>
   );
 };
 

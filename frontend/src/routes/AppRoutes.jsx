@@ -53,16 +53,10 @@ const AppRoutes = () => {
       <Route path="/signup" element={<SignUpPage />} />
 
       {/* Dashboard (Accessible to All Authenticated Users) */}
-      <Route 
-        path="/dashboard" 
-        element={auth.isAuthenticated ? <Dashboard /> : <Navigate to="/" replace />}
-      />
+      <Route path="/dashboard" element={auth.isAuthenticated ? <Dashboard /> : <Navigate to="/" replace />}/>
 
       {/* Protected Routes */}
-      <Route 
-        path="/inventory" 
-        element={<ProtectedRoute element={<InventoryPage />} allowedRoles={["Admin", "Inventory"]} />} 
-      />
+      <Route path="/inventory" element={<ProtectedRoute element={<InventoryPage />} allowedRoles={["Admin", "Inventory"]} />}/>
 
       {/* Purchase Orders */}
       <Route 
@@ -93,10 +87,7 @@ const AppRoutes = () => {
         path="/returnform" 
         element={<ProtectedRoute element={<ReturnsFormPage />} allowedRoles={["Admin", "Returns"]} />} 
       />
-      <Route 
-        path="/return-details" 
-        element={<ProtectedRoute element={<ReturnDetailsPage />} allowedRoles={["Admin", "Returns"]} />} 
-      />
+      <Route path="/return-details" element={<ProtectedRoute element={<ReturnDetailsPage />} allowedRoles={["Admin", "Returns"]} />}/>
     </Routes>
   );
 };
