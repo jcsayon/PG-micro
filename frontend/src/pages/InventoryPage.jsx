@@ -5,49 +5,49 @@ const InventoryPage = () => {
   const [inventory, setInventory] = useState([
     {
       id: 1,
-      serialNumber: "SN12345",
+      Model: "SN12345",
       description: "Laptop",
       quantityReceived: 20,
       quantityAvailable: 15,
       stockStatus: "In Stock",
       location: "Warehouse A",
-      dateReceived: "2024-02-24",
+      Brand: "2024-02-24",
       sellingPrice: "₱800.00",
     },
     {
       id: 2,
-      serialNumber: "SN67890",
+      Model: "SN67890",
       description: "Mouse",
       quantityReceived: 50,
       quantityAvailable: 30,
       stockStatus: "In Stock",
       location: "Warehouse B",
-      dateReceived: "2024-02-20",
+      Brand: "2024-02-20",
       sellingPrice: "₱25.00",
     },
   ]);
 
   const [newProduct, setNewProduct] = useState({
-    serialNumber: "",
+    Model: "",
     description: "",
     quantityReceived: "",
     quantityAvailable: "",
     stockStatus: "In Stock",
     location: "",
-    dateReceived: "",
+    Brand: "",
     sellingPrice: "",
   });
 
   const [editProduct, setEditProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Open Edit Modal
+  const stockStatusOptions = ["In Stock", "Limited Stock", "Out of Stock"];
+
   const handleEdit = (index) => {
     setEditProduct({ ...inventory[index], index });
     setIsModalOpen(true);
   };
 
-  // Save Changes in Edit Modal
   const handleSaveChanges = () => {
     if (editProduct) {
       const updatedInventory = [...inventory];
@@ -61,33 +61,30 @@ const InventoryPage = () => {
     }
   };
 
-  // Handle Delete Item
   const handleDelete = (index) => {
     const updatedInventory = inventory.filter((_, i) => i !== index);
     setInventory(updatedInventory);
   };
 
-  // Handle Input Change for Adding New Product
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNewProduct((prev) => ({
       ...prev,
-      [name]: name === "sellingPrice" ? `₱${value.replace(/₱/g, "")}` : value,
+      [name]: value,
     }));
   };
 
-  // Handle Adding New Product
   const handleAddProduct = () => {
-    if (newProduct.serialNumber && newProduct.description) {
+    if (newProduct.Model && newProduct.description) {
       setInventory([...inventory, { ...newProduct, id: inventory.length + 1 }]);
       setNewProduct({
-        serialNumber: "",
+        Model: "",
         description: "",
         quantityReceived: "",
         quantityAvailable: "",
         stockStatus: "In Stock",
         location: "",
-        dateReceived: "",
+        Brand: "",
         sellingPrice: "",
       });
     }
@@ -107,9 +104,9 @@ const InventoryPage = () => {
             <thead className="sticky top-0 bg-purple-100 text-left text-sm font-medium text-gray-700">
               <tr>
                 <th className="p-3 border">Item ID</th>
-                <th className="p-3 border">Serial Number</th>
+                <th className="p-3 border">Model</th>
                 <th className="p-3 border">Description</th>
-                <th className="p-3 border">Date Received</th>
+                <th className="p-3 border">Brand</th>
                 <th className="p-3 border">Quantity Received</th>
                 <th className="p-3 border">Quantity Available</th>
                 <th className="p-3 border">Stock Status</th>
@@ -122,9 +119,9 @@ const InventoryPage = () => {
               {inventory.map((item, index) => (
                 <tr key={item.id} className="text-sm text-gray-700 border-t">
                   <td className="p-3 border">{item.id}</td>
-                  <td className="p-3 border">{item.serialNumber}</td>
+                  <td className="p-3 border">{item.Model}</td>
                   <td className="p-3 border">{item.description}</td>
-                  <td className="p-3 border">{item.dateReceived}</td>
+                  <td className="p-3 border">{item.Brand}</td>
                   <td className="p-3 border">{item.quantityReceived}</td>
                   <td className="p-3 border">{item.quantityAvailable}</td>
                   <td className="p-3 border">{item.stockStatus}</td>
@@ -156,17 +153,33 @@ const InventoryPage = () => {
             Add to Inventory
           </h2>
           <div className="grid grid-cols-2 gap-4">
-            {Object.keys(newProduct).map((key) => (
-              <input
-                key={key}
-                type={key.includes("date") ? "date" : "text"}
-                name={key}
-                placeholder={key.replace(/([A-Z])/g, " $1").trim()}
-                value={newProduct[key]}
-                onChange={handleChange}
-                className="p-3 border rounded bg-gray-100 text-black"
-              />
-            ))}
+            {Object.keys(newProduct).map((key) =>
+              key === "stockStatus" ? (
+                <select
+                  key={key}
+                  name={key}
+                  value={newProduct[key]}
+                  onChange={handleChange}
+                  className="p-3 border rounded bg-gray-100 text-black"
+                >
+                  {stockStatusOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  key={key}
+                  type="text"
+                  name={key}
+                  placeholder={key.replace(/([A-Z])/g, " $1").trim()}
+                  value={newProduct[key]}
+                  onChange={handleChange}
+                  className="p-3 border rounded bg-gray-100 text-black"
+                />
+              )
+            )}
           </div>
           <button
             onClick={handleAddProduct}
@@ -185,41 +198,49 @@ const InventoryPage = () => {
                 {Object.keys(editProduct).map(
                   (key) =>
                     key !== "index" &&
-                    key !== "id" && (
-                      <input
+                    key !== "id" &&
+                    (key === "stockStatus" ? (
+                      <select
                         key={key}
-                        type={key.includes("date") ? "date" : "text"}
                         name={key}
-                        placeholder={key.replace(/([A-Z])/g, " $1").trim()}
                         value={editProduct[key]}
                         onChange={(e) =>
                           setEditProduct({
                             ...editProduct,
-                            [key]:
-                              key === "sellingPrice"
-                                ? `₱${e.target.value.replace(/₱/g, "")}`
-                                : e.target.value,
+                            [key]: e.target.value,
+                          })
+                        }
+                        className="p-3 border rounded bg-gray-100 text-black"
+                      >
+                        {stockStatusOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        key={key}
+                        type="text"
+                        name={key}
+                        value={editProduct[key]}
+                        onChange={(e) =>
+                          setEditProduct({
+                            ...editProduct,
+                            [key]: e.target.value,
                           })
                         }
                         className="p-3 border rounded bg-gray-100 text-black"
                       />
-                    )
+                    ))
                 )}
               </div>
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveChanges}
-                  className="bg-purple-700 text-white px-4 py-2 rounded"
-                >
-                  Save Changes
-                </button>
-              </div>
+              <button
+                onClick={handleSaveChanges}
+                className="bg-purple-700 text-white px-4 py-2 rounded"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
         )}
