@@ -204,49 +204,54 @@ const InventoryPage = () => {
 
         {/* Floating Edit Modal */}
         {isModalOpen && editProduct && (
-          <div className="fixed inset-0 flex items-center justify-center bg-transparent">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-1/3">
-              <h2 className="text-lg font-bold mb-4">Edit Product</h2>
-              <div className="grid grid-cols-2 gap-4">
-                {Object.keys(editProduct).map(
-                  (key) =>
-                    key !== "index" &&
-                    key !== "id" &&
-                    (key === "stockStatus" ? (
-                      <select
-                        key={key}
-                        name={key}
-                        value={editProduct[key]}
-                        onChange={(e) =>
-                          setEditProduct({
-                            ...editProduct,
-                            [key]: e.target.value,
-                          })
-                        }
-                        className="p-3 border rounded bg-gray-100 text-black"
-                      >
-                        <option value="In Stock">In Stock</option>
-                        <option value="Low Stock">Low Stock</option>
-                        <option value="Out of Stock">Out of Stock</option>
-                      </select>
-                    ) : (
-                      <input
-                        key={key}
-                        type="text"
-                        name={key}
-                        value={editProduct[key]}
-                        onChange={(e) =>
-                          setEditProduct({
-                            ...editProduct,
-                            [key]: e.target.value,
-                          })
-                        }
-                        className="p-3 border rounded bg-gray-100 text-black"
-                      />
-                    ))
-                    ))
+        <div className="fixed inset-0 flex items-center justify-center bg-transparent">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-1/3">
+            <h2 className="text-lg font-bold mb-4">Edit Product</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {Object.keys(editProduct)
+                .filter(key => key !== "index" && key !== "id")
+                .map(key =>
+                  key === "stockStatus" ? (
+                    <select
+                      key={key}
+                      name={key}
+                      value={editProduct[key]}
+                      onChange={(e) =>
+                        setEditProduct({
+                          ...editProduct,
+                          [key]: e.target.value,
+                        })
+                      }
+                      className="p-3 border rounded bg-gray-100 text-black"
+                    >
+                      <option value="In Stock">In Stock</option>
+                      <option value="Low Stock">Low Stock</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                    </select>
+                  ) : (
+                    <input
+                      key={key}
+                      type="text"
+                      name={key}
+                      value={editProduct[key]}
+                      onChange={(e) =>
+                        setEditProduct({
+                          ...editProduct,
+                          [key]: e.target.value,
+                        })
+                      }
+                      className="p-3 border rounded bg-gray-100 text-black"
+                    />
+                  )
                 )}
-              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
+              >
+                Cancel
+              </button>
               <button
                 onClick={handleSaveChanges}
                 className="bg-purple-700 text-white px-4 py-2 rounded"
@@ -255,7 +260,8 @@ const InventoryPage = () => {
               </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
       </div>
     </div>
