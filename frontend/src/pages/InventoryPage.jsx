@@ -21,7 +21,7 @@ const InventoryPage = () => {
       quantityAvailable: 15,
       stockStatus: "In Stock",
       location: "Warehouse A",
-      dateReceived: "2024-02-24",
+      Brand: "2024-02-24",
       sellingPrice: "₱800.00",
     },
     {
@@ -32,7 +32,7 @@ const InventoryPage = () => {
       quantityAvailable: 30,
       stockStatus: "In Stock",
       location: "Warehouse B",
-      dateReceived: "2024-02-20",
+      Brand: "2024-02-20",
       sellingPrice: "₱25.00",
     },
   ]);
@@ -44,20 +44,20 @@ const InventoryPage = () => {
     quantityAvailable: "",
     stockStatus: "In Stock",
     location: "",
-    dateReceived: "",
+    Brand: "",
     sellingPrice: "",
   });
 
   const [editProduct, setEditProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Open Edit Modal
+  const stockStatusOptions = ["In Stock", "Limited Stock", "Out of Stock"];
+
   const handleEdit = (index) => {
     setEditProduct({ ...inventory[index], index });
     setIsModalOpen(true);
   };
 
-  // Save Changes in Edit Modal
   const handleSaveChanges = () => {
     if (editProduct) {
       const updatedInventory = [...inventory];
@@ -71,22 +71,19 @@ const InventoryPage = () => {
     }
   };
 
-  // Handle Delete Item
   const handleDelete = (index) => {
     const updatedInventory = inventory.filter((_, i) => i !== index);
     setInventory(updatedInventory);
   };
 
-  // Handle Input Change for Adding New Product
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNewProduct((prev) => ({
       ...prev,
-      [name]: name === "sellingPrice" ? `₱${value.replace(/₱/g, "")}` : value,
+      [name]: value,
     }));
   };
 
-  // Handle Adding New Product
   const handleAddProduct = () => {
     if (newProduct.serialNumber && newProduct.category) {
       setInventory([...inventory, { ...newProduct, id: inventory.length + 1 }]);
@@ -97,7 +94,7 @@ const InventoryPage = () => {
         quantityAvailable: "",
         stockStatus: "In Stock",
         location: "",
-        dateReceived: "",
+        Brand: "",
         sellingPrice: "",
       });
     }
@@ -235,38 +232,27 @@ const InventoryPage = () => {
                     ) : (
                       <input
                         key={key}
-                        type={key.includes("date") ? "date" : "text"}
+                        type="text"
                         name={key}
-                        placeholder={key.replace(/([A-Z])/g, " $1").trim()}
                         value={editProduct[key]}
                         onChange={(e) =>
                           setEditProduct({
                             ...editProduct,
-                            [key]:
-                              key === "sellingPrice"
-                                ? `₱${e.target.value.replace(/₱/g, "")}`
-                                : e.target.value,
+                            [key]: e.target.value,
                           })
                         }
                         className="p-3 border rounded bg-gray-100 text-black"
                       />
                     ))
+                    ))
                 )}
               </div>
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveChanges}
-                  className="bg-purple-700 text-white px-4 py-2 rounded"
-                >
-                  Save Changes
-                </button>
-              </div>
+              <button
+                onClick={handleSaveChanges}
+                className="bg-purple-700 text-white px-4 py-2 rounded"
+              >
+                Save Changes
+              </button>
             </div>
           </div>
         )}
