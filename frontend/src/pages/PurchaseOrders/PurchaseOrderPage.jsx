@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar_Primary from "../../components/Sidebar_Primary";
+import Sidebar_Primary from "../../components/Sidebar_Secondary";
 
 const PurchaseOrderPage = () => {
   const navigate = useNavigate();

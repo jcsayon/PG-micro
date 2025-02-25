@@ -1,8 +1,8 @@
 import React from "react";
-import Sidebar_Primary from "../components/Sidebar_Primary";
+import Sidebar_Primary from "../components/Sidebar_Secondary";
 import Header from "../components/Header";
 
-const SalesDashboardLayout = ({ children }) => {
+const ModuleLayout = ({ children }) => {
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar_Primary />
@@ -14,4 +14,4 @@ const SalesDashboardLayout = ({ children }) => {
   );
 };
 
-export default SalesDashboardLayout;
+export default ModuleLayout;

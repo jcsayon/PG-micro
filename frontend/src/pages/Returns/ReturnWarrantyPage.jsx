@@ -1,5 +1,4 @@
 import React from 'react';
-import Sidebar_Primary from '../../components/Sidebar_Primary'; 
 import Sidebar_Secondary from '../../components/Sidebar_Secondary';
 import { useNavigate } from "react-router-dom";
 
@@ -8,8 +7,6 @@ const ReturnWarrantyPage = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Primary Sidebar */}
-      <Sidebar_Primary />
 
       {/* Secondary Sidebar and Main Content */}
       <div className="flex flex-1">
