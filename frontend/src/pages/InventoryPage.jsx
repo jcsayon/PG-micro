@@ -12,6 +12,7 @@ const InventoryPage = () => {
   useEffect(() => {
     localStorage.setItem("sidebarCollapsed", isSidebarCollapsed);
   }, [isSidebarCollapsed]);
+
   const [inventory, setInventory] = useState([
     {
       id: 1,
@@ -21,7 +22,7 @@ const InventoryPage = () => {
       quantityAvailable: 15,
       stockStatus: "In Stock",
       location: "Warehouse A",
-      Brand: "2024-02-24",
+      Brand: "Lenovo",
       sellingPrice: "₱800.00",
     },
     {
@@ -32,7 +33,7 @@ const InventoryPage = () => {
       quantityAvailable: 30,
       stockStatus: "In Stock",
       location: "Warehouse B",
-      Brand: "2024-02-20",
+      Brand: "Razer",
       sellingPrice: "₱25.00",
     },
   ]);
@@ -40,18 +41,16 @@ const InventoryPage = () => {
   const [newProduct, setNewProduct] = useState({
     serialNumber: "",
     category: "",
+    Brand: "",
     quantityReceived: "",
     quantityAvailable: "",
     stockStatus: "In Stock",
     location: "",
-    Brand: "",
     sellingPrice: "",
   });
 
   const [editProduct, setEditProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const stockStatusOptions = ["In Stock", "Limited Stock", "Out of Stock"];
 
   const handleEdit = (index) => {
     setEditProduct({ ...inventory[index], index });
@@ -90,11 +89,11 @@ const InventoryPage = () => {
       setNewProduct({
         serialNumber: "",
         category: "",
+        Brand: "",
         quantityReceived: "",
         quantityAvailable: "",
         stockStatus: "In Stock",
         location: "",
-        Brand: "",
         sellingPrice: "",
       });
     }
@@ -102,7 +101,7 @@ const InventoryPage = () => {
 
   return (
     <div className="flex h-screen">
-      <Sidebar_Primary isCollapsed={isSidebarCollapsed}toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}/>
+      <Sidebar_Primary isCollapsed={isSidebarCollapsed} toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}/>
       <div
         className={`flex-1 p-6 overflow-auto transition-all duration-300 ${
           isSidebarCollapsed ? "ml-16" : "ml-64"
@@ -118,7 +117,7 @@ const InventoryPage = () => {
             <thead className="sticky top-0 bg-purple-100 text-left text-sm font-medium text-gray-700">
               <tr>
                 <th className="p-3 border">Item ID</th>
-                <th className="p-3 border">Model</th>
+                <th className="p-3 border">Serial</th>
                 <th className="p-3 border">Category</th>
                 <th className="p-3 border">Brand</th>
                 <th className="p-3 border">Quantity</th>
@@ -135,25 +134,15 @@ const InventoryPage = () => {
                   <td className="p-3 border">{item.id}</td>
                   <td className="p-3 border">{item.serialNumber}</td>
                   <td className="p-3 border">{item.category}</td>
-                  <td className="p-3 border">{item.dateReceived}</td>
+                  <td className="p-3 border">{item.Brand}</td>
                   <td className="p-3 border">{item.quantityReceived}</td>
                   <td className="p-3 border">{item.quantityAvailable}</td>
                   <td className="p-3 border">{item.stockStatus}</td>
                   <td className="p-3 border">{item.location}</td>
                   <td className="p-3 border">{item.sellingPrice}</td>
                   <td className="p-3 border">
-                    <button
-                      onClick={() => handleEdit(index)}
-                      className="text-blue-600 hover:text-blue-800 px-2"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(index)}
-                      className="text-red-600 hover:text-red-800 px-2"
-                    >
-                      Delete
-                    </button>
+                    <button onClick={() => handleEdit(index)}className="text-blue-600 hover:text-blue-800 px-2">Edit</button>
+                    <button onClick={() => handleDelete(index)}className="text-red-600 hover:text-red-800 px-2">Delete</button>
                   </td>
                 </tr>
               ))}
@@ -194,74 +183,51 @@ const InventoryPage = () => {
               );
             })}
           </div>
-          <button
-            onClick={handleAddProduct}
-            className="mt-4 bg-purple-700 text-white px-6 py-2 rounded shadow hover:bg-purple-800"
-          >
+          <button onClick={handleAddProduct} className="mt-4 bg-purple-700 text-white px-6 py-2 rounded shadow hover:bg-purple-800">
             Add to Inventory
           </button>
         </div>
 
         {/* Floating Edit Modal */}
         {isModalOpen && editProduct && (
-        <div className="fixed inset-0 flex items-center justify-center bg-transparent">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-1/3">
-            <h2 className="text-lg font-bold mb-4">Edit Product</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {Object.keys(editProduct)
-                .filter(key => key !== "index" && key !== "id")
-                .map(key =>
-                  key === "stockStatus" ? (
-                    <select
-                      key={key}
-                      name={key}
-                      value={editProduct[key]}
-                      onChange={(e) =>
-                        setEditProduct({
-                          ...editProduct,
-                          [key]: e.target.value,
-                        })
-                      }
-                      className="p-3 border rounded bg-gray-100 text-black"
-                    >
-                      <option value="In Stock">In Stock</option>
-                      <option value="Low Stock">Low Stock</option>
-                      <option value="Out of Stock">Out of Stock</option>
-                    </select>
-                  ) : (
-                    <input
-                      key={key}
-                      type="text"
-                      name={key}
-                      value={editProduct[key]}
-                      onChange={(e) =>
-                        setEditProduct({
-                          ...editProduct,
-                          [key]: e.target.value,
-                        })
-                      }
-                      className="p-3 border rounded bg-gray-100 text-black"
-                    />
-                  )
-                )}
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveChanges}
-                className="bg-purple-700 text-white px-4 py-2 rounded"
-              >
-                Save Changes
-              </button>
+          <div className="fixed inset-0 flex items-center justify-center bg-transparent">
+            <div className="bg-blue-500 p-6 rounded-lg shadow-lg w-1/3">
+              <h2 className="text-lg font-bold mb-4">Edit Product</h2>
+              <div className="grid grid-cols-4 gap-4">
+                {Object.keys(editProduct)
+                  .filter((key) => key !== "index" && key !== "id").map((key) =>
+                    key === "stockStatus" ? (
+                      <select key={key} name={key} value={editProduct[key]}
+                        onChange={(e) => setEditProduct({...editProduct, [key]: e.target.value,})}
+                        className="p-3 border rounded bg-gray-100 text-black">
+                        <option value="In Stock">In Stock</option>
+                        <option value="Low Stock">Low Stock</option>
+                        <option value="Out of Stock">Out of Stock</option>
+                      </select>
+                    ) : (
+                      <input key={key} type="text" name={key} value={editProduct[key]}
+                        onChange={(e) => setEditProduct({...editProduct,[key]: e.target.value,})}
+                        className="p-3 border rounded bg-gray-100 text-black"/>
+                    )
+                  )}
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveChanges}
+                  className="bg-purple-700 text-white px-4 py-2 rounded"
+                >
+                  Save Changes
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       </div>
     </div>
