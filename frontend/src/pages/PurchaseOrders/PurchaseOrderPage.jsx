@@ -130,46 +130,47 @@ const PurchaseOrderPage = () => {
                     <tbody>
                       {products.map((product, index) => (
                         <tr key={product.id} className={`border-t ${product.isEditing ? "bg-yellow-100" : ""}`}>
-                          <td className="p-3">{product.id}</td>
-                          <td className="p-3">
-                            <input type="text" className="border p-1 w-full" 
+                          <td className="p-1">{product.id}</td>
+                          <td className="p-1">
+                            <input type="text" className="p-1 w-full" 
                               value={product.brand} disabled={!product.isEditing}
                               onChange={(e) => handleChangeProduct(index, "brand", e.target.value)}
                             />
                           </td>
-                          <td className="p-3">
-                            <input type="text" className="border p-1 w-full" 
+                          <td className="p-1">
+                            <input type="text" className="p-1 w-full" 
                               value={product.model} disabled={!product.isEditing}
                               onChange={(e) => handleChangeProduct(index, "model", e.target.value)}
                             />
                           </td>
-                          <td className="p-3">
-                            <input type="text" className="border p-1 w-full"
+                          <td className="p-1">
+                            <input type="text" className="p-1 w-full"
                               value={product.description} disabled={!product.isEditing}
                               onChange={(e) => handleChangeProduct(index, "description", e.target.value)}
                             />
                           </td>
-                          <td className="p-3 flex">
-                            <input type="text" className="border p-1 w-full" 
-                              value={`₱ ${product.purchasePrice}`} disabled={!product.isEditing}
+                          <td className="p-1 flex">
+                            <span>₱</span>
+                            <input type="text" className="p-1 w-full"
+                              value={product.purchasePrice} disabled={!product.isEditing}
                               onChange={(e) => handleChangeProduct(index, "purchasePrice", e.target.value)}
                             />
                           </td>
-                          <td className="p-3">    
-                            <input type="text" className="border p-1 w-full" 
+                          <td className="p-1">    
+                            <input type="text" className="p-1 w-full" 
                               value={product.reorderPoint} disabled={!product.isEditing}
                               onChange={(e) => handleChangeProduct(index, "reorderPoint", e.target.value)}
                             />
                           </td>
-                          <td className="p-3">
-                            <input type="text" className="border p-1 w-full" 
+                          <td className="p-1">
+                            <input type="text" className="p-1 w-full" 
                               value={product.warrantyDuration} disabled={!product.isEditing}
                               onChange={(e) => handleChangeProduct(index, "warrantyDuration", e.target.value)}
                             />
                           </td>
-                          <td className="p-3">{product.audit ? "✅" : "❌"}</td>
-                          <td className="p-3">{product.damage ? "✅" : "❌"}</td>
-                          <td className="p-3 flex gap-2">
+                          <td className="p-1">{product.audit ? "✅" : "❌"}</td>
+                          <td className="p-1">{product.damage ? "✅" : "❌"}</td>
+                          <td className="p-1 flex gap-2">
                             <button 
                               className={`px-2 py-1 rounded w-[50px] text-white
                               ${product.isEditing ? "bg-green-600" : "bg-blue-600"}`} 
@@ -257,36 +258,36 @@ const PurchaseOrderPage = () => {
                   <tbody>
                     {suppliers.map((supplier, index) => (
                       <tr key={supplier.id} className={`border-t ${supplier.isEditing ? "bg-yellow-100" : ""}`}>
-                        <td className="p-3">{supplier.id}</td>
-                        <td className="p-3">
+                        <td className="p-1">{supplier.id}</td>
+                        <td className="p-1">
                           <input 
-                            type="text" className="border p-1 w-full" value={supplier.name} 
+                            type="text" className="p-1 w-full " value={supplier.name} 
                             onChange={(e) => handleChangeSupplier(index, "name", e.target.value)}
                             disabled={!supplier.isEditing}
                           />
                         </td>
-                        <td className="p-3">
+                        <td className="p-1">
                           <input 
-                            type="text" className="border p-1 w-full" value={supplier.address} 
+                            type="text" className="p-1 w-full" value={supplier.address} 
                             onChange={(e) => handleChangeSupplier(index, "address", e.target.value)}
                             disabled={!supplier.isEditing}
                           />
                         </td>
-                        <td className="p-3">
+                        <td className="p-1">
                           <input 
-                            type="email" className="border p-1 w-full" value={supplier.email} 
+                            type="email" className="p-1 w-full" value={supplier.email} 
                             onChange={(e) => handleChangeSupplier(index, "email", e.target.value)}
                             disabled={!supplier.isEditing}
                           />
                         </td>
-                        <td className="p-3">
+                        <td className="p-1">
                           <input 
-                            type="text" className="border p-1 w-full" value={supplier.contact} 
+                            type="text" className="p-1 w-full" value={supplier.contact} 
                             onChange={(e) => handleChangeSupplier(index, "contact", e.target.value)}
                             disabled={!supplier.isEditing}
                           />
                         </td>
-                        <td className="p-3 flex gap-2">
+                        <td className="p-1 flex gap-2">
                           <button 
                             className={`px-2 py-1 rounded w-[50px] text-white
                             ${supplier.isEditing ? "bg-green-600" : "bg-blue-600"}`} 
