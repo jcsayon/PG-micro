@@ -68,3 +68,9 @@ Edit
 git reset --hard origin/<branch-name>
 ```
 This will overwrite your local changes and make your local branch identical to the remote branch. Use this with caution.
+
+Add Tailwind css
+```bash
+cd frontend
+npm install tailwindcss @tailwindcss/vite
+```

@@ -1,59 +1,56 @@
 // frontend/src/components/Sidebar_Secondary.jsx
-import React from "react";
-import { NavLink,useLocation } from "react-router-dom";
+import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
 
 const Sidebar_Secondary = () => {
-  const location = useLocation(); // Get the current route
+  const [isCollapsed, setIsCollapsed] = useState(false); // State for sidebar visibility
 
-  // list all other paths for page links from return-warranty, purchase-orders, sales
-  // Define all possible menu links
-  const MenuLinks = [
-    //PO
-    { name: "Purchase Orders", path: "/purchase-orders" },
-    //SALES
-    { name: "Sales", path: "/sales" },  
-    { name: "Customer Form", path: "/customerform" },
-    //RETURN-WARRANTY
-    { name: "Return List", path: "/return-warranty" },
-    { name: "Return Form", path: "/returnform" },
+  const menuItems = [
+    { name: "Dashboard", path: "/dashboard", icon: "🏠" },
+    { name: "Purchase Orders", path: "/purchase-orders", icon: "📋" },
+    { name: "Inventory", path: "/inventory", icon: "📦" },
+    { name: "Sales", path: "/sales", icon: "💵" },
+    { name: "Returns", path: "/return-warranty", icon: "🔄" },
   ];
 
-  // Define visibility rules for specific pages
-let menuLinks = MenuLinks.filter(link => {
-  if (location.pathname === "/return-warranty" || location.pathname === "/returnform") {
-    // Only show Return List & Return Form on these pages
-    return link.path === "/return-warranty" || link.path === "/returnform";
-  } 
-  
-  else if (location.pathname === "/sales" || location.pathname === "/purchase-orders") {
-    // Hide Return List & Return Form in Sales and Purchase Orders
-    return link.path !== "/return-warranty" && link.path !== "/returnform";
-  }
-
-  return true; // Show all links for other pages
-});
-
-
-
   return (
-    <aside className="w-64 bg-purple-700 text-white p-5 min-h-screen">
-      <h2 className="text-lg font-bold mb-6">Returns & Warranty</h2>
-      <nav className="space-y-3">
-        {menuLinks.map((link, index) => (
+    <div className={`h-screen ${isCollapsed ? "w-16" : "w-64"} bg-purple-700 text-white fixed top-0 left-0 flex flex-col shadow-lg transition-all duration-300`}>
+      {/* Logo Section */}
+      <div className="p-4 text-center font-bold text-2xl bg-purple-800">
+        {!isCollapsed && "PG Micro World SECONDARY"}
+      </div>
+
+      {/* Menu Items */}
+      <nav className="flex-1 mt-6">
+        {menuItems.map((item, index) => (
           <NavLink
             key={index}
-            to={link.path}
+            to={item.path}
             className={({ isActive }) =>
-              isActive
-                ? "block bg-purple-900 p-3 rounded transition"
-                : "block p-3 hover:bg-purple-800 rounded transition"
+              `flex items-center gap-3 px-5 py-3 text-lg hover:bg-purple-600 transition ${
+                isActive ? "bg-purple-500 font-semibold" : ""
+              }`
             }
           >
-            {link.name}
+            <span>{item.icon}</span>
+            {!isCollapsed && item.name}
           </NavLink>
         ))}
       </nav>
-    </aside>
+
+      {/* Toggle Button */}
+      <button
+        className="absolute top-1/2 -right-4 transform -translate-y-1/2 bg-purple-800 border-2 border-purple-800 text-white px-4 py-2 mb-4 block p-2 mr-2 hover:bg-purple-700 hover:border-2 hover:border-purple-800 rounded text-xl"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        {isCollapsed ? "›" : "‹"}
+      </button>
+
+      {/* Footer Section */}
+      <div className="p-4 text-center text-sm bg-purple-800">
+        {!isCollapsed && "© 2025 PG Micro World"}
+      </div>
+    </div>
   );
 };
 
