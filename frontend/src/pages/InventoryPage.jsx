@@ -1,216 +1,172 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Sidebar_Primary from "../components/Sidebar_Primary";
+// import { supabase } from "../supabaseClient"; // Uncomment when using Supabase
 
 const InventoryPage = () => {
-  // Sample inventory data
-  const [inventory, setInventory] = useState([
-    { id: 1, name: "Laptop", category: "Electronics", quantityReceived: 20, quantityRemaining: 15, status: "In Stock", purchasePrice: "₱700.00", sellingPrice: "₱800.00", dateReceived: "2024-02-20", location: "Warehouse A" },
-    { id: 2, name: "Mouse", category: "Accessories", quantityReceived: 50, quantityRemaining: 30, status: "In Stock", purchasePrice: "₱15.00", sellingPrice: "₱25.00", dateReceived: "2024-02-18", location: "Warehouse B" }
-  ]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [newProduct, setNewProduct] = useState({
-    id: "",
-    name: "",
-    category: "",
-    quantityReceived: "",
-    quantityRemaining: "",
-    status: "In Stock",
-    purchasePrice: "",
-    sellingPrice: "",
-    dateReceived: "",
-    location: ""
-  });
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [inventory, setInventory] = useState([]);
+  const [damagedProducts, setDamagedProducts] = useState([]);
+  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
+  useEffect(() => {
+    generateDummyData();
+    localStorage.setItem("sidebarCollapsed", isSidebarCollapsed);
+
+    // Uncomment this to fetch data from Supabase instead of using dummy data.
+    // fetchDataFromSupabase();
+  }, [isSidebarCollapsed]);
+
+  /** 🔹 Dummy Data for Placeholder */
+  const generateDummyData = () => {
+    const inventoryData = Array.from({ length: 60 }, (_, i) => ({
+      id: i + 1,
+      serialNumber: `SN${10000 + i}`,
+      category: ["Laptop", "Mouse", "Router", "Switch", "RAM"][i % 5],
+      quantityReceived: Math.floor(Math.random() * 100) + 1,
+      quantityAvailable: Math.floor(Math.random() * 50) + 1,
+      stockStatus: ["In Stock", "Limited Stock", "Out of Stock"][i % 3],
+      location: `Warehouse ${String.fromCharCode(65 + (i % 5))}`,
+      brand: `Brand ${i % 5}`,
+      sellingPrice: `₱${(Math.random() * 1000).toFixed(2)}`,
+    }));
+
+    const damagedData = Array.from({ length: 40 }, (_, i) => ({
+      id: i + 100,
+      serialNumber: `SN-DMG${20000 + i}`,
+      category: ["Laptop", "Mouse", "Router", "Switch", "RAM"][i % 5],
+      location: `Warehouse ${String.fromCharCode(65 + (i % 5))}`,
+    }));
+
+    setInventory(inventoryData);
+    setDamagedProducts(damagedData);
   };
 
-  const handleAddProduct = () => {
-    setInventory([...inventory, { ...newProduct, id: inventory.length + 1 }]);
-    setNewProduct({
-      id: "",
-      name: "",
-      category: "",
-      quantityReceived: "",
-      quantityRemaining: "",
-      status: "In Stock",
-      purchasePrice: "",
-      sellingPrice: "",
-      dateReceived: "",
-      location: ""
-    });
-  };
+  /** 🔹 Fetch Data from Supabase */
+  // const fetchDataFromSupabase = async () => {
+  //   try {
+  //     const { data: inventoryData, error: inventoryError } = await supabase
+  //       .from("inventory")
+  //       .select("*");
 
-  const handleEditProduct = (id) => {
-    const product = inventory.find((item) => item.id === id);
-    setNewProduct(product);
-  };
+  //     if (inventoryError) throw inventoryError;
 
-  const handleDeleteProduct = (id) => {
-    setInventory(inventory.filter((item) => item.id !== id));
-  };
+  //     const { data: damagedData, error: damagedError } = await supabase
+  //       .from("damaged_products")
+  //       .select("*");
 
-  const filteredInventory = inventory.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  //     if (damagedError) throw damagedError;
+
+  //     setInventory(inventoryData);
+  //     setDamagedProducts(damagedData);
+  //   } catch (error) {
+  //     console.error("Error fetching data:", error.message);
+  //   }
+  // };
+
+  /** 🔹 Open Inventory Details Modal */
+  const openInventoryModal = (item) => {
+    setSelectedItem(item);
+    setIsInventoryModalOpen(true);
+  };
 
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
-      <Sidebar_Primary />
+      <Sidebar_Primary
+        isCollapsed={isSidebarCollapsed}
+        toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
 
       {/* Main Content */}
-      <div className="flex-1 p-6 overflow-auto ml-64">
-        <h1 className="text-2xl font-bold text-purple-600 mb-4">Inventory Management</h1>
+      <div
+        className={`flex-1 p-6 transition-all duration-300 ${
+          isSidebarCollapsed ? "ml-16" : "ml-64"
+        }`}
+      >
+        <h1 className="text-3xl font-bold text-purple-700 mb-6">
+          Inventory Management
+        </h1>
 
-        {/* Search Bar and Button */}
-        <div className="flex justify-between items-center mb-4">
-          <input
-            type="text"
-            placeholder="Search items..."
-            className="w-1/3 p-2 border border-gray-300 rounded focus:ring-purple-500 focus:border-purple-500"
-            value={searchQuery}
-            onChange={handleSearch}
-          />
-          <button
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-            onClick={handleAddProduct}
-          >
-            + Add Product
-          </button>
-        </div>
-
-        {/* Inventory Table */}
-        <div className="overflow-x-auto bg-white shadow-md rounded-lg">
-          <table className="min-w-full border border-gray-200 rounded">
-            <thead>
-              <tr className="bg-purple-100 text-left text-sm font-medium text-gray-700">
-                <th className="p-3 border">Description</th>
-                <th className="p-3 border">Category</th>
-                <th className="p-3 border">Quantity Received</th>
-                <th className="p-3 border">Quantity Remaining</th>
-                <th className="p-3 border">Stock Status</th>
-                <th className="p-3 border">Purchase Price</th>
-                <th className="p-3 border">Selling Price</th>
-                <th className="p-3 border">Date Received</th>
-                <th className="p-3 border">Location</th>
-                <th className="p-3 border">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredInventory.map((item) => (
-                <tr key={item.id} className="text-sm text-gray-700 border-t">
-                  <td className="p-3 border">{item.name}</td>
-                  <td className="p-3 border">{item.category}</td>
-                  <td className="p-3 border">{item.quantityReceived}</td>
-                  <td className="p-3 border">{item.quantityRemaining}</td>
-                  <td className="p-3 border">
-                    <span className={`px-2 py-1 rounded text-white ${item.status === "In Stock" ? "bg-green-500" : "bg-red-500"}`}>
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="p-3 border">{item.purchasePrice}</td>
-                  <td className="p-3 border">{item.sellingPrice}</td>
-                  <td className="p-3 border">{item.dateReceived}</td>
-                  <td className="p-3 border">{item.location}</td>
-                  <td className="p-3 border">
-                    <button
-                      className="text-blue-500 hover:underline mr-2"
-                      onClick={() => handleEditProduct(item.id)}
+        {/* Grid Layout for Tables */}
+        <div className="grid grid-cols-2 gap-6 h-[80vh]">
+          {/* ✅ Available Inventory Table */}
+          <div className="bg-blue-50 shadow-lg rounded-lg p-4 flex flex-col h-full">
+            <h2 className="text-xl font-semibold text-blue-700 mb-4">
+              Available Inventory
+            </h2>
+            <div className="overflow-y-auto flex-grow max-h-[70vh]">
+              <table className="min-w-full border border-gray-200 rounded">
+                <thead className="sticky top-0 bg-blue-200 text-left text-sm font-medium text-gray-800">
+                  <tr>
+                    <th className="p-3 border">Item ID</th>
+                    <th className="p-3 border">Serial Number</th>
+                    <th className="p-3 border">Category</th>
+                    <th className="p-3 border">Quantity</th>
+                    <th className="p-3 border">Available</th>
+                    <th className="p-3 border">Stock Status</th>
+                    <th className="p-3 border">Location</th>
+                    <th className="p-3 border">Selling Price</th>
+                    <th className="p-3 border text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inventory.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="text-sm text-gray-700 border-t"
                     >
-                      Edit
-                    </button>
-                    <button
-                      className="text-red-500 hover:underline"
-                      onClick={() => handleDeleteProduct(item.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Add/Edit Product Form */}
-        <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">{newProduct.id ? "Edit Product" : "Add Product"}</h2>
-          <form>
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Name"
-                className="p-2 border border-gray-300 rounded"
-                value={newProduct.name}
-                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="Category"
-                className="p-2 border border-gray-300 rounded"
-                value={newProduct.category}
-                onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-              />
-              <input
-                type="number"
-                placeholder="Quantity Received"
-                className="p-2 border border-gray-300 rounded"
-                value={newProduct.quantityReceived}
-                onChange={(e) => setNewProduct({ ...newProduct, quantityReceived: e.target.value })}
-              />
-              <input
-                type="number"
-                placeholder="Quantity Remaining"
-                className="p-2 border border-gray-300 rounded"
-                value={newProduct.quantityRemaining}
-                onChange={(e) => setNewProduct({ ...newProduct, quantityRemaining: e.target.value })}
-              />
-              <select
-                className="p-2 border border-gray-300 rounded"
-                value={newProduct.status}
-                onChange={(e) => setNewProduct({ ...newProduct, status: e.target.value })}
-              >
-                <option value="In Stock">In Stock</option>
-                <option value="Out of Stock">Out of Stock</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Purchase Price"
-                className="p-2 border border-gray-300 rounded"
-                value={newProduct.purchasePrice}
-                onChange={(e) => setNewProduct({ ...newProduct, purchasePrice: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="Selling Price"
-                className="p-2 border border-gray-300 rounded"
-                value={newProduct.sellingPrice}
-                onChange={(e) => setNewProduct({ ...newProduct, sellingPrice: e.target.value })}
-              />
-              <input
-                type="date"
-                placeholder="Date Received"
-                className="p-2 border border-gray-300 rounded"
-                value={newProduct.dateReceived}
-                onChange={(e) => setNewProduct({ ...newProduct, dateReceived: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="Location"
-                className="p-2 border border-gray-300 rounded"
-                value={newProduct.location}
-                onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
-              />
+                      <td className="p-3 border">{item.id}</td>
+                      <td className="p-3 border">{item.serialNumber}</td>
+                      <td className="p-3 border">{item.category}</td>
+                      <td className="p-3 border">{item.quantityReceived}</td>
+                      <td className="p-3 border">{item.quantityAvailable}</td>
+                      <td className="p-3 border">{item.stockStatus}</td>
+                      <td className="p-3 border">{item.location}</td>
+                      <td className="p-3 border">{item.sellingPrice}</td>
+                      <td className="p-3 border text-center">
+                        <button
+                          onClick={() => openInventoryModal(item)}
+                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-700"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <button
-              type="button"
-              className="mt-4 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-              onClick={handleAddProduct}
-            >
-              {newProduct.id ? "Update Product" : "Add Product"}
-            </button>
-          </form>
+          </div>
+
+          {/* ✅ Damaged Products Table */}
+          <div className="bg-red-50 shadow-lg rounded-lg p-4 flex flex-col h-full">
+            <h2 className="text-xl font-semibold text-red-700 mb-4">
+              Damaged Products
+            </h2>
+            <div className="overflow-y-auto flex-grow max-h-[70vh]">
+              <table className="min-w-full border border-gray-200 rounded">
+                <thead className="sticky top-0 bg-red-200 text-left text-sm font-medium text-gray-800">
+                  <tr>
+                    <th className="p-3 border">Item ID</th>
+                    <th className="p-3 border">Serial Number</th>
+                    <th className="p-3 border">Category</th>
+                    <th className="p-3 border">Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {damagedProducts.map((item) => (
+                    <tr key={item.id} className="border-t">
+                      <td className="p-3 border">{item.id}</td>
+                      <td className="p-3 border">{item.serialNumber}</td>
+                      <td className="p-3 border">{item.category}</td>
+                      <td className="p-3 border">{item.location}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
