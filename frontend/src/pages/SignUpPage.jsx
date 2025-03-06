@@ -10,6 +10,7 @@ const SignUpPage = () => {
     password: "",
     role: "Employee", // Default role
   });
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     setUser({ ...user, [e.target.name]: e.target.value });
@@ -17,28 +18,29 @@ const SignUpPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
-    // TEMPORARY: Add user to local state for testing
-    console.log("Temporary Signup Data:", user);
+    try {
+      // Create user in Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: user.email,
+        password: user.password,
+      });
 
-    // ✅ Supabase Integration
-    const { data, error } = await supabase.auth.signUp({
-      email: user.email,
-      password: user.password,
-    });
+      if (error) {
+        setError(error.message);
+      } else {
+        // Insert user into `profiles` table
+        await supabase.from("profiles").insert([
+          { email: user.email, name: user.name, role: user.role }
+        ]);
 
-    if (error) {
-      alert("Error signing up: " + error.message);
-    } else {
-      // ✅ Store user role in Supabase database (Table: `profiles`)
-      await supabase.from("profiles").insert([{ 
-        email: user.email, 
-        name: user.name, 
-        role: user.role 
-      }]);
-
-      alert("Sign-up successful! Redirecting to Dashboard...");
-      navigate("/dashboard");
+        alert("Sign-up successful! Redirecting to Login...");
+        navigate("/");
+      }
+    } catch (err) {
+      setError("An error occurred during sign-up.");
+      console.error("Sign-up error:", err);
     }
   };
 
@@ -46,6 +48,7 @@ const SignUpPage = () => {
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-2xl font-bold text-center text-purple-600 mb-6">Create Account</h2>
+        {error && <p className="text-red-500 text-center mb-3">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-gray-700">Full Name</label>
