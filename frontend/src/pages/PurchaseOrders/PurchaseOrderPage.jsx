@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar_Primary from "../../components/Sidebar_Secondary";
+import Sidebar_Secondary from "../../components/Sidebar_Secondary";
 
 const PurchaseOrderPage = () => {
+  // Initialize state from localStorage (default to false if not set)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem("sidebarCollapsed");
+    return saved === "true";
+  });
+  // Persist state changes to localStorage
+  useEffect(() => {
+    localStorage.setItem("sidebarCollapsed", isSidebarCollapsed);
+  }, [isSidebarCollapsed]);
+
   const navigate = useNavigate();
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,6 +39,14 @@ const PurchaseOrderPage = () => {
     setProducts(updatedProducts);
   };
 
+  const handleAuditChange = (e, index) => {
+    handleChangeProduct(index, "audit", e.target.value === "true");
+  };
+  
+  const handleDamageChange = (e, index) => {
+    handleChangeProduct(index, "damage", e.target.value === "true");
+  };
+
   const handleChangeProduct = (index, field, value) => {
     const updatedProducts = [...products];
     updatedProducts[index][field] = value;
@@ -47,23 +65,8 @@ const PurchaseOrderPage = () => {
     { id: 3, name: "MGM Marketing Inc.", address: "789 Market St, Manila", email: "contact@mgm.com", contact: "0934-567-8910", isEditing: false },
   ]);
   const [newSupplier, setNewSupplier] = useState({ name: "", address: "", email: "", contact: "" });
-  // Purchase order table
-  useEffect(() => {setPurchaseOrders([
-      { id: 1, poNumber: "#1234", supplier: "Hardware World", date: "2023-01-01", total: "₱199,100.00", status: "Order Placed" },
-      { id: 2, poNumber: "#5678", supplier: "CD-R King", date: "2023-01-02", total: "₱50,050.00", status: "Shipped" },
-      { id: 3, poNumber: "#9101", supplier: "MGM Marketing Inc.", date: "2023-01-03", total: "₱12,075.00", status: "Delivered" },
-    ]);}, []
-  );
 
-  const filteredOrders = purchaseOrders.filter((order) => {
-    const matchesSearch =
-      order.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.supplier.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "All" || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  // 🔹 NEW CHANGE: Supplier CRUD Functions
+  // Supplier CRUD Functions
   const handleAddSupplier = () => {
     setSuppliers([...suppliers, { id: suppliers.length + 1, ...newSupplier, isEditing: false }]);
     setNewSupplier({ name: "", address: "", email: "", contact: "" });
@@ -85,10 +88,28 @@ const PurchaseOrderPage = () => {
     setSuppliers(suppliers.filter((supplier) => supplier.id !== id));
   };
 
+  // Purchase order table
+  useEffect(() => {setPurchaseOrders([
+    { id: 1, poNumber: "#1234", supplier: "Hardware World", date: "2023-01-01", total: "₱199,100.00", status: "Order Placed" },
+    { id: 2, poNumber: "#5678", supplier: "CD-R King", date: "2023-01-02", total: "₱50,050.00", status: "Shipped" },
+    { id: 3, poNumber: "#9101", supplier: "MGM Marketing Inc.", date: "2023-01-03", total: "₱12,075.00", status: "Delivered" },
+    { id: 4, poNumber: "#2345", supplier: "Sara Davis", date: "2023-01-04", total: "₱100,125.00", status: "Delivered" },
+    { id: 5, poNumber: "#6789", supplier: "Mike Tyson Inc.", date: "2023-01-05", total: "₱55,625.00", status: "In Progress" },
+    ]);}, []
+  );
+
+  const filteredOrders = purchaseOrders.filter((order) => {
+    const matchesSearch =
+      order.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.supplier.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "All" || order.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="flex">
       {/* Sidebar */}
-      <Sidebar_Primary />
+      <Sidebar_Secondary isCollapsed={isSidebarCollapsed} toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}/>
 
       {/* Main Content */}
       <div className="flex-grow ml-64 p-6 bg-gray-50 min-h-screen">
@@ -98,7 +119,6 @@ const PurchaseOrderPage = () => {
           <div className="flex gap-4">
             <button className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
               onClick={() => setShowProductModal(true)}>View Products</button>
-            {/* 🔹 NEW CHANGE: View Suppliers Button */}
             <button className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
               onClick={() => setShowSupplierModal(true)}>View Suppliers</button>
             <button className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
@@ -106,24 +126,25 @@ const PurchaseOrderPage = () => {
           </div>
         </div>
 
-        {/* 🔹 Product Modal */}
+        {/* Product Modal */}
         {showProductModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+            <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
                 <div className="bg-white p-6 rounded shadow-lg h-[600px] w-[1450px] flex flex-col">
 
                 <div className={`overflow-x-auto flex-grow ${products.length >= 4 ? "max-h-96 overflow-y-auto" : ""}`}>
+                  <h3 className="text-lg font-bold">Product List</h3>
                   <table className="min-w-full bg-white border border-gray-300 rounded">
                     <thead className="sticky top-0 bg-gray-100">
                       <tr>
-                        <th className="p-3 text-center w-[110px]">Product ID</th>
-                        <th className="p-3 text-center">Brand</th>
-                        <th className="p-3 text-center">Model</th>
-                        <th className="p-3 text-center">Description</th>
-                        <th className="p-3 text-center">Purchase Price</th>
-                        <th className="p-3 text-center">Reorder Point</th>
-                        <th className="p-3 text-center">Warranty Duration</th>
-                        <th className="p-3 text-center">Audit</th>
-                        <th className="p-3 text-center">Damage</th>
+                        <th className="p-3 text-left w-[110px]">Product ID</th>
+                        <th className="p-3 text-left">Brand</th>
+                        <th className="p-3 text-left">Model</th>
+                        <th className="p-3 text-left">Description</th>
+                        <th className="p-3 text-left">Purchase Price</th>
+                        <th className="p-3 text-left">Reorder Point</th>
+                        <th className="p-3 text-left">Warranty Duration</th>
+                        <th className="p-3 text-left">Audit</th>
+                        <th className="p-3 text-left">Damage</th>
                         <th className="p-3 text-center">Actions</th>
                       </tr>
                     </thead>
@@ -168,8 +189,18 @@ const PurchaseOrderPage = () => {
                               onChange={(e) => handleChangeProduct(index, "warrantyDuration", e.target.value)}
                             />
                           </td>
-                          <td className="p-1">{product.audit ? "✅" : "❌"}</td>
-                          <td className="p-1">{product.damage ? "✅" : "❌"}</td>
+                          <td className="p-1">
+                            <select value={product.audit ? true : false} disabled={!product.isEditing} onChange={(e) => handleAuditChange(e, index)}>
+                              <option value={true}>✅</option>
+                              <option value={false}>❌</option>
+                            </select>
+                          </td>
+                          <td className="p-1">
+                            <select value={product.damage ? true : false} disabled={!product.isEditing} onChange={(e) => handleDamageChange(e, index)}>
+                              <option value={true}>✅</option>
+                              <option value={false}>❌</option>
+                            </select>
+                          </td>
                           <td className="p-1 flex gap-2">
                             <button 
                               className={`px-2 py-1 rounded w-[50px] text-white
@@ -190,7 +221,7 @@ const PurchaseOrderPage = () => {
 
                 {/* Add Product */}
                 <div className="mt-4 grid grid-cols-3 gap-1">
-                  <h3 className="text-lg font-bold">Add New Product</h3>
+                  <h3 className="text-lg font-bold">New Product</h3>
                   <div></div>
                   <div></div>
                   <input
@@ -238,20 +269,21 @@ const PurchaseOrderPage = () => {
             </div>
         )}
 
-        {/* 🔹 NEW CHANGE: Supplier Modal with Editable Inputs */}
+        {/* Supplier Modal with Editable Inputs */}
         {showSupplierModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
             <div className="bg-white p-6 rounded shadow-lg h-[600px] w-[1200px] flex flex-col">
               
               <div className={`overflow-x-auto flex-grow ${suppliers.length >= 4 ? "max-h-96 overflow-y-auto" : ""}`}>
+                <h3 className="text-lg font-bold">Supplier List</h3>
                 <table className="min-w-full bg-white border border-gray-300 rounded">
                   <thead className="sticky top-0 bg-gray-100">
                     <tr className="bg-gray-100">
-                      <th className="p-3 text-center w-[110px]">Supplier ID</th>
-                      <th className="p-3 text-center">Name</th>
-                      <th className="p-3 text-center">Address</th>
-                      <th className="p-3 text-center">Email</th>
-                      <th className="p-3 text-center">Contact Number</th>
+                      <th className="p-3 text-left w-[110px]">Supplier ID</th>
+                      <th className="p-3 text-left">Name</th>
+                      <th className="p-3 text-left">Address</th>
+                      <th className="p-3 text-left">Email</th>
+                      <th className="p-3 text-left">Contact Number</th>
                       <th className="p-3 text-center">Actions</th>
                     </tr>
                   </thead>
@@ -307,7 +339,7 @@ const PurchaseOrderPage = () => {
 
               {/* Add Supplier */}
               <div className="mt-4 grid grid-cols-2 gap-1">
-                <h3 className="text-lg font-bold">Add New Supplier</h3>
+                <h3 className="text-lg font-bold">New Supplier</h3>
                 <div>
                 </div>
                 <input
@@ -346,14 +378,14 @@ const PurchaseOrderPage = () => {
           <div className="flex gap-4">
             <button className="bg-gray-200 px-3 py-2 rounded">Status</button>
             <select className="p-2 border border-gray-300 rounded"
-              value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            >
+              value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="All">All</option>
               <option value="Order Placed">Order Placed</option>
               <option value="Shipped">Shipped</option>
               <option value="Delivered">Delivered</option>
               <option value="In Progress">In Progress</option>
-            </select>          
+            </select>
+            {/* Search bar */}
             <input type="text" placeholder="Search by PO number, Supplier, or Date"
               className="p-2 border border-gray-300 rounded w-[600px]"
               value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}/>
@@ -384,7 +416,7 @@ const PurchaseOrderPage = () => {
                       order.status === "Delivered" ? "bg-green-500" :
                       order.status === "Shipped" ? "bg-gray-500" :
                       order.status === "Order Placed"? "bg-purple-400": 
-                      order.status === "On Hold"? "bg-yellow-400": ""
+                      order.status === "In Progress"? "bg-yellow-400": ""
                     }`}
                   >
                     {order.status}
