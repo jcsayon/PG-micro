@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import Sidebar_Primary from "../components/Sidebar_Primary";
-// import { supabase } from "../supabaseClient"; // Uncomment when using Supabase
+// import { createClient } from "@supabase/supabase-js"; // Uncomment when using Supabase
+
+// Uncomment and replace with your actual Supabase credentials
+// const supabase = createClient("YOUR_SUPABASE_URL", "YOUR_SUPABASE_ANON_KEY");
 
 const InventoryPage = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -8,6 +11,10 @@ const InventoryPage = () => {
   const [damagedProducts, setDamagedProducts] = useState([]);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+
+  // Search state and table selection
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTable, setSelectedTable] = useState("inventory"); // Default: Inventory
 
   useEffect(() => {
     generateDummyData();
@@ -17,7 +24,7 @@ const InventoryPage = () => {
     // fetchDataFromSupabase();
   }, [isSidebarCollapsed]);
 
-  /** 🔹 Dummy Data for Placeholder */
+  /*Dummy Data for Placeholder */
   const generateDummyData = () => {
     const inventoryData = Array.from({ length: 60 }, (_, i) => ({
       id: i + 1,
@@ -42,7 +49,7 @@ const InventoryPage = () => {
     setDamagedProducts(damagedData);
   };
 
-  /** 🔹 Fetch Data from Supabase */
+  /*Fetch Data from Supabase */
   // const fetchDataFromSupabase = async () => {
   //   try {
   //     const { data: inventoryData, error: inventoryError } = await supabase
@@ -64,11 +71,34 @@ const InventoryPage = () => {
   //   }
   // };
 
-  /** 🔹 Open Inventory Details Modal */
+  /*Open Inventory Details Modal */
   const openInventoryModal = (item) => {
     setSelectedItem(item);
     setIsInventoryModalOpen(true);
   };
+
+  /*Filtered Data Based on Search Query */
+  const filteredInventory =
+    selectedTable === "inventory"
+      ? inventory.filter((item) =>
+          Object.values(item).some(
+            (val) =>
+              typeof val === "string" &&
+              val.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        )
+      : inventory;
+
+  const filteredDamagedProducts =
+    selectedTable === "damaged"
+      ? damagedProducts.filter((item) =>
+          Object.values(item).some(
+            (val) =>
+              typeof val === "string" &&
+              val.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+        )
+      : damagedProducts;
 
   return (
     <div className="flex h-screen">
@@ -87,6 +117,27 @@ const InventoryPage = () => {
         <h1 className="text-3xl font-bold text-purple-700 mb-6">
           Inventory Management
         </h1>
+
+        {/*Search Bar with Table Selection */}
+        <div className="flex items-center mb-4">
+          <input
+            type="text"
+            placeholder={`Search in ${
+              selectedTable === "inventory" ? "Inventory" : "Damaged Products"
+            }...`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border border-gray-300 rounded-l-md px-4 py-2 w-80 focus:ring-2 focus:ring-purple-500"
+          />
+          <select
+            value={selectedTable}
+            onChange={(e) => setSelectedTable(e.target.value)}
+            className="border border-gray-300 rounded-r-md px-3 py-2 bg-white text-gray-700"
+          >
+            <option value="inventory">Inventory</option>
+            <option value="damaged">Damaged Products</option>
+          </select>
+        </div>
 
         {/* Grid Layout for Tables */}
         <div className="grid grid-cols-2 gap-6 h-[80vh]">
@@ -107,11 +158,10 @@ const InventoryPage = () => {
                     <th className="p-3 border">Stock Status</th>
                     <th className="p-3 border">Location</th>
                     <th className="p-3 border">Selling Price</th>
-                    <th className="p-3 border text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {inventory.map((item) => (
+                  {filteredInventory.map((item) => (
                     <tr
                       key={item.id}
                       className="text-sm text-gray-700 border-t"
@@ -124,14 +174,6 @@ const InventoryPage = () => {
                       <td className="p-3 border">{item.stockStatus}</td>
                       <td className="p-3 border">{item.location}</td>
                       <td className="p-3 border">{item.sellingPrice}</td>
-                      <td className="p-3 border text-center">
-                        <button
-                          onClick={() => openInventoryModal(item)}
-                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-700"
-                        >
-                          View Details
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -139,7 +181,7 @@ const InventoryPage = () => {
             </div>
           </div>
 
-          {/* ✅ Damaged Products Table */}
+          {/* Damaged Products Table */}
           <div className="bg-red-50 shadow-lg rounded-lg p-4 flex flex-col h-full">
             <h2 className="text-xl font-semibold text-red-700 mb-4">
               Damaged Products
@@ -155,7 +197,7 @@ const InventoryPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {damagedProducts.map((item) => (
+                  {filteredDamagedProducts.map((item) => (
                     <tr key={item.id} className="border-t">
                       <td className="p-3 border">{item.id}</td>
                       <td className="p-3 border">{item.serialNumber}</td>
