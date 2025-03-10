@@ -2,10 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar_Secondary from "../../components/Sidebar_Secondary";
 
-/* 
-  1) WARRANTY LOGIC & STATUS OPTIONS 
-     (Imported from the "latest" Create PO code)
-*/
+// Convert a warranty duration string to seconds (simplified).
 function convertWarrantyDurationToSeconds(durationStr) {
   const lower = durationStr.toLowerCase().trim();
   if (lower.includes("year")) return 365 * 24 * 3600;
@@ -17,6 +14,7 @@ function convertWarrantyDurationToSeconds(durationStr) {
   return 0;
 }
 
+// Format seconds as D:H:M:S
 function formatTime(totalSeconds) {
   const days = Math.floor(totalSeconds / (3600 * 24));
   const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
@@ -35,7 +33,7 @@ const statusOptions = [
 
 const PurchaseOrderPage = () => {
   // --------------------------------
-  // SIDEBAR COLLAPSE (previous style)
+  // SIDEBAR COLLAPSE (unchanged)
   // --------------------------------
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem("sidebarCollapsed");
@@ -48,13 +46,12 @@ const PurchaseOrderPage = () => {
   const navigate = useNavigate();
 
   // --------------------------------
-  // PURCHASE ORDERS TABLE (previous style)
+  // PURCHASE ORDERS TABLE (unchanged)
   // --------------------------------
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  // Load initial Purchase Orders (same as previous version)
   useEffect(() => {
     setPurchaseOrders([
       {
@@ -100,7 +97,6 @@ const PurchaseOrderPage = () => {
     ]);
   }, []);
 
-  // Filtered Orders for the table
   const filteredOrders = purchaseOrders.filter((order) => {
     const matchesSearch =
       order.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -111,7 +107,7 @@ const PurchaseOrderPage = () => {
   });
 
   // --------------------------------
-  // PRODUCT MODAL & LIST (previous style)
+  // PRODUCT MODAL & CRUD (unchanged)
   // --------------------------------
   const [showProductModal, setShowProductModal] = useState(false);
   const [products, setProducts] = useState([
@@ -151,7 +147,6 @@ const PurchaseOrderPage = () => {
     damage: false,
   });
 
-  // Product CRUD from previous version
   const handleAddProduct = () => {
     setProducts([
       ...products,
@@ -189,7 +184,7 @@ const PurchaseOrderPage = () => {
   };
 
   // --------------------------------
-  // SUPPLIER MODAL & LIST (previous style)
+  // SUPPLIER MODAL & CRUD (unchanged)
   // --------------------------------
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [suppliers, setSuppliers] = useState([
@@ -225,7 +220,6 @@ const PurchaseOrderPage = () => {
     contact: "",
   });
 
-  // Supplier CRUD from previous version
   const handleAddSupplier = () => {
     setSuppliers([
       ...suppliers,
@@ -248,11 +242,11 @@ const PurchaseOrderPage = () => {
   };
 
   // --------------------------------
-  // NEW CREATE PO MODAL (latest logic)
+  // NEW CREATE PO MODAL (with per-serial logic)
   // --------------------------------
   const [showCreatePOModal, setShowCreatePOModal] = useState(false);
 
-  // Live-updating clock for the Create PO form
+  // Live-updating clock
   const [currentTime, setCurrentTime] = useState(new Date());
   useEffect(() => {
     const interval = setInterval(() => {
@@ -264,11 +258,10 @@ const PurchaseOrderPage = () => {
 
   // Example new PO ID
   const newPOId = 6;
-
-  // PO status for the new order
+  // PO status
   const [poStatus, setPoStatus] = useState("Order Placed");
 
-  // Supplier selection for new PO
+  // Supplier selection
   const [supplierSearch, setSupplierSearch] = useState("");
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const handleSupplierSearchChange = (e) => {
@@ -279,7 +272,7 @@ const PurchaseOrderPage = () => {
     setSelectedSupplier(found || null);
   };
 
-  // Product selection for new PO
+  // Product selection for new PO items
   const [productSearch, setProductSearch] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const handleProductSearchChange = (e) => {
@@ -290,92 +283,59 @@ const PurchaseOrderPage = () => {
     setSelectedProduct(found || null);
   };
 
-  // Order items for the new PO
+  // Order items (each with `serials` array)
   const [orderItems, setOrderItems] = useState([]);
 
-  // Add a product (quantity=1 by default)
+  // ADD a product => initialize serials with quantity=1
   const handleAddOrderItem = () => {
     if (selectedProduct) {
-      const item = { ...selectedProduct, quantity: 1 };
-      setOrderItems([...orderItems, item]);
+      const newItem = {
+        ...selectedProduct,
+        quantity: 1,
+        // Each item now has its own array of serials
+        serials: [
+          {
+            id: 1,
+            audit: false,
+            damage: false,
+            isEditing: false,
+          },
+        ],
+      };
+      setOrderItems([...orderItems, newItem]);
       setProductSearch("");
       setSelectedProduct(null);
     }
   };
 
-  // Remove an item from the new PO
+  // REMOVE an item
   const removeOrderItem = (index) => {
-    setOrderItems(orderItems.filter((_, i) => i !== index));
-  };
-
-  // Change quantity
-  const handleOrderItemQuantityChange = (index, value) => {
     const updated = [...orderItems];
-    updated[index].quantity = parseInt(value) || 1;
+    updated.splice(index, 1);
     setOrderItems(updated);
   };
 
-  // Generate "serial rows" for each item (Table 3)
-  const generateSerialRows = (orderItem, itemIndex) => {
-    const totalWarrantySeconds = convertWarrantyDurationToSeconds(
-      orderItem.warrantyDuration
-    );
-    const rows = [];
-    for (let i = 0; i < orderItem.quantity; i++) {
-      const serialNumber = `${orderItem.id}-${i + 1}`;
-      let remainingSeconds = totalWarrantySeconds;
-      // If the entire PO is Delivered, show countdown; otherwise "Not started"
-      if (poStatus === "Delivered") {
-        // Simplified: countdown starts now
-        remainingSeconds = Math.max(totalWarrantySeconds - 0, 0);
-      }
-      rows.push(
-        <tr key={i} className="border-t">
-          <td className="border p-1 text-center">{serialNumber}</td>
-          <td className="border p-1 text-center">{orderItem.warrantyDuration}</td>
-          <td className="border p-1 text-center">
-            {poStatus === "Delivered" ? formatTime(remainingSeconds) : "Not started"}
-          </td>
-          {/* Audit */}
-          <td className="border p-1 text-center">
-            <select
-              value={orderItem.audit ? "true" : "false"}
-              onChange={(e) => {
-                const updated = [...orderItems];
-                updated[itemIndex].audit = e.target.value === "true";
-                setOrderItems(updated);
-              }}
-            >
-              <option value="true">✅</option>
-              <option value="false">❌</option>
-            </select>
-          </td>
-          {/* Damage */}
-          <td className="border p-1 text-center">
-            <select
-              value={orderItem.damage ? "true" : "false"}
-              onChange={(e) => {
-                const updated = [...orderItems];
-                updated[itemIndex].damage = e.target.value === "true";
-                setOrderItems(updated);
-              }}
-            >
-              <option value="true">✅</option>
-              <option value="false">❌</option>
-            </select>
-          </td>
-          <td className="border p-1 text-center">
-            <button
-              className="bg-blue-600 text-white px-2 py-1 rounded"
-              onClick={() => alert("Edit Audit/Damage for this serial row")}
-            >
-              Edit
-            </button>
-          </td>
-        </tr>
-      );
+  // QUANTITY CHANGE => sync `serials` length with the new quantity
+  const handleOrderItemQuantityChange = (index, newQty) => {
+    const updated = [...orderItems];
+    const item = updated[index];
+    const qty = parseInt(newQty) || 1;
+    item.quantity = qty;
+
+    // Ensure `item.serials` has exactly `qty` rows
+    while (item.serials.length < qty) {
+      item.serials.push({
+        id: item.serials.length + 1,
+        audit: false,
+        damage: false,
+        isEditing: false,
+      });
     }
-    return rows;
+    while (item.serials.length > qty) {
+      item.serials.pop();
+    }
+
+    setOrderItems(updated);
   };
 
   // Calculate total
@@ -384,7 +344,7 @@ const PurchaseOrderPage = () => {
     0
   );
 
-  // Finalize & Send new PO
+  // Finalize & Send
   const handleAddPO = () => {
     if (!selectedSupplier) {
       alert("Please select a supplier first.");
@@ -404,10 +364,10 @@ const PurchaseOrderPage = () => {
       items: orderItems,
       total: orderTotal.toFixed(2),
     };
-    // Add to the purchaseOrders array
+    // Add to the existing POs
     setPurchaseOrders([...purchaseOrders, newPO]);
 
-    // Reset the modal
+    // Reset modal
     setShowCreatePOModal(false);
     setSupplierSearch("");
     setSelectedSupplier(null);
@@ -420,7 +380,7 @@ const PurchaseOrderPage = () => {
 
   return (
     <div className="flex">
-      {/* Sidebar (previous style) */}
+      {/* Sidebar */}
       <Sidebar_Secondary
         isCollapsed={isSidebarCollapsed}
         toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -428,7 +388,7 @@ const PurchaseOrderPage = () => {
 
       {/* Main Content */}
       <div className="flex-grow ml-64 p-6 bg-gray-50 min-h-screen">
-        {/* Page Header (previous style) */}
+        {/* Page Header */}
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-purple-600">
             Issued Purchase Orders
@@ -446,10 +406,6 @@ const PurchaseOrderPage = () => {
             >
               View Suppliers
             </button>
-            {/* 
-              Instead of navigate("/purchase-orders/create"), 
-              we now open the new Create PO modal 
-            */}
             <button
               className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
               onClick={() => setShowCreatePOModal(true)}
@@ -460,7 +416,7 @@ const PurchaseOrderPage = () => {
         </div>
 
         {/* ---------------------------
-            NEW CREATE PO MODAL (latest logic)
+            CREATE PO MODAL
         --------------------------- */}
         {showCreatePOModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
@@ -563,71 +519,177 @@ const PurchaseOrderPage = () => {
 
               {/* Scrollable container for items */}
               <div className="flex-grow overflow-y-auto border rounded p-2 mb-2">
-                {orderItems.map((item, index) => (
-                  <div key={index} className="mb-4">
-                    {/* Table 2: Product details */}
-                    <table className="w-full mb-1">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="border p-1 text-center">Product ID</th>
-                          <th className="border p-1 text-center">Brand</th>
-                          <th className="border p-1 text-center">Model</th>
-                          <th className="border p-1 text-center">Purchase Price</th>
-                          <th className="border p-1 text-center">Quantity</th>
-                          <th className="border p-1 text-center">Item Total</th>
-                          <th className="border p-1 text-center">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="border p-1 text-center">{item.id}</td>
-                          <td className="border p-1 text-center">{item.brand}</td>
-                          <td className="border p-1 text-center">{item.model}</td>
-                          <td className="border p-1 text-center">
-                            ₱{item.purchasePrice}
-                          </td>
-                          <td className="border p-1 text-center">
-                            <input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) =>
-                                handleOrderItemQuantityChange(index, e.target.value)
-                              }
-                              className="border p-1 rounded w-16 text-center"
-                            />
-                          </td>
-                          <td className="border p-1 text-center">
-                            ₱{(item.purchasePrice * item.quantity).toFixed(2)}
-                          </td>
-                          <td className="border p-1 text-center">
-                            <button
-                              className="bg-red-600 text-white px-2 py-1 rounded"
-                              onClick={() => removeOrderItem(index)}
-                            >
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                {orderItems.map((item, index) => {
+                  // For the warranty countdown (if status=Delivered)
+                  return (
+                    <div key={index} className="mb-4">
+                      {/* Table 2: Product details */}
+                      <table className="w-full mb-1">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="border p-1 text-center">
+                              Product ID
+                            </th>
+                            <th className="border p-1 text-center">Brand</th>
+                            <th className="border p-1 text-center">Model</th>
+                            <th className="border p-1 text-center">
+                              Purchase Price
+                            </th>
+                            <th className="border p-1 text-center">Quantity</th>
+                            <th className="border p-1 text-center">
+                              Item Total
+                            </th>
+                            <th className="border p-1 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border p-1 text-center">
+                              {item.id}
+                            </td>
+                            <td className="border p-1 text-center">
+                              {item.brand}
+                            </td>
+                            <td className="border p-1 text-center">
+                              {item.model}
+                            </td>
+                            <td className="border p-1 text-center">
+                              ₱{item.purchasePrice}
+                            </td>
+                            <td className="border p-1 text-center">
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  handleOrderItemQuantityChange(
+                                    index,
+                                    e.target.value
+                                  )
+                                }
+                                className="border p-1 rounded w-16 text-center"
+                              />
+                            </td>
+                            <td className="border p-1 text-center">
+                              ₱
+                              {(
+                                item.purchasePrice * item.quantity
+                              ).toFixed(2)}
+                            </td>
+                            <td className="border p-1 text-center">
+                              <button
+                                className="bg-red-600 text-white px-2 py-1 rounded"
+                                onClick={() => removeOrderItem(index)}
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
 
-                    {/* Table 3: Serial info, warranty, etc. */}
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-gray-100">
-                          <th className="border p-1 text-center">Serial Number</th>
-                          <th className="border p-1 text-center">Warranty Duration</th>
-                          <th className="border p-1 text-center">Warranty Time</th>
-                          <th className="border p-1 text-center">Audit</th>
-                          <th className="border p-1 text-center">Damage</th>
-                          <th className="border p-1 text-center">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>{generateSerialRows(item, index)}</tbody>
-                    </table>
-                  </div>
-                ))}
+                      {/* Table 3: Serial info, warranty, etc. */}
+                      <table className="w-full">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="border p-1 text-center">
+                              Serial Number
+                            </th>
+                            <th className="border p-1 text-center">
+                              Warranty Duration
+                            </th>
+                            <th className="border p-1 text-center">
+                              Warranty Time
+                            </th>
+                            <th className="border p-1 text-center">Audit</th>
+                            <th className="border p-1 text-center">Damage</th>
+                            <th className="border p-1 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {item.serials.map((serial, sIndex) => {
+                            // Simplistic countdown if status=Delivered
+                            let remainingSeconds = convertWarrantyDurationToSeconds(
+                              item.warrantyDuration
+                            );
+                            if (poStatus === "Delivered") {
+                              remainingSeconds = Math.max(remainingSeconds - 0, 0);
+                            }
+
+                            return (
+                              <tr
+                                key={sIndex}
+                                className={`border-t ${
+                                  serial.isEditing ? "bg-yellow-100" : ""
+                                }`}
+                              >
+                                <td className="border p-1 text-center">
+                                  {item.id}-{serial.id}
+                                </td>
+                                <td className="border p-1 text-center">
+                                  {item.warrantyDuration}
+                                </td>
+                                <td className="border p-1 text-center">
+                                  {poStatus === "Delivered"
+                                    ? formatTime(remainingSeconds)
+                                    : "Not started"}
+                                </td>
+                                <td className="border p-1 text-center">
+                                  <select
+                                    disabled={!serial.isEditing}
+                                    value={serial.audit ? "true" : "false"}
+                                    onChange={(e) => {
+                                      const updated = [...orderItems];
+                                      updated[index].serials[sIndex].audit =
+                                        e.target.value === "true";
+                                      setOrderItems(updated);
+                                    }}
+                                  >
+                                    <option value="true">✅</option>
+                                    <option value="false">❌</option>
+                                  </select>
+                                </td>
+                                <td className="border p-1 text-center">
+                                  <select
+                                    disabled={!serial.isEditing}
+                                    value={serial.damage ? "true" : "false"}
+                                    onChange={(e) => {
+                                      const updated = [...orderItems];
+                                      updated[index].serials[sIndex].damage =
+                                        e.target.value === "true";
+                                      setOrderItems(updated);
+                                    }}
+                                  >
+                                    <option value="true">✅</option>
+                                    <option value="false">❌</option>
+                                  </select>
+                                </td>
+                                <td className="border p-1 text-center">
+                                  <button
+                                    className={`px-2 py-1 rounded text-white ${
+                                      serial.isEditing
+                                        ? "bg-green-600"
+                                        : "bg-blue-600"
+                                    }`}
+                                    onClick={() => {
+                                      const updated = [...orderItems];
+                                      // Toggle isEditing
+                                      updated[index].serials[sIndex].isEditing =
+                                        !serial.isEditing;
+                                      setOrderItems(updated);
+                                    }}
+                                  >
+                                    {serial.isEditing ? "Save" : "Edit"}
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Order Total */}
@@ -654,9 +716,7 @@ const PurchaseOrderPage = () => {
           </div>
         )}
 
-        {/* ---------------------------
-            PRODUCT MODAL (previous version)
-        --------------------------- */}
+        {/* PRODUCT MODAL (unchanged) */}
         {showProductModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
             <div className="bg-white p-6 rounded shadow-lg h-[600px] w-[1450px] flex flex-col">
@@ -731,11 +791,7 @@ const PurchaseOrderPage = () => {
                             value={product.purchasePrice}
                             disabled={!product.isEditing}
                             onChange={(e) =>
-                              handleChangeProduct(
-                                index,
-                                "purchasePrice",
-                                e.target.value
-                              )
+                              handleChangeProduct(index, "purchasePrice", e.target.value)
                             }
                           />
                         </td>
@@ -807,7 +863,7 @@ const PurchaseOrderPage = () => {
                 </table>
               </div>
 
-              {/* Add Product (previous style) */}
+              {/* Add Product (unchanged) */}
               <div className="mt-4 grid grid-cols-3 gap-1">
                 <h3 className="text-lg font-bold">New Product</h3>
                 <div></div>
@@ -907,7 +963,7 @@ const PurchaseOrderPage = () => {
         )}
 
         {/* ---------------------------
-            SUPPLIER MODAL (previous version)
+            SUPPLIER MODAL (unchanged)
         --------------------------- */}
         {showSupplierModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
@@ -1004,7 +1060,7 @@ const PurchaseOrderPage = () => {
                 </table>
               </div>
 
-              {/* Add Supplier (previous style) */}
+              {/* Add Supplier */}
               <div className="mt-4 grid grid-cols-2 gap-1">
                 <h3 className="text-lg font-bold">New Supplier</h3>
                 <div></div>
@@ -1089,7 +1145,7 @@ const PurchaseOrderPage = () => {
           </div>
         </div>
 
-        {/* Purchase Orders Table (previous style) */}
+        {/* Purchase Orders Table */}
         <table className="min-w-full bg-white border border-gray-300 rounded">
           <thead>
             <tr className="bg-gray-100">
