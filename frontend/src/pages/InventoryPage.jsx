@@ -1,3 +1,4 @@
+// frontend/pages/InventoryPage.jsx
 import React, { useState, useEffect } from "react";
 import Sidebar_Primary from "../components/Sidebar_Primary";
 
