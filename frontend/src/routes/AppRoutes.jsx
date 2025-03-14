@@ -6,6 +6,7 @@ import LoginPage from "../pages/LoginPage";
 import SignUpPage from "../pages/SignUpPage";
 import Dashboard from "../pages/Dashboard";
 import InventoryPage from "../pages/InventoryPage";
+import DamagedProductsPage from "../pages/DamageProductsPage";
 
 // Purchase Orders
 import PurchaseOrderPage from "../pages/PurchaseOrders/PurchaseOrderPage";
@@ -20,25 +21,22 @@ import ReturnWarrantyPage from "../pages/Returns/ReturnWarrantyPage";
 import ReturnsFormPage from "../pages/Returns/ReturnsFormPage";
 import ReturnDetailsPage from "../pages/Returns/ReturnDetailsPage";
 
-// Reports Module (Fixed import path)
+// Reports Module
 import ReportModule from "../pages/ReportModule/ReportModule";
 
 const AppRoutes = () => {
-  // Load authentication state from sessionStorage
   const [auth, setAuth] = useState({
     isAuthenticated: sessionStorage.getItem("isAuthenticated") === "true",
     role: sessionStorage.getItem("userRole") || null,
   });
 
   useEffect(() => {
-    // Update state when session storage changes
     setAuth({
       isAuthenticated: sessionStorage.getItem("isAuthenticated") === "true",
       role: sessionStorage.getItem("userRole") || null,
     });
   }, []);
 
-  // Protected Route Component
   const ProtectedRoute = ({ element, allowedRoles }) => {
     if (!auth.isAuthenticated) {
       return <Navigate to="/" replace />;
@@ -51,11 +49,9 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* Public Routes */}
       <Route path="/" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
 
-      {/* Dashboard (Accessible to All Authenticated Users) */}
       <Route
         path="/dashboard"
         element={
@@ -63,12 +59,23 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Protected Routes */}
+      {/* Inventory */}
       <Route
         path="/inventory"
         element={
           <ProtectedRoute
             element={<InventoryPage />}
+            allowedRoles={["Admin", "Inventory"]}
+          />
+        }
+      />
+
+      {/* ✅ Damaged Products Page Route */}
+      <Route
+        path="/damaged-products"
+        element={
+          <ProtectedRoute
+            element={<DamagedProductsPage />}
             allowedRoles={["Admin", "Inventory"]}
           />
         }
@@ -143,7 +150,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Report Module */}
+      {/* Reports */}
       <Route
         path="/reports"
         element={
