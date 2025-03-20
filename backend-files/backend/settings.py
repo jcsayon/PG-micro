@@ -69,6 +69,10 @@ INSTALLED_APPS = [
     'api',
 ]
 
+# backend/settings.py
+AUTH_USER_MODEL = 'api.User'
+
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite default
 ]

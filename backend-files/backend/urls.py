@@ -26,6 +26,6 @@ def root_redirect(request):
 urlpatterns = [
     path('', root_redirect, name="root_redirect"),  # Root URL -> redirect
     path('admin/', admin.site.urls),
-    path('api/auth/', include('api.urls')),         # or wherever your API routes are
+    path('api/auth/', include('api.urls')),  # => /api/auth/signup, /api/auth/login
 ]
 

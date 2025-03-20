@@ -4,38 +4,38 @@ import { supabase } from "../config/supabaseClient";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  // We store both email & password in a single 'formData' state
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
 
-  // Update formData on input changes
+  // Update email & password in formData
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Submit event: sign in with Supabase
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
-      // 1) Call Supabase for sign in
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
 
       if (loginError) {
+        // Show Supabase error message
         setError(loginError.message);
         return;
       }
 
-      // 2) If success, store token or session
+      // If success, store token in sessionStorage
       if (data?.session) {
         const token = data.session.access_token;
         sessionStorage.setItem("token", token);
 
         alert("Login successful!");
-        navigate("/dashboard");
+        navigate("/dashboard"); // Go to dashboard
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -63,11 +63,11 @@ const LoginPage = () => {
             </span>
             <input
               type="email"
-              name="email" // <-- important
+              name="email"
               placeholder="Enter your email"
               className="w-full p-3 pl-10 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition"
-              value={formData.email} // use formData
-              onChange={handleChange} // single change handler
+              value={formData.email}
+              onChange={handleChange}
               required
             />
           </div>
@@ -79,10 +79,10 @@ const LoginPage = () => {
             </span>
             <input
               type="password"
-              name="password" // <-- important
+              name="password"
               placeholder="Enter your password"
               className="w-full p-3 pl-10 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition"
-              value={formData.password} // use formData
+              value={formData.password}
               onChange={handleChange}
               required
             />
