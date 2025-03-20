@@ -1,46 +1,58 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "../config/supabaseClient";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../config/supabaseClient';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "Employee", // Default role
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'Employee' // default
   });
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
-  const handleChange = (e) => {
-    setUser({ ...user, [e.target.name]: e.target.value });
+  const handleChange = e => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    setError("");
+    setError('');
 
     try {
-      // Create user in Supabase Auth
+      // 1) Create user in Supabase Auth
       const { data, error } = await supabase.auth.signUp({
-        email: user.email,
-        password: user.password,
+        email: formData.email,
+        password: formData.password
       });
 
       if (error) {
         setError(error.message);
-      } else {
-        // Insert user into `profiles` table
-        await supabase.from("profiles").insert([
-          { email: user.email, name: user.name, role: user.role }
+        return;
+      }
+
+      // 2) Insert into "profiles" table for additional info
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            email: formData.email,
+            name: formData.name,
+            role: formData.role,
+          }
         ]);
 
-        alert("Sign-up successful! Redirecting to Login...");
-        navigate("/");
+      if (profileError) {
+        setError(profileError.message);
+        return;
       }
+
+      alert('Sign-up successful!');
+      navigate('/login'); // redirect to login
     } catch (err) {
-      setError("An error occurred during sign-up.");
-      console.error("Sign-up error:", err);
+      console.error('Sign-up error:', err);
+      setError('An error occurred during sign-up.');
     }
   };
 
@@ -48,7 +60,6 @@ const SignUpPage = () => {
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
         <h2 className="text-2xl font-bold text-center text-purple-600 mb-6">Create Account</h2>
-        {error && <p className="text-red-500 text-center mb-3">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-gray-700">Full Name</label>

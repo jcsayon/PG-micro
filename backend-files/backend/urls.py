@@ -14,17 +14,18 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
+
 from django.urls import path, include
-from django.http import JsonResponse  # ✅ For API response
-from django.shortcuts import redirect  # ✅ Redirect users
-
-# ✅ Default view for "/"
-def home_view(request):
-    return redirect("http://localhost:5173/dashboard")  # ✅ Redirect to Vite frontend # API response
-
+from django.shortcuts import redirect
+from django.contrib import admin
+def root_redirect(request):
+    # Suppose your React login page is at http://localhost:5173/
+    # If you have a dedicated "/login" route in the frontend, 
+    # you can do: "http://localhost:5173/login"
+    return redirect("http://localhost:5173/")
 urlpatterns = [
-    path('', home_view, name="home"),  # ✅ Set root URL
+    path('', root_redirect, name="root_redirect"),  # Root URL -> redirect
     path('admin/', admin.site.urls),
-    path('api/', include('api.urls')),  # Include API endpoints
+    path('api/auth/', include('api.urls')),         # or wherever your API routes are
 ]
+
