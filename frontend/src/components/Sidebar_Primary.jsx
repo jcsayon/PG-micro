@@ -1,9 +1,7 @@
-// Sidebar_Primary.jsx
 import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 
 const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggleCollapse }) => {
-  // Use prop if provided, else fallback to internal state
   const [internalCollapsed, setInternalCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true"
   );
@@ -17,12 +15,13 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     }
   };
 
-  // Only update localStorage when using internal state
   useEffect(() => {
     if (propCollapsed === undefined) {
       localStorage.setItem("sidebarCollapsed", internalCollapsed);
     }
   }, [internalCollapsed, propCollapsed]);
+
+  const userRole = sessionStorage.getItem("userRole");
 
   const menuItems = [
     { name: "Home", path: "/dashboard", icon: "🏠" },
@@ -31,16 +30,19 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     { name: "Inventory", path: "/inventory", icon: "📦" },
   ];
 
+  // Show "User List" only if the user is an Admin
+  if (userRole === "Admin") {
+    menuItems.push({ name: "User List", path: "/user-list", icon: "👥" });
+  }
+
   return (
     <div
       className={`h-screen ${isCollapsed ? "w-16" : "w-64"} bg-purple-700 text-white fixed top-0 left-0 flex flex-col shadow-lg transition-all duration-300`}
     >
-      {/* Logo Section */}
       <div className="p-4 text-center font-bold text-2xl bg-purple-800">
         {!isCollapsed && "PG Micro World PRIMARY"}
       </div>
 
-      {/* Navigation Links */}
       <nav className="flex-1 mt-6">
         {menuItems.map((item, index) => (
           <NavLink
@@ -58,7 +60,6 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
         ))}
       </nav>
 
-      {/* Toggle Button */}
       <button
         className="absolute top-1/2 -right-4 transform -translate-y-1/2 bg-purple-800 border-2 border-purple-800 text-white px-4 py-2 mr-2 hover:bg-purple-700 rounded text-xl"
         onClick={toggleSidebar}
@@ -66,7 +67,6 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
         {isCollapsed ? "›" : "‹"}
       </button>
 
-      {/* Footer Section */}
       <div className="p-4 text-center text-sm bg-purple-800">
         {!isCollapsed && "© 2025 PG Micro World"}
       </div>
