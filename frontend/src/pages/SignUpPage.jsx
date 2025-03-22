@@ -1,6 +1,6 @@
+//frontend/src/pages/SignUpPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../config/supabaseClient";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -21,37 +21,20 @@ const SignUpPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
     try {
-      // 1) Create user in Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password
+      // Send a POST request to your Django backend signup endpoint
+      const response = await fetch("http://localhost:8000/api/auth/signup/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
-
-      if (error) {
-        setError(error.message);
-        return;
+      const data = await response.json();
+      if (response.ok) {
+        alert("Sign-up successful!");
+        navigate("/"); // Redirect to login or dashboard
+      } else {
+        setError(data.error || "Error signing up");
       }
-
-      // 2) Insert into "profiles" table for additional user info
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert([
-          {
-            email: formData.email,
-            name: formData.name,
-            role: formData.role
-          }
-        ]);
-
-      if (profileError) {
-        setError(profileError.message);
-        return;
-      }
-
-      alert("Sign-up successful!");
-      navigate("/"); // Go back to login page
     } catch (err) {
       console.error("Sign-up error:", err);
       setError("An error occurred during sign-up.");

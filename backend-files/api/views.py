@@ -1,19 +1,31 @@
+# backend-files/api/views.py
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
 from .serializers import UserSignupSerializer, UserLoginSerializer
 
+from .models import Inventory  # your Inventory model
+from .serializers import InventorySerializer  # create a serializer for your model
+
 @api_view(['POST'])
+
 def signup(request):
     serializer = UserSignupSerializer(data=request.data)
     if serializer.is_valid():
-        user = serializer.save()
-        return Response({"message": "User created successfully!", "user": {
-            "username": user.username,
-            "email": user.email,
-            "role": user.role
-        }}, status=status.HTTP_201_CREATED)
+        try:
+            user = serializer.save()
+        except Exception as e:
+            # Return a JSON error with the exception message
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({
+            "message": "User created successfully!",
+            "user": {
+                "username": user.username,
+                "email": user.email,
+                "role": user.role
+            }
+        }, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
@@ -29,3 +41,10 @@ def login(request):
         return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def inventory_list(request):
+    inventory_items = Inventory.objects.all()
+    serializer = InventorySerializer(inventory_items, many=True)
+    return Response(serializer.data)

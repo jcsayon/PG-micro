@@ -12,7 +12,7 @@ const LoginPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Submit event: sign in with Supabase
+  // Sign in with Supabase and redirect to dashboard, with error handling for navigation.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -24,25 +24,29 @@ const LoginPage = () => {
       });
 
       if (loginError) {
-        // Show Supabase error message
         setError(loginError.message);
         return;
       }
 
-      // If success, store token in sessionStorage
       if (data?.session) {
         const token = data.session.access_token;
         sessionStorage.setItem("token", token);
+        console.log("Login successful, token stored.");
 
-        alert("Login successful!");
-        navigate("/dashboard"); // Go to dashboard
+        try {
+          navigate("/dashboard");
+        } catch (navigationError) {
+          console.error("Navigation error:", navigationError);
+          setError("Login succeeded but failed to redirect to dashboard. Please try again.");
+        }
+      } else {
+        setError("Login succeeded but no session was returned. Please try again.");
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("An error occurred during login.");
+      setError("An error occurred during login. Please try again.");
     }
   };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-purple-100">
       <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-10">

@@ -1,62 +1,105 @@
 import React, { useState, useEffect } from "react";
 import Sidebar_Primary from "../components/Sidebar_Primary";
 
+const fetchInventoryData = async () => {
+  try {
+    const response = await fetch("http://localhost:8000/api/inventory/");
+    if (!response.ok) {
+      throw new Error("Failed to fetch inventory data");
+    }
+    const data = await response.json();
+    console.log("Fetched Inventory Data:", data); // Log the fetched data
+    setInventory(data);
+  } catch (error) {
+    console.error("Error fetching inventory data:", error);
+  }
+};
+
 const InventoryPage = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [inventory, setInventory] = useState([]);
+  const [categoryBrandMap, setCategoryBrandMap] = useState({}); // State for mapping
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+
+  // Search and category filter for inventory
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  // For enabling edit mode in the View modal
   const [isViewEditable, setIsViewEditable] = useState(false);
 
-  // Damaged Products state + search
+  // Damaged products data & search
   const [damagedProducts, setDamagedProducts] = useState([]);
   const [damagedSearchQuery, setDamagedSearchQuery] = useState("");
+  const [selectedDamagedCategory, setSelectedDamagedCategory] = useState("All");
   const [isDamagedModalOpen, setIsDamagedModalOpen] = useState(false);
 
+  // Compute all categories from the fetched categoryBrandMap
+  const allCategories = ["All", ...Object.keys(categoryBrandMap)];
+
+  // Fetch category-brand mapping from Django API
+  const fetchCategoryBrandMap = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/categories/");
+      if (!response.ok) {
+        throw new Error("Failed to fetch category-brand mapping");
+      }
+      const data = await response.json();
+      // Assume data is an array of category objects each with "name" and "brands" array.
+      const mapping = {};
+      data.forEach((cat) => {
+        // Each cat.brands is assumed to be an array of brand objects with a "name" field.
+        mapping[cat.name] = cat.brands.map((brand) => brand.name);
+      });
+      setCategoryBrandMap(mapping);
+    } catch (error) {
+      console.error("Error fetching category-brand mapping:", error);
+    }
+  };
+
+  // Fetch inventory data from Django API
+  const fetchInventoryData = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/inventory/");
+      if (!response.ok) {
+        throw new Error("Failed to fetch inventory data");
+      }
+      const data = await response.json();
+      setInventory(data);
+    } catch (error) {
+      console.error("Error fetching inventory data:", error);
+    }
+  };
+
+  // Fetch damaged products data from Django API
+  const fetchDamagedProductsData = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/damaged-products/");
+      if (!response.ok) {
+        throw new Error("Failed to fetch damaged products data");
+      }
+      const data = await response.json();
+      setDamagedProducts(data);
+    } catch (error) {
+      console.error("Error fetching damaged products data:", error);
+    }
+  };
+
+  // Separate useEffect for fetching category-brand mapping (runs once on mount)
   useEffect(() => {
-    generateDummyData();
-    generateDummyDamagedProducts();
+    fetchCategoryBrandMap();
+  }, []);
+
+  // Fetch inventory and damaged data on mount and when sidebar state changes
+  useEffect(() => {
+    fetchInventoryData();
+    fetchDamagedProductsData();
     localStorage.setItem("sidebarCollapsed", isSidebarCollapsed);
   }, [isSidebarCollapsed]);
 
-  // Generate dummy inventory data
-  const generateDummyData = () => {
-    const inventoryData = Array.from({ length: 60 }, (_, i) => ({
-      id: i + 1,
-      category: ["Laptop", "Mouse", "Router", "Switch", "RAM"][i % 5],
-      brand: `Brand ${i % 5}`,
-      serialNumber: `SN${10000 + i}`,
-      quantityReceived: Math.floor(Math.random() * 100) + 1,
-      quantityAvailable: Math.floor(Math.random() * 50) + 1,
-      stockStatus: ["In Stock", "Limited Stock", "Out of Stock"][i % 3],
-      sellingPrice: `₱${(Math.random() * 1000).toFixed(2)}`,
-      location: `Warehouse ${String.fromCharCode(65 + (i % 5))}`,
-      productDescription: `Description of ${
-        ["Laptop", "Mouse", "Router", "Switch", "RAM"][i % 5]
-      }`,
-      purchasePrice: `₱${(Math.random() * 800).toFixed(2)}`,
-      warrantyDuration: `${Math.floor(Math.random() * 3) + 1} Years`,
-      model: `Model ${i + 1}`,
-      isNew: Math.random() > 0.5 ? "New Item" : "Old Item",
-    }));
-    setInventory(inventoryData);
-  };
-
-  // Generate dummy Damaged Products data
-  const generateDummyDamagedProducts = () => {
-    const damagedData = Array.from({ length: 30 }, (_, i) => ({
-      damageId: i + 101,
-      category: ["Laptop", "Mouse", "Router", "Switch", "RAM"][i % 5],
-      brand: `Brand Dmg ${i % 5}`,
-      serialNumber: `DMG${9000 + i}`,
-      model: `Damaged Model ${i + 1}`,
-    }));
-    setDamagedProducts(damagedData);
-  };
-
-  // Inventory modals
+  // Open/close modals
   const openEditModal = (item) => {
     setSelectedItem(item);
     setIsEditModalOpen(true);
@@ -74,6 +117,7 @@ const InventoryPage = () => {
     setIsViewEditable(false);
   };
 
+  // Handle input/checkbox changes in modals
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setSelectedItem({ ...selectedItem, [name]: value });
@@ -100,8 +144,11 @@ const InventoryPage = () => {
     setInventory(updatedInventory);
   };
 
-  // Filter inventory
+  // Filter logic for inventory
   const filteredInventory = inventory.filter((item) => {
+    if (selectedCategory !== "All" && item.category !== selectedCategory) {
+      return false;
+    }
     if (searchQuery.trim() === "") return true;
     const lowerQuery = searchQuery.toLowerCase();
     return (
@@ -116,8 +163,11 @@ const InventoryPage = () => {
     );
   });
 
-  // Filter damaged products
+  // Filter logic for damaged products
   const filteredDamagedProducts = damagedProducts.filter((dp) => {
+    if (selectedDamagedCategory !== "All" && dp.category !== selectedDamagedCategory) {
+      return false;
+    }
     if (damagedSearchQuery.trim() === "") return true;
     const lowerQuery = damagedSearchQuery.toLowerCase();
     return (
@@ -129,7 +179,7 @@ const InventoryPage = () => {
     );
   });
 
-  // Damaged Products modal
+  // Damaged Products modal functions
   const openDamagedModal = () => {
     setIsDamagedModalOpen(true);
   };
@@ -159,15 +209,28 @@ const InventoryPage = () => {
             Available Inventory
           </h2>
 
-          {/* Inventory Search + Damaged Button */}
+          {/* Search Bar, Category Dropdown & Damaged Products Button */}
           <div className="flex items-center justify-between mb-4">
-            <input
-              type="text"
-              placeholder="Search Inventory..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="p-2 border border-gray-300 rounded-md w-64"
-            />
+            <div className="flex space-x-2 items-center">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {allCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Search Inventory..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="p-2 border border-gray-300 rounded-md w-64"
+              />
+            </div>
             <button
               onClick={openDamagedModal}
               className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
@@ -176,7 +239,7 @@ const InventoryPage = () => {
             </button>
           </div>
 
-          {/* Scrollable Table */}
+          {/* Inventory Table */}
           <div className="overflow-y-auto max-h-[60vh]">
             <table className="min-w-full border-collapse">
               <thead
@@ -187,12 +250,10 @@ const InventoryPage = () => {
               >
                 <tr>
                   <th className="p-3 border border-gray-300">Item ID</th>
-                  <th className="p-3 border border-gray-300">Category</th>
                   <th className="p-3 border border-gray-300">Brand</th>
+                  <th className="p-3 border border-gray-300">Model</th>
                   <th className="p-3 border border-gray-300">Serial Number</th>
-                  <th className="p-3 border border-gray-300">Quantity</th>
-                  <th className="p-3 border border-gray-300">Available</th>
-                  <th className="p-3 border border-gray-300">Stock Status</th>
+                  <th className="p-3 border border-gray-300">Location</th>
                   <th className="p-3 border border-gray-300">Selling Price</th>
                   <th className="p-3 border border-gray-300 text-center">
                     Actions
@@ -206,34 +267,27 @@ const InventoryPage = () => {
                     className="bg-white hover:bg-gray-100 border-b text-sm text-gray-700"
                   >
                     <td className="p-3 border border-gray-200">{item.id}</td>
-                    <td className="p-3 border border-gray-200">
-                      {item.category}
-                    </td>
                     <td className="p-3 border border-gray-200">{item.brand}</td>
-                    <td className="p-3 border border-gray-200">
-                      {item.serialNumber}
-                    </td>
-                    <td className="p-3 border border-gray-200">
-                      {item.quantityReceived}
-                    </td>
-                    <td className="p-3 border border-gray-200">
-                      {item.quantityAvailable}
-                    </td>
-                    <td className="p-3 border border-gray-200">
-                      {item.stockStatus}
-                    </td>
-                    <td className="p-3 border border-gray-200">
-                      {item.sellingPrice}
-                    </td>
+                    <td className="p-3 border border-gray-200">{item.model}</td>
+                    <td className="p-3 border border-gray-200">{item.serialNumber}</td>
+                    <td className="p-3 border border-gray-200">{item.location}</td>
+                    <td className="p-3 border border-gray-200">{item.sellingPrice}</td>
                     <td className="p-3 border border-gray-200 flex space-x-2 justify-center">
                       <button
-                        onClick={() => openDetailsModal(item)}
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setIsDetailsModalOpen(true);
+                          setIsViewEditable(false);
+                        }}
                         className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors"
                       >
                         View
                       </button>
                       <button
-                        onClick={() => openEditModal(item)}
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setIsEditModalOpen(true);
+                        }}
                         className="bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-700 transition-colors"
                       >
                         Edit
@@ -269,8 +323,7 @@ const InventoryPage = () => {
                     name="id"
                     value={selectedItem.id}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full p-2 rounded-md border border-gray-300
-                      focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -282,8 +335,7 @@ const InventoryPage = () => {
                     name="category"
                     value={selectedItem.category}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full p-2 rounded-md border border-gray-300
-                      focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -295,8 +347,7 @@ const InventoryPage = () => {
                     name="brand"
                     value={selectedItem.brand}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full p-2 rounded-md border border-gray-300
-                      focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -308,8 +359,7 @@ const InventoryPage = () => {
                     name="serialNumber"
                     value={selectedItem.serialNumber}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full p-2 rounded-md border border-gray-300
-                      focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -321,8 +371,7 @@ const InventoryPage = () => {
                     name="quantityReceived"
                     value={selectedItem.quantityReceived}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full p-2 rounded-md border border-gray-300
-                      focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -334,8 +383,7 @@ const InventoryPage = () => {
                     name="quantityAvailable"
                     value={selectedItem.quantityAvailable}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full p-2 rounded-md border border-gray-300
-                      focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -346,8 +394,7 @@ const InventoryPage = () => {
                     name="stockStatus"
                     value={selectedItem.stockStatus}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full p-2 rounded-md border border-gray-300
-                      focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="In Stock">In Stock</option>
                     <option value="Limited Stock">Limited Stock</option>
@@ -363,26 +410,21 @@ const InventoryPage = () => {
                     name="sellingPrice"
                     value={selectedItem.sellingPrice}
                     onChange={handleInputChange}
-                    className="mt-1 block w-full p-2 rounded-md border border-gray-300
-                      focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="mt-1 block w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div className="flex justify-end space-x-2 pt-2">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="bg-red-500 hover:bg-red-600 text-white font-semibold
-                      py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-red-300
-                      transition-colors"
+                    className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-red-300 transition-colors"
                   >
                     Close
                   </button>
                   <button
                     type="button"
                     onClick={saveChanges}
-                    className="bg-green-500 hover:bg-green-600 text-white font-semibold
-                      py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-green-300
-                      transition-colors"
+                    className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-green-300 transition-colors"
                   >
                     Save
                   </button>
@@ -446,32 +488,14 @@ const InventoryPage = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">
-                    Model
+                    Date Received
                   </label>
                   <input
                     type="text"
-                    name="model"
-                    value={selectedItem.model}
-                    onChange={handleInputChange}
-                    readOnly={!isViewEditable}
-                    className={`mt-1 block w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      !isViewEditable ? "bg-gray-100" : ""
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={selectedItem.location}
-                    onChange={handleInputChange}
-                    readOnly={!isViewEditable}
-                    className={`mt-1 block w-full p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      !isViewEditable ? "bg-gray-100" : ""
-                    }`}
+                    name="dateReceived"
+                    value={selectedItem.dateReceived}
+                    readOnly
+                    className="mt-1 block w-full p-2 rounded-md border border-gray-300 bg-gray-100 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -518,43 +542,49 @@ const InventoryPage = () => {
         {/* ------------------ Damaged Products Modal ------------------ */}
         {isDamagedModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent">
-            {/* Modal with fixed height to avoid dynamic resizing */}
             <div className="relative bg-white shadow-lg rounded-xl border border-gray-300 p-6 w-2/3 h-[70vh] flex flex-col">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">
                 Damaged Products
               </h2>
-              {/* Damaged Products Search Bar (fixed width) */}
-              <div className="relative w-64 mb-4">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-2 text-gray-400">
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M21 21l-4.35-4.35m0
-                        0A7.5 7.5 0
-                        1010.5 3a7.5 7.5 0
-                        006.15 11.65z"
-                    />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search Damaged Products..."
-                  value={damagedSearchQuery}
-                  onChange={(e) => setDamagedSearchQuery(e.target.value)}
-                  className="pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                />
+              <div className="flex space-x-2 mb-4">
+                <select
+                  value={selectedDamagedCategory}
+                  onChange={(e) => setSelectedDamagedCategory(e.target.value)}
+                  className="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {allCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <div className="relative w-64">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-2 text-gray-400">
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 3a7.5 7.5 0 006.15 11.65z"
+                      />
+                    </svg>
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Search Damaged Products..."
+                    value={damagedSearchQuery}
+                    onChange={(e) => setDamagedSearchQuery(e.target.value)}
+                    className="pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  />
+                </div>
               </div>
-              {/* Table container that scrolls */}
               <div className="overflow-y-auto flex-1">
                 <table className="min-w-full border-collapse">
-                  {/* Match the header color to Inventory Table (bg-blue-200 + text-gray-800) */}
                   <thead className="sticky top-0 z-50 bg-blue-200 text-left text-sm font-medium text-gray-800 shadow-md">
                     <tr>
                       <th className="p-3 border border-gray-300">
@@ -594,7 +624,6 @@ const InventoryPage = () => {
                   </tbody>
                 </table>
               </div>
-              {/* Close Button pinned at bottom */}
               <div className="flex justify-end mt-4">
                 <button
                   onClick={closeDamagedModal}

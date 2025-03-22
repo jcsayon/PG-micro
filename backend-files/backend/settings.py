@@ -1,3 +1,4 @@
+# backend/settings.py
 """
 Django settings for backend project.
 
@@ -74,7 +75,7 @@ AUTH_USER_MODEL = 'api.User'
 
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # Vite default
+    "http://localhost:5173",  #  your React development URL
 ]
 
 

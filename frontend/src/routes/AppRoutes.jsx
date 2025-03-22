@@ -1,3 +1,5 @@
+//frontend/src/routes/AppRoutes.jsx
+
 import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 //updated

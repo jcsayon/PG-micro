@@ -1,3 +1,4 @@
+# backend/urls.py
 """
 URL configuration for backend project.
 
@@ -18,6 +19,7 @@ Including another URLconf
 from django.urls import path, include
 from django.shortcuts import redirect
 from django.contrib import admin
+from api.views.inventory_list import inventory_list 
 def root_redirect(request):
     # Suppose your React login page is at http://localhost:5173/
     # If you have a dedicated "/login" route in the frontend, 
@@ -25,7 +27,9 @@ def root_redirect(request):
     return redirect("http://localhost:5173/")
 urlpatterns = [
     path('', root_redirect, name="root_redirect"),  # Root URL -> redirect
-    path('admin/', admin.site.urls),
-    path('api/auth/', include('api.urls')),  # => /api/auth/signup, /api/auth/login
+     path('admin/', admin.site.urls),
+    path('api/auth/', include('api.urls')),
+    # Update the URL pattern to include 'api/' before inventory
+    path('api/inventory/', inventory_list, name='inventory_list'),
 ]
 

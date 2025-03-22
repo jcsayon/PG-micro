@@ -24,6 +24,12 @@ const Dashboard = () => {
       icon: "🔄",
       link: "/return-warranty",
     },
+    {
+      title: "Reports",
+      description: "View monthly financial reports of income & expenses.",
+      icon: "📊",
+      link: "/reports",
+    },
   ];
 
   return (
@@ -47,7 +53,9 @@ const Dashboard = () => {
                   Open
                 </button>
               </div>
-              <h2 className="text-xl font-semibold text-gray-800">{card.title}</h2>
+              <h2 className="text-xl font-semibold text-gray-800">
+                {card.title}
+              </h2>
               <p className="text-gray-600 mt-2">{card.description}</p>
             </div>
           ))}

@@ -8,23 +8,30 @@ from rest_framework import status
 
 @api_view(['POST'])
 def signup(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-    email = request.data.get('email')
-
-    if User.objects.filter(username=username).exists():
-        return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
-
-    user = User.objects.create_user(username=username, password=password, email=email)
-    return Response({"message": "Signup successful!"}, status=status.HTTP_201_CREATED)
+    serializer = UserSignupSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        return Response({
+            "message": "User created successfully!",
+            "user": {
+                "name": user.name,
+                "email": user.email,
+                "role": user.role
+            }
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def login(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
-
-    user = authenticate(username=username, password=password)
-    if user is not None:
-        return Response({"message": "Login successful", "role": "Employee"}, status=status.HTTP_200_OK)
-    else:
+    serializer = UserLoginSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data['email']
+        password = serializer.validated_data['password']
+        # Your authentication logic here...
+        # For example, using Django's authenticate:
+        from django.contrib.auth import authenticate
+        user = authenticate(username=name, password=password)
+        if user:
+            return Response({"message": "Login successful!", "role": user.role}, status=status.HTTP_200_OK)
         return Response({"error": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
