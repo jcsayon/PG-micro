@@ -1,59 +1,58 @@
 import React, { useState, useEffect } from "react";
-import Sidebar_Primary from "../components/Sidebar_Primary";
-import Sidebar_Secondary from "../components/Sidebar_Secondary";
-import Header from "../components/Header";
 import { useLocation } from "react-router-dom";
+import Sidebar_Primary from "../components/Sidebar_Primary";
+import Header from "../components/Header";
 
 const DashboardLayout = ({ children }) => {
-  const location = useLocation();
-
-  // ✅ Load the sidebar collapsed state from localStorage (persists across pages)
   const [isPrimaryCollapsed, setIsPrimaryCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true"
   );
-  const [isSecondaryVisible, setIsSecondaryVisible] = useState(true);
 
-  // ✅ Update localStorage whenever primary sidebar state changes
+  const location = useLocation();
+
+  // Persist sidebar state
   useEffect(() => {
     localStorage.setItem("sidebarCollapsed", isPrimaryCollapsed);
   }, [isPrimaryCollapsed]);
 
-  // ✅ Define pages where the Secondary Sidebar should be shown
-  const showSidebarSecondary = [
-    "/sales-list",
-    "/sales-customer",
-    "/purchase-order-list",
-    "/purchase-order-supplier",
-    "/return-warranty-list",
-    "/return-warranty-form",
-  ].includes(location.pathname);
+  // 🔹 Define page-specific background gradients
+  const pageGradients = {
+    "/dashboard": "from-purple-500 to-purple-200",
+    "/account-info": "from-purple-500 to-purple-200",
+    "/settings": "from-purple-500 to-purple-200",
+
+    "/inventory": "from-teal-500 to-teal-200",
+    "/sales": "from-red-500 to-red-200",
+    "/purchase-orders": "from-yellow-500 to-yellow-200",
+    "/return-warranty": "from-blue-500 to-blue-200",
+    "/reports": "from-green-500 to-green-200",
+  };
+
+  const defaultGradient = "from-gray-100 to-white";
+  const gradientClass = pageGradients[location.pathname] || defaultGradient;
 
   return (
     <div className="flex bg-gray-50 min-h-screen transition-all duration-300">
-      {/* ✅ Primary Sidebar (Collapsible & Persistent) */}
+      {/* Sidebar */}
       <Sidebar_Primary
         isCollapsed={isPrimaryCollapsed}
         toggleCollapse={() => setIsPrimaryCollapsed(!isPrimaryCollapsed)}
       />
 
-      {/* ✅ Main Content Wrapper - Adjust margin dynamically */}
+      {/* Main Content Area */}
       <div
         className={`flex flex-grow transition-all duration-300 ${
           isPrimaryCollapsed ? "ml-16" : "ml-64"
-        } ${showSidebarSecondary ? "mr-64" : ""}`}
+        }`}
       >
-        {/* ✅ Secondary Sidebar - Only visible on specific pages */}
-        {showSidebarSecondary && (
-          <Sidebar_Secondary setIsSecondaryVisible={setIsSecondaryVisible} />
-        )}
-
-        {/* ✅ Main Content Area */}
         <div className="flex-1 flex flex-col transition-all duration-300">
           {/* Header */}
           <Header />
 
-          {/* Page Content */}
-          <main className="flex-1 p-8 bg-gray-100 overflow-auto transition-all duration-300">
+          {/* Page Content with dynamic background */}
+          <main
+            className={`flex-1 p-2 bg-gradient-to-r ${gradientClass} overflow-auto transition-all duration-300`}
+          >
             {children}
           </main>
         </div>

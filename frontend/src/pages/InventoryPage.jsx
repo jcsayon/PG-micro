@@ -1,24 +1,15 @@
-// frontend/pages/InventoryPage.jsx
 import React, { useState, useEffect } from "react";
-import Sidebar_Primary from "../components/Sidebar_Primary";
-// import { supabase } from "../supabaseClient"; // Uncomment when using Supabase
+import DashboardLayout from "../layouts/DashboardLayout";
 
 const InventoryPage = () => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [inventory, setInventory] = useState([]);
   const [damagedProducts, setDamagedProducts] = useState([]);
-  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [activeTab, setActiveTab] = useState("available");
 
   useEffect(() => {
     generateDummyData();
-    localStorage.setItem("sidebarCollapsed", isSidebarCollapsed);
+  }, []);
 
-    // Uncomment this to fetch data from Supabase instead of using dummy data.
-    // fetchDataFromSupabase();
-  }, [isSidebarCollapsed]);
-
-  /** 🔹 Dummy Data for Placeholder */
   const generateDummyData = () => {
     const inventoryData = Array.from({ length: 60 }, (_, i) => ({
       id: i + 1,
@@ -43,62 +34,43 @@ const InventoryPage = () => {
     setDamagedProducts(damagedData);
   };
 
-  /** 🔹 Fetch Data from Supabase */
-  // const fetchDataFromSupabase = async () => {
-  //   try {
-  //     const { data: inventoryData, error: inventoryError } = await supabase
-  //       .from("inventory")
-  //       .select("*");
-
-  //     if (inventoryError) throw inventoryError;
-
-  //     const { data: damagedData, error: damagedError } = await supabase
-  //       .from("damaged_products")
-  //       .select("*");
-
-  //     if (damagedError) throw damagedError;
-
-  //     setInventory(inventoryData);
-  //     setDamagedProducts(damagedData);
-  //   } catch (error) {
-  //     console.error("Error fetching data:", error.message);
-  //   }
-  // };
-
-  /** 🔹 Open Inventory Details Modal */
-  const openInventoryModal = (item) => {
-    setSelectedItem(item);
-    setIsInventoryModalOpen(true);
-  };
-
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <Sidebar_Primary
-        isCollapsed={isSidebarCollapsed}
-        toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
-
-      {/* Main Content */}
-      <div
-        className={`flex-1 p-6 transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
-        }`}
-      >
+    <DashboardLayout>
+      <div className="p-2 bg-gradient-to-r from-teal-500 to-teal-200 min-h-screen">
         <h1 className="text-3xl font-bold text-purple-700 mb-6">
           Inventory Management
         </h1>
 
-        {/* Grid Layout for Tables */}
-        <div className="grid grid-cols-2 gap-6 h-[80vh]">
-          {/* ✅ Available Inventory Table */}
-          <div className="bg-blue-50 shadow-lg rounded-lg p-4 flex flex-col h-full">
-            <h2 className="text-xl font-semibold text-blue-700 mb-4">
-              Available Inventory
-            </h2>
-            <div className="overflow-y-auto flex-grow max-h-[70vh]">
+        {/* 🔹 Tab Buttons */}
+        <div className="flex gap-1">
+          <button
+            onClick={() => setActiveTab("available")}
+            className={`px-4 py-2 rounded-t font-semibold text-lg ${
+              activeTab === "available"
+                ? "bg-blue-500 text-white"
+                : "bg-blue-100 text-blue-600"
+            }`}
+          >
+            Available Products
+          </button>
+          <button
+            onClick={() => setActiveTab("damaged")}
+            className={`px-4 py-2 rounded-t font-semibold text-lg ${
+              activeTab === "damaged"
+                ? "bg-red-500 text-white"
+                : "bg-red-100 text-red-600"
+            }`}
+          >
+            Damaged Products
+          </button>
+        </div>
+
+        {/* 🔹 Tab Content - Available Products */}
+        {activeTab === "available" && (
+          <div className="bg-gradient-to-b from-blue-500 to-blue-200 shadow-lg rounded-r rounded-b p-4 flex flex-col h-[80vh]">
+            <div className="overflow-auto flex-grow">
               <table className="min-w-full border border-gray-200 rounded">
-                <thead className="sticky top-0 bg-blue-200 text-left text-sm font-medium text-gray-800">
+                <thead className="sticky top-0 bg-blue-300 text-left text-sm font-medium text-gray-800">
                   <tr>
                     <th className="p-3 border">Item ID</th>
                     <th className="p-3 border">Serial Number</th>
@@ -113,10 +85,7 @@ const InventoryPage = () => {
                 </thead>
                 <tbody>
                   {inventory.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="text-sm text-gray-700 border-t"
-                    >
+                    <tr key={item.id} className="text-sm text-gray-700 border-t">
                       <td className="p-3 border">{item.id}</td>
                       <td className="p-3 border">{item.serialNumber}</td>
                       <td className="p-3 border">{item.category}</td>
@@ -126,10 +95,7 @@ const InventoryPage = () => {
                       <td className="p-3 border">{item.location}</td>
                       <td className="p-3 border">{item.sellingPrice}</td>
                       <td className="p-3 border text-center">
-                        <button
-                          onClick={() => openInventoryModal(item)}
-                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-700"
-                        >
+                        <button className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-700">
                           View Details
                         </button>
                       </td>
@@ -139,15 +105,14 @@ const InventoryPage = () => {
               </table>
             </div>
           </div>
+        )}
 
-          {/* ✅ Damaged Products Table */}
-          <div className="bg-red-50 shadow-lg rounded-lg p-4 flex flex-col h-full">
-            <h2 className="text-xl font-semibold text-red-700 mb-4">
-              Damaged Products
-            </h2>
-            <div className="overflow-y-auto flex-grow max-h-[70vh]">
+        {/* 🔹 Tab Content - Damaged Products */}
+        {activeTab === "damaged" && (
+          <div className="bg-gradient-to-b from-red-500 to-red-200 shadow-lg rounded-r rounded-b p-4 flex flex-col h-[80vh]">
+            <div className="overflow-auto flex-grow">
               <table className="min-w-full border border-gray-200 rounded">
-                <thead className="sticky top-0 bg-red-200 text-left text-sm font-medium text-gray-800">
+                <thead className="sticky top-0 bg-red-300 text-left text-sm font-medium text-gray-800">
                   <tr>
                     <th className="p-3 border">Item ID</th>
                     <th className="p-3 border">Serial Number</th>
@@ -168,9 +133,9 @@ const InventoryPage = () => {
               </table>
             </div>
           </div>
-        </div>
+        )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
