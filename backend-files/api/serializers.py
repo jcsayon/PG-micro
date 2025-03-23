@@ -18,7 +18,7 @@ class UserSignupSerializer(serializers.ModelSerializer):
         # If your user model uses 'username' instead of 'name', update accordingly.
         fields = ['username', 'email', 'password', 'role']
         extra_kwargs = {
-            'name': {'required': True},
+            'username': {'required': True},
             'email': {'required': True},
             'role': {'required': True},
         }
@@ -35,7 +35,7 @@ class UserLoginSerializer(serializers.Serializer):
     # The login serializer expects the user's name and password.
     # If your custom user model uses 'username' instead of 'name', adjust this.
     username = serializers.CharField(required=True)
-    name = serializers.CharField(required=True)
+    #name = serializers.CharField(required=True)
     password = serializers.CharField(required=True, write_only=True)
 
 class InventorySerializer(serializers.ModelSerializer):

@@ -53,7 +53,7 @@ const SignUpPage = () => {
             <label className="block text-gray-700">Full Name</label>
             <input
               type="text"
-              name="name"
+              name="username"
               placeholder="John Doe"
               className="w-full p-2 border border-gray-300 rounded"
               onChange={handleChange}

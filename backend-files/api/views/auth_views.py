@@ -6,19 +6,27 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
+
 @api_view(['POST'])
 def signup(request):
+    print("Request data:", request.data)  # Debug: print request payload
     serializer = UserSignupSerializer(data=request.data)
     if serializer.is_valid():
-        user = serializer.save()
+        try:
+            user = serializer.save()
+            print("User created:", user)  # Debug: confirm user creation
+        except Exception as e:
+            print("Error during user creation:", e)
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response({
             "message": "User created successfully!",
             "user": {
-                "name": user.name,
+                "username": getattr(user, "username", None) or getattr(user, "name", None),
                 "email": user.email,
                 "role": user.role
             }
         }, status=status.HTTP_201_CREATED)
+    print("Serializer errors:", serializer.errors)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
