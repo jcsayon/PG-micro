@@ -39,6 +39,7 @@ const LoginPage = () => {
         console.log("Login successful, token stored.");
 
         navigate("/dashboard");
+        window.location.href = "/dashboard";
       } else {
         setError("Login succeeded but no session was returned. Please check your Supabase auth settings.");
       }

@@ -7,7 +7,7 @@ const Header = () => {
       <div className="flex items-center gap-4">
         <span className="text-gray-600">Joshua Sayon III</span>
         <img
-          src="https://via.placeholder.com/40"
+          src="https://placehold.co/40"
           alt="User Avatar"
           className="w-10 h-10 rounded-full border"
         />

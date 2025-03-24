@@ -1,63 +1,73 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../config/supabaseClient";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: "", // using username for full name
+    name: "",      // full name input
     email: "",
     password: "",
-    role: "Employee"
+    role: "Admin", // default role; user can choose
   });
   const [error, setError] = useState("");
-
-  // Uncomment this block if you want to restrict access to admins only.
-  // useEffect(() => {
-  //   const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
-  //   const userRole = sessionStorage.getItem("userRole");
-  //   if (!isAuthenticated || userRole !== "Admin") {
-  //     // If not admin, redirect to dashboard (or another page)
-  //     navigate("/dashboard");
-  //   }
-  // }, [navigate]);
 
   // Update form fields
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle sign-up form submission
+  // Handle sign-up form submission with profile insertion
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-  
+
+    // Debug: log the form data
+    console.log("Sending sign-up data:", formData);
+
     try {
-      // Use only email and password for auth and pass extra data as metadata.
-      const { data, error: signupError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-      }, {
-        data: { 
-          role: formData.role,
-          // If you really want a username, include it here.
-          // username: formData.username
+      // First, sign up the user with email and password and pass extra data as metadata.
+      const { data, error: signupError } = await supabase.auth.signUp(
+        {
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          data: {
+            role: formData.role,
+            name: formData.name,
+          },
         }
-      });
-  
+      );
+
       if (signupError) {
         setError(signupError.message);
         return;
       }
-  
+
+      // Debug: Log the returned data from signup
+      console.log("Signup data returned:", data);
+
+      // After successful sign-up, insert the custom profile data into your profiles table.
+      // Make sure your profiles table has columns "id", "role", and "name".
+      // The user's ID is available from data.user (or data.user.id) depending on your Supabase version.
+      const userId = data.user.id;
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .insert([{ id: userId, role: formData.role, name: formData.name }]);
+
+      if (profileError) {
+        setError("Profile creation error: " + profileError.message);
+        return;
+      }
+
       alert("Sign-up successful!");
-      navigate("/");
+      navigate("/"); // Redirect to login or dashboard
     } catch (err) {
       console.error("Sign-up error:", err);
       setError("An unexpected error occurred during sign-up.");
     }
   };
-  
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
@@ -106,6 +116,7 @@ const SignUpPage = () => {
               name="role"
               className="w-full p-2 border border-gray-300 rounded"
               onChange={handleChange}
+              value={formData.role}
             >
               <option value="Employee">Employee</option>
               <option value="Inventory">Inventory</option>
