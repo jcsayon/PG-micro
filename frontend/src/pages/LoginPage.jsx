@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "../config/supabaseClient";
 
 const LoginPage = () => {
@@ -12,7 +12,7 @@ const LoginPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Sign in with Supabase and redirect to dashboard, with error handling for navigation.
+  // Sign in with Supabase and redirect to dashboard
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -23,6 +23,8 @@ const LoginPage = () => {
         password: formData.password,
       });
 
+      console.log("Supabase login response:", data);
+
       if (loginError) {
         setError(loginError.message);
         return;
@@ -31,36 +33,29 @@ const LoginPage = () => {
       if (data?.session) {
         const token = data.session.access_token;
         sessionStorage.setItem("token", token);
+        // Also set any auth flags if needed:
+        sessionStorage.setItem("isAuthenticated", "true");
+        sessionStorage.setItem("userRole", data.session.user?.role || "Employee");
         console.log("Login successful, token stored.");
 
-        try {
-          navigate("/dashboard");
-        } catch (navigationError) {
-          console.error("Navigation error:", navigationError);
-          setError("Login succeeded but failed to redirect to dashboard. Please try again.");
-        }
+        navigate("/dashboard");
       } else {
-        setError("Login succeeded but no session was returned. Please try again.");
+        setError("Login succeeded but no session was returned. Please check your Supabase auth settings.");
       }
     } catch (err) {
       console.error("Login error:", err);
       setError("An error occurred during login. Please try again.");
     }
   };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-purple-100">
       <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-10">
-        {/* Title */}
         <h2 className="text-2xl font-bold text-purple-800 text-center mb-4">
           PG MICRO WORLD COMPUTERS
         </h2>
-
-        {/* Error Message */}
         {error && <p className="text-red-500 text-center mb-3">{error}</p>}
-
-        {/* Login Form */}
         <form className="space-y-6 mt-4" onSubmit={handleSubmit}>
-          {/* Email Field */}
           <div className="relative">
             <span className="absolute inset-y-0 left-3 flex items-center text-purple-500">
               📧
@@ -75,8 +70,6 @@ const LoginPage = () => {
               required
             />
           </div>
-
-          {/* Password Field */}
           <div className="relative">
             <span className="absolute inset-y-0 left-3 flex items-center text-purple-500">
               🔑
@@ -91,8 +84,6 @@ const LoginPage = () => {
               required
             />
           </div>
-
-          {/* Remember Me & Forgot Password */}
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <input
@@ -109,8 +100,6 @@ const LoginPage = () => {
               Forgot password?
             </a>
           </div>
-
-          {/* Sign In Button */}
           <button
             type="submit"
             className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg"
@@ -118,13 +107,11 @@ const LoginPage = () => {
             Sign In
           </button>
         </form>
-
-        {/* Sign Up Link */}
         <p className="text-sm text-gray-600 mt-6 text-center">
           Don't have an account?{" "}
-          <a href="/signup" className="text-purple-500 font-medium hover:underline">
+          <Link to="/signup" className="text-purple-500 font-medium hover:underline">
             Sign Up
-          </a>
+          </Link>
         </p>
       </div>
     </div>

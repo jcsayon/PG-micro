@@ -1,45 +1,63 @@
-//frontend/src/pages/SignUpPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../config/supabaseClient";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: "",
+    username: "", // using username for full name
     email: "",
     password: "",
     role: "Employee"
   });
   const [error, setError] = useState("");
 
+  // Uncomment this block if you want to restrict access to admins only.
+  // useEffect(() => {
+  //   const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
+  //   const userRole = sessionStorage.getItem("userRole");
+  //   if (!isAuthenticated || userRole !== "Admin") {
+  //     // If not admin, redirect to dashboard (or another page)
+  //     navigate("/dashboard");
+  //   }
+  // }, [navigate]);
+
   // Update form fields
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle the sign-up form
+  // Handle sign-up form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+  
     try {
-      // Send a POST request to your Django backend signup endpoint
-      const response = await fetch("http://localhost:8000/api/auth/signup/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+      // Use only email and password for auth and pass extra data as metadata.
+      const { data, error: signupError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+      }, {
+        data: { 
+          role: formData.role,
+          // If you really want a username, include it here.
+          // username: formData.username
+        }
       });
-      const data = await response.json();
-      if (response.ok) {
-        alert("Sign-up successful!");
-        navigate("/"); // Redirect to login or dashboard
-      } else {
-        setError(data.error || "Error signing up");
+  
+      if (signupError) {
+        setError(signupError.message);
+        return;
       }
+  
+      alert("Sign-up successful!");
+      navigate("/");
     } catch (err) {
       console.error("Sign-up error:", err);
-      setError("An error occurred during sign-up.");
+      setError("An unexpected error occurred during sign-up.");
     }
   };
+  
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
@@ -53,7 +71,7 @@ const SignUpPage = () => {
             <label className="block text-gray-700">Full Name</label>
             <input
               type="text"
-              name="username"
+              name="name"
               placeholder="John Doe"
               className="w-full p-2 border border-gray-300 rounded"
               onChange={handleChange}
