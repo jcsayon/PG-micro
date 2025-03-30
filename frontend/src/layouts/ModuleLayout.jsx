@@ -1,5 +1,5 @@
 import React from "react";
-import Sidebar_Primary from "../components/Sidebar_Secondary";
+import Sidebar_Primary from "../components/Sidebar_Primary";
 import Header from "../components/Header";
 
 const ModuleLayout = ({ children }) => {
