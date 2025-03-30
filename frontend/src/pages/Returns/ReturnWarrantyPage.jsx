@@ -8,8 +8,8 @@ const ReturnWarrantyPage = () => {
   return (
     <DashboardLayout>
       {/* Main Content Wrapper */}
-      <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-200 min-h-screen">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-200 rounded-lg">
+      <div className="p-2 bg-blue-400 min-h-screen">
+        <div className="bg-blue-400 rounded-lg">
           <h1 className="text-2xl font-bold text-purple-700 mb-4">Return List</h1>
           <p className="text-gray-600 mb-4">
             Form pages are used to collect or verify information from users.

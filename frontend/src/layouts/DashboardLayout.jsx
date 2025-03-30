@@ -21,11 +21,11 @@ const DashboardLayout = ({ children }) => {
     "/account-info": "from-purple-500 to-purple-200",
     "/settings": "from-purple-500 to-purple-200",
 
-    "/inventory": "from-teal-500 to-teal-200",
-    "/sales": "from-red-500 to-red-200",
-    "/purchase-orders": "from-yellow-500 to-yellow-200",
-    "/return-warranty": "from-blue-500 to-blue-200",
-    "/reports": "from-green-500 to-green-200",
+    "/inventory": "bg-teal-400",
+    "/sales": "bg-red-300",
+    "/purchase-orders": "bg-yellow-400",
+    "/return-warranty": "bg-blue-400",
+    "/reports": "bg-green-400",
   };
 
   const defaultGradient = "from-gray-100 to-white";

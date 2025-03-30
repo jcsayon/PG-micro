@@ -37,7 +37,7 @@ const SalesOrderPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="w-full bg-gradient-to-r from-red-500 to-red-200 p-2 rounded-lg">
+      <div className="w-full bg-red-300 p-2 rounded-lg">
         <h1 className="text-2xl font-bold text-purple-700 mb-6">
           New Sales Order
         </h1>
