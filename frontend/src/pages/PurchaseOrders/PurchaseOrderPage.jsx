@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar_Secondary from "../../components/Sidebar_Secondary";
+import DashboardLayout from "../../layouts/DashboardLayout";
+
+// -----------------------
+// Helper Functions
+// -----------------------
 
 // Convert a warranty duration string to seconds (simplified).
 function convertWarrantyDurationToSeconds(durationStr) {
@@ -23,36 +27,333 @@ function formatTime(totalSeconds) {
   return `${days}d:${hours}h:${minutes}m:${seconds}s`;
 }
 
-// For the Create PO status dropdown
+/**
+ * Returns a Tailwind background color class for the given value.
+ * This is used for dynamically coloring <select> backgrounds.
+ */
+function getBackgroundColor(value) {
+  switch (value) {
+    case "All":
+      return "bg-white rounded";
+    case "Order Placed":
+      return "bg-purple-300 rounded";
+    case "Shipped":
+      return "bg-gray-300 rounded";
+    case "Delivered":
+      return "bg-green-300 rounded";
+    case "In Progress":
+      return "bg-yellow-300 rounded";
+    case "true": // for audit/damage = true
+      return "bg-green-300 rounded";
+    case "false": // for audit/damage = false
+      return "bg-red-300 rounded";
+    default:
+      return "bg-white";
+  }
+}
+
+// The possible statuses for orders
 const statusOptions = [
-  { value: "Order Placed", color: "bg-purple-400" },
-  { value: "Shipped", color: "bg-gray-500" },
-  { value: "Delivered", color: "bg-green-500" },
-  { value: "In Progress", color: "bg-yellow-400" },
+  { label: "Order Placed", value: "Order Placed", colorClass: "bg-purple-200" },
+  { label: "Shipped", value: "Shipped", colorClass: "bg-gray-200" },
+  { label: "Delivered", value: "Delivered", colorClass: "bg-green-200" },
+  { label: "In Progress", value: "In Progress", colorClass: "bg-yellow-200" },
 ];
 
-const PurchaseOrderPage = () => {
-  // --------------------------------
-  // SIDEBAR COLLAPSE (unchanged)
-  // --------------------------------
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
-    const saved = localStorage.getItem("sidebarCollapsed");
-    return saved === "true";
-  });
-  useEffect(() => {
-    localStorage.setItem("sidebarCollapsed", isSidebarCollapsed);
-  }, [isSidebarCollapsed]);
+// -----------------------
+// ViewPurchaseOrderModal Component
+// -----------------------
+function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
+  const [poStatus, setPoStatus] = useState(order.status);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // For each order item, track assignment: "" | "approved" | "damaged"
+  const [assignments, setAssignments] = useState({});
+  useEffect(() => {
+    const init = {};
+    order.items.forEach((_, i) => (init[i] = ""));
+    setAssignments(init);
+  }, [order.items]);
+
+  const approvedItems = order.items.filter((_, i) => assignments[i] === "approved");
+  const damagedItems = order.items.filter((_, i) => assignments[i] === "damaged");
+  const allAssigned =
+    order.items.length > 0 && order.items.every((_, i) => assignments[i] !== "");
+
+  const handleAssignmentChange = (index, value) => {
+    setAssignments((prev) => ({ ...prev, [index]: value }));
+  };
+
+  const handleSendToInventory = () => {
+    alert(
+      `Sending ${approvedItems.length} approved items to Available Inventory and ${damagedItems.length} damaged items to Damaged Products.`
+    );
+    onSendToInventory?.(approvedItems, damagedItems);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded shadow-lg h-[700px] w-[900px] flex flex-col overflow-auto">
+        <h2 className="text-2xl font-bold mb-4">Purchase Order Details</h2>
+
+        {/* PO Info */}
+        <table className="w-full border mb-4">
+          <tbody>
+            <tr>
+              <td className="border p-2">PO Number: {order.poNumber}</td>
+              <td className="border p-2">
+                Status:{" "}
+                <select
+                  value={poStatus}
+                  onChange={(e) => setPoStatus(e.target.value)}
+                  className={`border rounded px-2 py-1 ml-1 ${getBackgroundColor(poStatus)}`}
+                >
+                  {statusOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value} className={opt.colorClass}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td className="border p-2">Date: {order.date}</td>
+              <td className="border p-2">Time: {currentTime.toLocaleTimeString()}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Supplier Info */}
+        <table className="w-full border mb-4">
+          <tbody>
+            <tr>
+              <td className="border p-2">
+                <strong>Supplier:</strong> {order.supplier}
+              </td>
+              <td className="border p-2" colSpan={3}>
+                {/* Additional supplier details can go here */}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Order Items Details Section */}
+        <div className="mt-4">
+          <h3 className="text-xl font-bold mb-2">Order Items Details</h3>
+          {order.items && order.items.length > 0 ? (
+            order.items.map((item, index) => (
+              <div key={index} className="mb-4 border rounded p-2">
+                <table className="w-full border mb-2">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border p-1 text-center">Product ID</th>
+                      <th className="border p-1 text-center">Brand</th>
+                      <th className="border p-1 text-center">Model</th>
+                      <th className="border p-1 text-center">Purchase Price</th>
+                      <th className="border p-1 text-center">Quantity</th>
+                      <th className="border p-1 text-center">Item Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border p-1 text-center">{item.id}</td>
+                      <td className="border p-1 text-center">{item.brand}</td>
+                      <td className="border p-1 text-center">{item.model}</td>
+                      <td className="border p-1 text-center">₱{item.purchasePrice}</td>
+                      <td className="border p-1 text-center">{item.quantity}</td>
+                      <td className="border p-1 text-center">
+                        ₱{(item.purchasePrice * item.quantity).toFixed(2)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                {item.serials && item.serials.length > 0 && (
+                  <table className="w-full border">
+                    <thead>
+                      <tr className="bg-gray-200">
+                        <th className="border p-1 text-center">Serial Number</th>
+                        <th className="border p-1 text-center">Warranty Duration</th>
+                        <th className="border p-1 text-center">Warranty Time</th>
+                        <th className="border p-1 text-center">Audit</th>
+                        <th className="border p-1 text-center">Damage</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {item.serials.map((serial, sIndex) => {
+                        let remainingSeconds = convertWarrantyDurationToSeconds(
+                          item.warrantyDuration
+                        );
+                        if (poStatus === "Delivered") {
+                          remainingSeconds = Math.max(remainingSeconds - 0, 0);
+                        }
+                        return (
+                          <tr key={sIndex} className="border-t">
+                            <td className="border p-1 text-center">
+                              {item.id}-{serial.id}
+                            </td>
+                            <td className="border p-1 text-center">
+                              {item.warrantyDuration}
+                            </td>
+                            <td className="border p-1 text-center">
+                              {poStatus === "Delivered"
+                                ? formatTime(remainingSeconds)
+                                : "Not started"}
+                            </td>
+                            <td className="border p-1 text-center">
+                              {serial.audit ? "✅" : "❌"}
+                            </td>
+                            <td className="border p-1 text-center">
+                              {serial.damage ? "✅" : "❌"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            ))
+          ) : (
+            <p>No order items found.</p>
+          )}
+        </div>
+
+        {/* Existing Auditing Section if Delivered */}
+        {poStatus === "Delivered" && (
+          <div className="flex flex-col flex-grow mt-4">
+            <h3 className="text-xl font-bold mb-2">Audit Items</h3>
+            <div className="overflow-y-auto flex-grow border rounded p-2 mb-4">
+              {order.items.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="p-2 border-b last:border-b-0 flex justify-between items-center"
+                >
+                  <div>
+                    <p className="font-semibold">
+                      {item.brand} {item.model} (Qty: {item.quantity})
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Item Total: ₱{(item.purchasePrice * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-1">
+                      <input
+                        type="radio"
+                        name={`assignment-${idx}`}
+                        value="approved"
+                        checked={assignments[idx] === "approved"}
+                        onChange={(e) => handleAssignmentChange(idx, e.target.value)}
+                      />
+                      Approved
+                    </label>
+                    <label className="flex items-center gap-1">
+                      <input
+                        type="radio"
+                        name={`assignment-${idx}`}
+                        value="damaged"
+                        checked={assignments[idx] === "damaged"}
+                        onChange={(e) => handleAssignmentChange(idx, e.target.value)}
+                      />
+                      Damaged
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="border rounded p-2">
+                <h4 className="font-bold text-green-600 mb-2">
+                  Approved Items (Audit true, Damage false)
+                </h4>
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-green-100">
+                      <th className="border p-1 text-center">Product</th>
+                      <th className="border p-1 text-center">Quantity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.items
+                      .filter((_, i) => assignments[i] === "approved")
+                      .map((itm, i) => (
+                        <tr key={i} className="border-t">
+                          <td className="border p-1 text-center">
+                            {itm.brand} {itm.model}
+                          </td>
+                          <td className="border p-1 text-center">{itm.quantity}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="border rounded p-2">
+                <h4 className="font-bold text-red-600 mb-2">
+                  Damaged Items (Audit true, Damage true)
+                </h4>
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-red-100">
+                      <th className="border p-1 text-center">Product</th>
+                      <th className="border p-1 text-center">Quantity</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.items
+                      .filter((_, i) => assignments[i] === "damaged")
+                      .map((itm, i) => (
+                        <tr key={i} className="border-t">
+                          <td className="border p-1 text-center">
+                            {itm.brand} {itm.model}
+                          </td>
+                          <td className="border p-1 text-center">{itm.quantity}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {allAssigned && (
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                onClick={handleSendToInventory}
+              >
+                Send to Inventory
+              </button>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          className="mt-4 bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 self-end"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------
+// Main PurchaseOrderPage Component
+// -----------------------
+const PurchaseOrderPage = () => {
   const navigate = useNavigate();
 
-  // --------------------------------
-  // PURCHASE ORDERS TABLE (unchanged)
-  // --------------------------------
+  // PURCHASE ORDERS STATE
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
   useEffect(() => {
+    // Simulate fetching purchase orders (replace with API call as needed)
     setPurchaseOrders([
       {
         id: 1,
@@ -77,6 +378,20 @@ const PurchaseOrderPage = () => {
         date: "2023-01-03",
         total: "₱12,075.00",
         status: "Delivered",
+        items: [
+          {
+            id: 101,
+            brand: "Acer",
+            model: "Predator",
+            purchasePrice: 55000,
+            quantity: 2,
+            warrantyDuration: "1 Year",
+            serials: [
+              { id: 1, audit: false, damage: false, isEditing: false },
+              { id: 2, audit: false, damage: false, isEditing: false },
+            ],
+          },
+        ],
       },
       {
         id: 4,
@@ -85,6 +400,17 @@ const PurchaseOrderPage = () => {
         date: "2023-01-04",
         total: "₱100,125.00",
         status: "Delivered",
+        items: [
+          {
+            id: 102,
+            brand: "Dell",
+            model: "XPS",
+            purchasePrice: 50000,
+            quantity: 1,
+            warrantyDuration: "6 Months",
+            serials: [{ id: 1, audit: false, damage: false, isEditing: false }],
+          },
+        ],
       },
       {
         id: 5,
@@ -101,14 +427,18 @@ const PurchaseOrderPage = () => {
     const matchesSearch =
       order.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.supplier.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "All" || order.status === statusFilter;
+    const matchesStatus = statusFilter === "All" || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  // --------------------------------
-  // PRODUCT MODAL & CRUD (unchanged)
-  // --------------------------------
+  // Handler to change order status
+  const handleStatusChange = (orderId, newStatus) => {
+    setPurchaseOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    );
+  };
+
+  // PRODUCT MODAL & CRUD
   const [showProductModal, setShowProductModal] = useState(false);
   const [products, setProducts] = useState([
     {
@@ -148,10 +478,7 @@ const PurchaseOrderPage = () => {
   });
 
   const handleAddProduct = () => {
-    setProducts([
-      ...products,
-      { id: products.length + 1, ...newProduct, isEditing: false },
-    ]);
+    setProducts([...products, { id: products.length + 1, ...newProduct, isEditing: false }]);
     setNewProduct({
       description: "",
       purchasePrice: 0,
@@ -164,9 +491,9 @@ const PurchaseOrderPage = () => {
     });
   };
   const handleEditProduct = (index) => {
-    const updatedProducts = [...products];
-    updatedProducts[index].isEditing = !updatedProducts[index].isEditing;
-    setProducts(updatedProducts);
+    const updated = [...products];
+    updated[index].isEditing = !updated[index].isEditing;
+    setProducts(updated);
   };
   const handleAuditChange = (e, index) => {
     handleChangeProduct(index, "audit", e.target.value === "true");
@@ -175,17 +502,15 @@ const PurchaseOrderPage = () => {
     handleChangeProduct(index, "damage", e.target.value === "true");
   };
   const handleChangeProduct = (index, field, value) => {
-    const updatedProducts = [...products];
-    updatedProducts[index][field] = value;
-    setProducts(updatedProducts);
+    const updated = [...products];
+    updated[index][field] = value;
+    setProducts(updated);
   };
   const handleDeleteProduct = (id) => {
-    setProducts(products.filter((product) => product.id !== id));
+    setProducts(products.filter((p) => p.id !== id));
   };
 
-  // --------------------------------
-  // SUPPLIER MODAL & CRUD (unchanged)
-  // --------------------------------
+  // SUPPLIER MODAL & CRUD
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [suppliers, setSuppliers] = useState([
     {
@@ -221,78 +546,83 @@ const PurchaseOrderPage = () => {
   });
 
   const handleAddSupplier = () => {
-    setSuppliers([
-      ...suppliers,
-      { id: suppliers.length + 1, ...newSupplier, isEditing: false },
-    ]);
+    setSuppliers([...suppliers, { id: suppliers.length + 1, ...newSupplier, isEditing: false }]);
     setNewSupplier({ name: "", address: "", email: "", contact: "" });
   };
   const handleEditSupplier = (index) => {
-    const updatedSuppliers = [...suppliers];
-    updatedSuppliers[index].isEditing = !updatedSuppliers[index].isEditing;
-    setSuppliers(updatedSuppliers);
+    const updated = [...suppliers];
+    updated[index].isEditing = !updated[index].isEditing;
+    setSuppliers(updated);
   };
   const handleChangeSupplier = (index, field, value) => {
-    const updatedSuppliers = [...suppliers];
-    updatedSuppliers[index][field] = value;
-    setSuppliers(updatedSuppliers);
+    const updated = [...suppliers];
+    updated[index][field] = value;
+    setSuppliers(updated);
   };
   const handleDeleteSupplier = (id) => {
-    setSuppliers(suppliers.filter((supplier) => supplier.id !== id));
+    setSuppliers(suppliers.filter((s) => s.id !== id));
   };
 
-  // --------------------------------
-  // NEW CREATE PO MODAL (with per-serial logic)
-  // --------------------------------
+  // CREATE PO MODAL
   const [showCreatePOModal, setShowCreatePOModal] = useState(false);
-
-  // Live-updating clock
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [poCurrentTime, setPoCurrentTime] = useState(new Date());
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const interval = setInterval(() => setPoCurrentTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
-  const currentDate = currentTime.toLocaleDateString();
-
-  // Example new PO ID
+  const poCurrentDate = poCurrentTime.toLocaleDateString();
   const newPOId = 6;
-  // PO status
   const [poStatus, setPoStatus] = useState("Order Placed");
 
-  // Supplier selection
-  const [supplierSearch, setSupplierSearch] = useState("");
-  const [selectedSupplier, setSelectedSupplier] = useState(null);
-  const handleSupplierSearchChange = (e) => {
-    setSupplierSearch(e.target.value);
+  // Order Items and Serial Collapse State
+  const [orderItems, setOrderItems] = useState([]);
+  const [serialsCollapsed, setSerialsCollapsed] = useState({});
+  useEffect(() => {
+    setSerialsCollapsed((prev) => {
+      const newState = {};
+      for (const item of orderItems) {
+        newState[item.id] = prev[item.id] !== undefined ? prev[item.id] : false;
+      }
+      return newState;
+    });
+  }, [orderItems]);
+
+  const toggleSerialsVisibility = (itemId) => {
+    setSerialsCollapsed((prev) => ({
+      ...prev,
+      [itemId]: !prev[itemId],
+    }));
+  };
+
+  const [poSupplierSearch, setPoSupplierSearch] = useState("");
+  const [poSelectedSupplier, setPoSelectedSupplier] = useState(null);
+  const handlePoSupplierSearchChange = (e) => {
+    setPoSupplierSearch(e.target.value);
     const found = suppliers.find(
       (s) => s.name.toLowerCase() === e.target.value.toLowerCase()
     );
-    setSelectedSupplier(found || null);
+    setPoSelectedSupplier(found || null);
+  };
+  const handleRemoveSupplier = () => {
+    setPoSupplierSearch("");
+    setPoSelectedSupplier(null);
   };
 
-  // Product selection for new PO items
-  const [productSearch, setProductSearch] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const handleProductSearchChange = (e) => {
-    setProductSearch(e.target.value);
+  const [poProductSearch, setPoProductSearch] = useState("");
+  const [poSelectedProduct, setPoSelectedProduct] = useState(null);
+  const handlePoProductSearchChange = (e) => {
+    setPoProductSearch(e.target.value);
     const found = products.find(
       (p) => p.model.toLowerCase() === e.target.value.toLowerCase()
     );
-    setSelectedProduct(found || null);
+    setPoSelectedProduct(found || null);
   };
 
-  // Order items (each with `serials` array)
-  const [orderItems, setOrderItems] = useState([]);
-
-  // ADD a product => initialize serials with quantity=1
   const handleAddOrderItem = () => {
-    if (selectedProduct) {
+    if (poSelectedProduct) {
       const newItem = {
-        ...selectedProduct,
+        ...poSelectedProduct,
         quantity: 1,
-        // Each item now has its own array of serials
         serials: [
           {
             id: 1,
@@ -303,26 +633,22 @@ const PurchaseOrderPage = () => {
         ],
       };
       setOrderItems([...orderItems, newItem]);
-      setProductSearch("");
-      setSelectedProduct(null);
+      setPoProductSearch("");
+      setPoSelectedProduct(null);
     }
   };
 
-  // REMOVE an item
   const removeOrderItem = (index) => {
     const updated = [...orderItems];
     updated.splice(index, 1);
     setOrderItems(updated);
   };
 
-  // QUANTITY CHANGE => sync `serials` length with the new quantity
   const handleOrderItemQuantityChange = (index, newQty) => {
     const updated = [...orderItems];
     const item = updated[index];
     const qty = parseInt(newQty) || 1;
     item.quantity = qty;
-
-    // Ensure `item.serials` has exactly `qty` rows
     while (item.serials.length < qty) {
       item.serials.push({
         id: item.serials.length + 1,
@@ -334,19 +660,17 @@ const PurchaseOrderPage = () => {
     while (item.serials.length > qty) {
       item.serials.pop();
     }
-
+    updated[index] = item;
     setOrderItems(updated);
   };
 
-  // Calculate total
   const orderTotal = orderItems.reduce(
     (sum, item) => sum + item.purchasePrice * item.quantity,
     0
   );
 
-  // Finalize & Send
   const handleAddPO = () => {
-    if (!selectedSupplier) {
+    if (!poSelectedSupplier) {
       alert("Please select a supplier first.");
       return;
     }
@@ -357,57 +681,49 @@ const PurchaseOrderPage = () => {
     const newPO = {
       id: newPOId,
       poNumber: `#${newPOId}`,
-      supplier: selectedSupplier.name,
-      date: currentDate,
-      time: currentTime.toLocaleTimeString(),
+      supplier: poSelectedSupplier.name,
+      date: poCurrentDate,
+      time: poCurrentTime.toLocaleTimeString(),
       status: poStatus,
       items: orderItems,
       total: orderTotal.toFixed(2),
     };
-    // Add to the existing POs
     setPurchaseOrders([...purchaseOrders, newPO]);
-
-    // Reset modal
     setShowCreatePOModal(false);
-    setSupplierSearch("");
-    setSelectedSupplier(null);
-    setProductSearch("");
-    setSelectedProduct(null);
+    setPoSupplierSearch("");
+    setPoSelectedSupplier(null);
+    setPoProductSearch("");
+    setPoSelectedProduct(null);
     setOrderItems([]);
     setPoStatus("Order Placed");
     alert("Purchase Order Created!");
   };
 
-  return (
-    <div className="flex">
-      {/* Sidebar */}
-      <Sidebar_Secondary
-        isCollapsed={isSidebarCollapsed}
-        toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
+  // VIEW DETAILS MODAL
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
 
-      {/* Main Content */}
-      <div className="flex-grow ml-64 p-6 bg-gray-50 min-h-screen">
+  return (
+    <DashboardLayout>
+      <div className="p-2 rounded bg-gradient-to-r from-yellow-500 to-yellow-200 min-h-screen">
         {/* Page Header */}
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-purple-600">
-            Issued Purchase Orders
-          </h1>
+          <h1 className="text-2xl font-bold text-purple-600">Issued Purchase Orders</h1>
           <div className="flex gap-4">
             <button
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+              className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-800"
               onClick={() => setShowProductModal(true)}
             >
               View Products
             </button>
             <button
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+              className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-800"
               onClick={() => setShowSupplierModal(true)}
             >
               View Suppliers
             </button>
             <button
-              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+              className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-800"
               onClick={() => setShowCreatePOModal(true)}
             >
               + Create PO
@@ -415,73 +731,160 @@ const PurchaseOrderPage = () => {
           </div>
         </div>
 
-        {/* ---------------------------
-            CREATE PO MODAL
-        --------------------------- */}
+        {/* Filters */}
+        <div className="flex gap-4 mb-4">
+          <button className="bg-gray-200 px-3 py-2 rounded">Status</button>
+          <select
+            className={`p-2 border border-purple-700 rounded ${getBackgroundColor(statusFilter)}`}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option className="bg-white" value="All">
+              All
+            </option>
+            <option className="bg-purple-300" value="Order Placed">
+              Order Placed
+            </option>
+            <option className="bg-gray-300" value="Shipped">
+              Shipped
+            </option>
+            <option className="bg-green-300" value="Delivered">
+              Delivered
+            </option>
+            <option className="bg-yellow-300" value="In Progress">
+              In Progress
+            </option>
+          </select>
+          <input
+            type="text"
+            placeholder="Search by PO id, Supplier, or Date"
+            className="p-2 border border-purple-700 rounded w-[400px]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {/* Purchase Orders Table */}
+        <table className="min-w-full bg-white border border-gray-300 rounded">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="p-3 text-left">Purchase Order ID</th>
+              <th className="p-3 text-left">Date</th>
+              <th className="p-3 text-left">Supplier</th>
+              <th className="p-3 text-left">Status</th>
+              <th className="p-3 text-right">Total</th>
+              <th className="p-3 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredOrders.map((order) => (
+              <tr key={order.id} className="border-t">
+                <td className="p-3">{order.poNumber}</td>
+                <td className="p-3">{order.date}</td>
+                <td className="p-3">{order.supplier}</td>
+                <td className="p-3">
+                  <select
+                    value={order.status}
+                    onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                    className={`border border-gray-300 rounded px-2 py-1 ${getBackgroundColor(
+                      order.status
+                    )}`}
+                  >
+                    {statusOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value} className={opt.colorClass}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td className="p-3 text-right">{order.total}</td>
+                <td className="p-3">
+                  <button
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setShowViewModal(true);
+                    }}
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-800"
+                  >
+                    View details
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* CREATE PO MODAL */}
         {showCreatePOModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
             <div className="bg-white p-6 rounded shadow-lg h-[700px] w-[1100px] flex flex-col">
-              <h2 className="text-2xl font-bold mb-4">Create Purchase Order</h2>
+              <h2 className="font-semibold">Create Purchase Order</h2>
 
-              {/* Single-row table for PO ID, Status, Date, Time */}
-              <table className="w-full border mb-4">
+              {/* PO Info Table */}
+              <table className="w-full border">
                 <tbody>
                   <tr>
-                    <td className="border p-2">
-                      Purchase Order ID: {newPOId}
-                    </td>
+                    <td className="border p-2">Purchase Order ID: {newPOId}</td>
                     <td className="border p-2">
                       Status:{" "}
                       <select
                         value={poStatus}
+                        disabled
                         onChange={(e) => setPoStatus(e.target.value)}
-                        className="bg-white border rounded ml-1"
+                        className={`border rounded ml-1 px-2 py-1 ${getBackgroundColor(poStatus)}`}
                       >
-                        {statusOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.value}
+                        {statusOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value} className={opt.colorClass}>
+                            {opt.label}
                           </option>
                         ))}
                       </select>
                     </td>
-                    <td className="border p-2">Date: {currentDate}</td>
+                    <td className="border p-2">Date: {poCurrentDate}</td>
                     <td className="border p-2">
-                      Time: {currentTime.toLocaleTimeString()}
+                      Time: {poCurrentTime.toLocaleTimeString()}
                     </td>
                   </tr>
                 </tbody>
               </table>
 
-              {/* Single-row table for Supplier Info */}
-              <p className="font-semibold mb-1">Select Supplier</p>
-              <input
-                list="supplierList"
-                value={supplierSearch}
-                onChange={handleSupplierSearchChange}
-                placeholder="Search Supplier"
-                className="border p-2 rounded w-full mb-2"
-              />
+              {/* Supplier Selection */}
+              <p className="font-semibold">Select Supplier</p>
+              <div className="flex gap-2 mb-1 items-center">
+                <input
+                  list="supplierList"
+                  value={poSupplierSearch}
+                  onChange={handlePoSupplierSearchChange}
+                  placeholder="Search Supplier"
+                  className="border p-2 rounded-t w-full"
+                />
+                <button
+                  className="bg-red-600 text-white px-4 py-2 rounded w-[140px]"
+                  onClick={handleRemoveSupplier}
+                >
+                  Remove
+                </button>
+              </div>
               <datalist id="supplierList">
                 {suppliers.map((s) => (
                   <option key={s.id} value={s.name} />
                 ))}
               </datalist>
-
-              <table className="w-full border mb-4">
-                <tbody>
-                  {selectedSupplier ? (
+              <table className="w-full border mb-1">
+                <tbody className="rounded-b">
+                  {poSelectedSupplier ? (
                     <tr>
-                      <td className="border p-2">
-                        <strong>Name:</strong> {selectedSupplier.name}
+                      <td className="border p-2 rounded-b">
+                        Name: {poSelectedSupplier.name}
                       </td>
                       <td className="border p-2">
-                        <strong>Address:</strong> {selectedSupplier.address}
+                        Address: {poSelectedSupplier.address}
                       </td>
                       <td className="border p-2">
-                        <strong>Email:</strong> {selectedSupplier.email}
+                        Email: {poSelectedSupplier.email}
                       </td>
                       <td className="border p-2">
-                        <strong>Contact:</strong> {selectedSupplier.contact}
+                        Contact: {poSelectedSupplier.contact}
                       </td>
                     </tr>
                   ) : (
@@ -494,13 +897,13 @@ const PurchaseOrderPage = () => {
                 </tbody>
               </table>
 
-              {/* Add Item/s */}
+              {/* Add Items Section */}
               <p className="font-semibold mb-1">Add Item/s</p>
               <div className="flex gap-2 mb-2">
                 <input
                   list="productList"
-                  value={productSearch}
-                  onChange={handleProductSearchChange}
+                  value={poProductSearch}
+                  onChange={handlePoProductSearchChange}
                   placeholder="Search Product"
                   className="border p-2 rounded w-full"
                 />
@@ -517,45 +920,36 @@ const PurchaseOrderPage = () => {
                 </button>
               </div>
 
-              {/* Scrollable container for items */}
+              {/* Order Items List */}
               <div className="flex-grow overflow-y-auto border rounded p-2 mb-2">
-                {orderItems.map((item, index) => {
-                  // For the warranty countdown (if status=Delivered)
+                {orderItems.map((item) => {
+                  const collapsed = serialsCollapsed[item.id] || false;
                   return (
-                    <div key={index} className="mb-4">
-                      {/* Table 2: Product details */}
+                    <div
+                      key={item.id}
+                      className={`mb-4 rounded p-2 border ${
+                        item.id % 2 === 0 ? "bg-purple-300" : "bg-blue-300"
+                      }`}
+                    >
+                      {/* Product Details Table */}
                       <table className="w-full mb-1">
                         <thead>
                           <tr className="bg-gray-100">
-                            <th className="border p-1 text-center">
-                              Product ID
-                            </th>
+                            <th className="border p-1 text-center">Product ID</th>
                             <th className="border p-1 text-center">Brand</th>
                             <th className="border p-1 text-center">Model</th>
-                            <th className="border p-1 text-center">
-                              Purchase Price
-                            </th>
+                            <th className="border p-1 text-center">Purchase Price</th>
                             <th className="border p-1 text-center">Quantity</th>
-                            <th className="border p-1 text-center">
-                              Item Total
-                            </th>
+                            <th className="border p-1 text-center">Item Total</th>
                             <th className="border p-1 text-center">Action</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr>
-                            <td className="border p-1 text-center">
-                              {item.id}
-                            </td>
-                            <td className="border p-1 text-center">
-                              {item.brand}
-                            </td>
-                            <td className="border p-1 text-center">
-                              {item.model}
-                            </td>
-                            <td className="border p-1 text-center">
-                              ₱{item.purchasePrice}
-                            </td>
+                            <td className="border p-1 text-center">{item.id}</td>
+                            <td className="border p-1 text-center">{item.brand}</td>
+                            <td className="border p-1 text-center">{item.model}</td>
+                            <td className="border p-1 text-center">₱{item.purchasePrice}</td>
                             <td className="border p-1 text-center">
                               <input
                                 type="number"
@@ -563,7 +957,7 @@ const PurchaseOrderPage = () => {
                                 value={item.quantity}
                                 onChange={(e) =>
                                   handleOrderItemQuantityChange(
-                                    index,
+                                    orderItems.findIndex((x) => x.id === item.id),
                                     e.target.value
                                   )
                                 }
@@ -571,134 +965,128 @@ const PurchaseOrderPage = () => {
                               />
                             </td>
                             <td className="border p-1 text-center">
-                              ₱
-                              {(
-                                item.purchasePrice * item.quantity
-                              ).toFixed(2)}
+                              ₱{(item.purchasePrice * item.quantity).toFixed(2)}
                             </td>
                             <td className="border p-1 text-center">
                               <button
                                 className="bg-red-600 text-white px-2 py-1 rounded"
-                                onClick={() => removeOrderItem(index)}
+                                onClick={() => {
+                                  const idx = orderItems.findIndex((x) => x.id === item.id);
+                                  removeOrderItem(idx);
+                                }}
                               >
                                 Remove
+                              </button>
+                              <button
+                                className="bg-blue-600 text-white px-2 py-1 rounded ml-1 w-[80px]"
+                                onClick={() => toggleSerialsVisibility(item.id)}
+                              >
+                                {collapsed ? "Expand" : "Collapse"}
                               </button>
                             </td>
                           </tr>
                         </tbody>
                       </table>
 
-                      {/* Table 3: Serial info, warranty, etc. */}
-                      <table className="w-full">
-                        <thead>
-                          <tr className="bg-gray-100">
-                            <th className="border p-1 text-center">
-                              Serial Number
-                            </th>
-                            <th className="border p-1 text-center">
-                              Warranty Duration
-                            </th>
-                            <th className="border p-1 text-center">
-                              Warranty Time
-                            </th>
-                            <th className="border p-1 text-center">Audit</th>
-                            <th className="border p-1 text-center">Damage</th>
-                            <th className="border p-1 text-center">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {item.serials.map((serial, sIndex) => {
-                            // Simplistic countdown if status=Delivered
-                            let remainingSeconds = convertWarrantyDurationToSeconds(
-                              item.warrantyDuration
-                            );
-                            if (poStatus === "Delivered") {
-                              remainingSeconds = Math.max(remainingSeconds - 0, 0);
-                            }
-
-                            return (
-                              <tr
-                                key={sIndex}
-                                className={`border-t ${
-                                  serial.isEditing ? "bg-yellow-100" : ""
-                                }`}
-                              >
-                                <td className="border p-1 text-center">
-                                  {item.id}-{serial.id}
-                                </td>
-                                <td className="border p-1 text-center">
-                                  {item.warrantyDuration}
-                                </td>
-                                <td className="border p-1 text-center">
-                                  {poStatus === "Delivered"
-                                    ? formatTime(remainingSeconds)
-                                    : "Not started"}
-                                </td>
-                                <td className="border p-1 text-center">
-                                  <select
-                                    disabled={!serial.isEditing}
-                                    value={serial.audit ? "true" : "false"}
-                                    onChange={(e) => {
-                                      const updated = [...orderItems];
-                                      updated[index].serials[sIndex].audit =
-                                        e.target.value === "true";
-                                      setOrderItems(updated);
-                                    }}
-                                  >
-                                    <option value="true">✅</option>
-                                    <option value="false">❌</option>
-                                  </select>
-                                </td>
-                                <td className="border p-1 text-center">
-                                  <select
-                                    disabled={!serial.isEditing}
-                                    value={serial.damage ? "true" : "false"}
-                                    onChange={(e) => {
-                                      const updated = [...orderItems];
-                                      updated[index].serials[sIndex].damage =
-                                        e.target.value === "true";
-                                      setOrderItems(updated);
-                                    }}
-                                  >
-                                    <option value="true">✅</option>
-                                    <option value="false">❌</option>
-                                  </select>
-                                </td>
-                                <td className="border p-1 text-center">
-                                  <button
-                                    className={`px-2 py-1 rounded text-white ${
-                                      serial.isEditing
-                                        ? "bg-green-600"
-                                        : "bg-blue-600"
-                                    }`}
-                                    onClick={() => {
-                                      const updated = [...orderItems];
-                                      // Toggle isEditing
-                                      updated[index].serials[sIndex].isEditing =
-                                        !serial.isEditing;
-                                      setOrderItems(updated);
-                                    }}
-                                  >
-                                    {serial.isEditing ? "Save" : "Edit"}
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                      {/* Serial Info Table */}
+                      {!collapsed && (
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              <th className="border p-1 text-center">Serial Number</th>
+                              <th className="border p-1 text-center">Warranty Duration</th>
+                              <th className="border p-1 text-center">Warranty Time</th>
+                              <th className="border p-1 text-center">Audit</th>
+                              <th className="border p-1 text-center">Damage</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {item.serials.map((serial, sIndex) => {
+                              let remainingSeconds = convertWarrantyDurationToSeconds(
+                                item.warrantyDuration
+                              );
+                              if (poStatus === "Delivered") {
+                                remainingSeconds = Math.max(remainingSeconds - 0, 0);
+                              }
+                              return (
+                                <tr
+                                  key={sIndex}
+                                  className={`border-t ${serial.isEditing ? "bg-yellow-100" : ""}`}
+                                >
+                                  <td className="border p-1 text-center">
+                                    {item.id}-{serial.id}
+                                  </td>
+                                  <td className="border p-1 text-center">
+                                    {item.warrantyDuration}
+                                  </td>
+                                  <td className="border p-1 text-center">
+                                    {poStatus === "Delivered"
+                                      ? formatTime(remainingSeconds)
+                                      : "Not started"}
+                                  </td>
+                                  <td className="border p-1 text-center">
+                                    <select
+                                      disabled={!serial.isEditing}
+                                      value={serial.audit ? "true" : "false"}
+                                      onChange={(e) => {
+                                        const idx = orderItems.findIndex((x) => x.id === item.id);
+                                        const updated = [...orderItems];
+                                        updated[idx].serials[sIndex].audit =
+                                          e.target.value === "true";
+                                        setOrderItems(updated);
+                                      }}
+                                      className={`px-2 py-1 ${getBackgroundColor(
+                                        serial.audit ? "true" : "false"
+                                      )}`}
+                                    >
+                                      <option className="bg-green-200" value="true">
+                                        ✅
+                                      </option>
+                                      <option className="bg-red-200" value="false">
+                                        ❌
+                                      </option>
+                                    </select>
+                                  </td>
+                                  <td className="border p-1 text-center">
+                                    <select
+                                      disabled={!serial.isEditing}
+                                      value={serial.damage ? "true" : "false"}
+                                      onChange={(e) => {
+                                        const idx = orderItems.findIndex((x) => x.id === item.id);
+                                        const updated = [...orderItems];
+                                        updated[idx].serials[sIndex].damage =
+                                          e.target.value === "true";
+                                        setOrderItems(updated);
+                                      }}
+                                      className={`px-2 py-1 ${getBackgroundColor(
+                                        serial.damage ? "true" : "false"
+                                      )}`}
+                                    >
+                                      <option className="bg-green-200" value="true">
+                                        ✅
+                                      </option>
+                                      <option className="bg-red-200" value="false">
+                                        ❌
+                                      </option>
+                                    </select>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      )}
                     </div>
                   );
                 })}
               </div>
 
               {/* Order Total */}
-              <p className="text-lg font-bold mb-4">
+              <p className="text-m font-semibold mb-1 bg-amber-400 rounded pl-1">
                 Order Total: ₱{orderTotal.toFixed(2)}
               </p>
 
-              {/* Finalize / Close */}
-              <div className="flex gap-4">
+              <div className="flex gap-2">
                 <button
                   className="bg-green-600 text-white px-4 py-2 rounded w-full"
                   onClick={handleAddPO}
@@ -716,7 +1104,7 @@ const PurchaseOrderPage = () => {
           </div>
         )}
 
-        {/* PRODUCT MODAL (unchanged) */}
+        {/* PRODUCT MODAL */}
         {showProductModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
             <div className="bg-white p-6 rounded shadow-lg h-[600px] w-[1450px] flex flex-col">
@@ -745,9 +1133,7 @@ const PurchaseOrderPage = () => {
                     {products.map((product, index) => (
                       <tr
                         key={product.id}
-                        className={`border-t ${
-                          product.isEditing ? "bg-yellow-100" : ""
-                        }`}
+                        className={`border-t ${product.isEditing ? "bg-yellow-100" : ""}`}
                       >
                         <td className="p-1">{product.id}</td>
                         <td className="p-1">
@@ -756,9 +1142,7 @@ const PurchaseOrderPage = () => {
                             className="p-1 w-full"
                             value={product.brand}
                             disabled={!product.isEditing}
-                            onChange={(e) =>
-                              handleChangeProduct(index, "brand", e.target.value)
-                            }
+                            onChange={(e) => handleChangeProduct(index, "brand", e.target.value)}
                           />
                         </td>
                         <td className="p-1">
@@ -767,9 +1151,7 @@ const PurchaseOrderPage = () => {
                             className="p-1 w-full"
                             value={product.model}
                             disabled={!product.isEditing}
-                            onChange={(e) =>
-                              handleChangeProduct(index, "model", e.target.value)
-                            }
+                            onChange={(e) => handleChangeProduct(index, "model", e.target.value)}
                           />
                         </td>
                         <td className="p-1">
@@ -813,32 +1195,38 @@ const PurchaseOrderPage = () => {
                             value={product.warrantyDuration}
                             disabled={!product.isEditing}
                             onChange={(e) =>
-                              handleChangeProduct(
-                                index,
-                                "warrantyDuration",
-                                e.target.value
-                              )
+                              handleChangeProduct(index, "warrantyDuration", e.target.value)
                             }
                           />
                         </td>
                         <td className="p-1">
                           <select
-                            value={product.audit ? true : false}
+                            value={product.audit ? "true" : "false"}
                             disabled={!product.isEditing}
                             onChange={(e) => handleAuditChange(e, index)}
+                            className={getBackgroundColor(product.audit ? "true" : "false")}
                           >
-                            <option value={true}>✅</option>
-                            <option value={false}>❌</option>
+                            <option className="bg-green-200" value="true">
+                              ✅
+                            </option>
+                            <option className="bg-red-200" value="false">
+                              ❌
+                            </option>
                           </select>
                         </td>
                         <td className="p-1">
                           <select
-                            value={product.damage ? true : false}
+                            value={product.damage ? "true" : "false"}
                             disabled={!product.isEditing}
                             onChange={(e) => handleDamageChange(e, index)}
+                            className={getBackgroundColor(product.damage ? "true" : "false")}
                           >
-                            <option value={true}>✅</option>
-                            <option value={false}>❌</option>
+                            <option className="bg-green-200" value="true">
+                              ✅
+                            </option>
+                            <option className="bg-red-200" value="false">
+                              ❌
+                            </option>
                           </select>
                         </td>
                         <td className="p-1 flex gap-2">
@@ -863,7 +1251,7 @@ const PurchaseOrderPage = () => {
                 </table>
               </div>
 
-              {/* Add Product (unchanged) */}
+              {/* Add New Product */}
               <div className="mt-4 grid grid-cols-3 gap-1">
                 <h3 className="text-lg font-bold">New Product</h3>
                 <div></div>
@@ -872,45 +1260,35 @@ const PurchaseOrderPage = () => {
                   type="text"
                   placeholder="Brand"
                   value={newProduct.brand}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, brand: e.target.value })
-                  }
+                  onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <input
                   type="text"
                   placeholder="Model"
                   value={newProduct.model}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, model: e.target.value })
-                  }
+                  onChange={(e) => setNewProduct({ ...newProduct, model: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <input
                   type="text"
                   placeholder="Description"
                   value={newProduct.description}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, description: e.target.value })
-                  }
+                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <input
                   type="text"
                   placeholder="Purchase Price"
                   value={newProduct.purchasePrice}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, purchasePrice: e.target.value })
-                  }
+                  onChange={(e) => setNewProduct({ ...newProduct, purchasePrice: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <input
                   type="text"
                   placeholder="Reorder Point"
                   value={newProduct.reorderPoint}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, reorderPoint: e.target.value })
-                  }
+                  onChange={(e) => setNewProduct({ ...newProduct, reorderPoint: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <input
@@ -918,10 +1296,7 @@ const PurchaseOrderPage = () => {
                   placeholder="Warranty Duration"
                   value={newProduct.warrantyDuration}
                   onChange={(e) =>
-                    setNewProduct({
-                      ...newProduct,
-                      warrantyDuration: e.target.value,
-                    })
+                    setNewProduct({ ...newProduct, warrantyDuration: e.target.value })
                   }
                   className="border p-2 rounded w-full mb-2"
                 />
@@ -929,18 +1304,14 @@ const PurchaseOrderPage = () => {
                   type="text"
                   placeholder="Audit"
                   value={newProduct.audit}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, audit: e.target.value })
-                  }
+                  onChange={(e) => setNewProduct({ ...newProduct, audit: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <input
                   type="text"
                   placeholder="Damage"
                   value={newProduct.damage}
-                  onChange={(e) =>
-                    setNewProduct({ ...newProduct, damage: e.target.value })
-                  }
+                  onChange={(e) => setNewProduct({ ...newProduct, damage: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <div></div>
@@ -962,9 +1333,7 @@ const PurchaseOrderPage = () => {
           </div>
         )}
 
-        {/* ---------------------------
-            SUPPLIER MODAL (unchanged)
-        --------------------------- */}
+        {/* SUPPLIER MODAL */}
         {showSupplierModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
             <div className="bg-white p-6 rounded shadow-lg h-[600px] w-[1200px] flex flex-col">
@@ -989,19 +1358,15 @@ const PurchaseOrderPage = () => {
                     {suppliers.map((supplier, index) => (
                       <tr
                         key={supplier.id}
-                        className={`border-t ${
-                          supplier.isEditing ? "bg-yellow-100" : ""
-                        }`}
+                        className={`border-t ${supplier.isEditing ? "bg-yellow-100" : ""}`}
                       >
                         <td className="p-1">{supplier.id}</td>
                         <td className="p-1">
                           <input
                             type="text"
-                            className="p-1 w-full "
+                            className="p-1 w-full"
                             value={supplier.name}
-                            onChange={(e) =>
-                              handleChangeSupplier(index, "name", e.target.value)
-                            }
+                            onChange={(e) => handleChangeSupplier(index, "name", e.target.value)}
                             disabled={!supplier.isEditing}
                           />
                         </td>
@@ -1021,9 +1386,7 @@ const PurchaseOrderPage = () => {
                             type="email"
                             className="p-1 w-full"
                             value={supplier.email}
-                            onChange={(e) =>
-                              handleChangeSupplier(index, "email", e.target.value)
-                            }
+                            onChange={(e) => handleChangeSupplier(index, "email", e.target.value)}
                             disabled={!supplier.isEditing}
                           />
                         </td>
@@ -1068,36 +1431,28 @@ const PurchaseOrderPage = () => {
                   type="text"
                   placeholder="Supplier Name"
                   value={newSupplier.name}
-                  onChange={(e) =>
-                    setNewSupplier({ ...newSupplier, name: e.target.value })
-                  }
+                  onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <input
                   type="text"
                   placeholder="Supplier Address"
                   value={newSupplier.address}
-                  onChange={(e) =>
-                    setNewSupplier({ ...newSupplier, address: e.target.value })
-                  }
+                  onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <input
                   type="email"
                   placeholder="Supplier Email"
                   value={newSupplier.email}
-                  onChange={(e) =>
-                    setNewSupplier({ ...newSupplier, email: e.target.value })
-                  }
+                  onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <input
                   type="text"
                   placeholder="Contact Number"
                   value={newSupplier.contact}
-                  onChange={(e) =>
-                    setNewSupplier({ ...newSupplier, contact: e.target.value })
-                  }
+                  onChange={(e) => setNewSupplier({ ...newSupplier, contact: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
                 />
                 <button
@@ -1117,86 +1472,19 @@ const PurchaseOrderPage = () => {
           </div>
         )}
 
-        {/* --------------------------------
-            FILTERS & PURCHASE ORDERS TABLE
-        --------------------------------*/}
-        <div className="flex justify-start items-center mb-4">
-          <div className="flex gap-4">
-            <button className="bg-gray-200 px-3 py-2 rounded">Status</button>
-            <select
-              className="p-2 border border-gray-300 rounded"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="All">All</option>
-              <option value="Order Placed">Order Placed</option>
-              <option value="Shipped">Shipped</option>
-              <option value="Delivered">Delivered</option>
-              <option value="In Progress">In Progress</option>
-            </select>
-            {/* Search bar */}
-            <input
-              type="text"
-              placeholder="Search by PO number, Supplier, or Date"
-              className="p-2 border border-gray-300 rounded w-[600px]"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Purchase Orders Table */}
-        <table className="min-w-full bg-white border border-gray-300 rounded">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="p-3 text-left">Purchase Order ID</th>
-              <th className="p-3 text-left">Date</th>
-              <th className="p-3 text-left">Supplier</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 text-right">Total</th>
-              <th className="p-3 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredOrders.map((order) => (
-              <tr key={order.id} className="border-t">
-                <td className="p-3">{order.poNumber}</td>
-                <td className="p-3">{order.date}</td>
-                <td className="p-3">{order.supplier}</td>
-                <td className="p-3">
-                  <span
-                    className={`px-2 py-1 rounded text-white ${
-                      order.status === "Delivered"
-                        ? "bg-green-500"
-                        : order.status === "Shipped"
-                        ? "bg-gray-500"
-                        : order.status === "Order Placed"
-                        ? "bg-purple-400"
-                        : order.status === "In Progress"
-                        ? "bg-yellow-400"
-                        : ""
-                    }`}
-                  >
-                    {order.status}
-                  </span>
-                </td>
-                <td className="p-3 text-right">{order.total}</td>
-                <td className="p-3">
-                  <button
-                    onClick={() =>
-                      navigate("/purchase-orders/view", { state: { order } })
-                    }
-                    className="text-blue-500 hover:underline"
-                  >
-                    View details
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* VIEW DETAILS MODAL */}
+        {showViewModal && selectedOrder && (
+          <ViewPurchaseOrderModal
+            order={selectedOrder}
+            onClose={() => setShowViewModal(false)}
+            onSendToInventory={(approvedItems, damagedItems) => {
+              console.log("Approved Items:", approvedItems);
+              console.log("Damaged Items:", damagedItems);
+            }}
+          />
+        )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
