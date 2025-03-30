@@ -5,6 +5,8 @@ const InventoryPage = () => {
   const [inventory, setInventory] = useState([]);
   const [damagedProducts, setDamagedProducts] = useState([]);
   const [activeTab, setActiveTab] = useState("available");
+  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     generateDummyData();
@@ -34,12 +36,20 @@ const InventoryPage = () => {
     setDamagedProducts(damagedData);
   };
 
+  const openInventoryModal = (item) => {
+    setSelectedItem(item);
+    setIsInventoryModalOpen(true);
+  };
+
+  const closeInventoryModal = () => {
+    setSelectedItem(null);
+    setIsInventoryModalOpen(false);
+  };
+
   return (
     <DashboardLayout>
-      <div className="p-2 bg-gradient-to-r from-teal-500 to-teal-200 min-h-screen">
-        <h1 className="text-3xl font-bold text-purple-700 mb-6">
-          Inventory Management
-        </h1>
+      <div className="p-2 from-purple-500 to-purple-200 min-h-screen">
+        <h1 className="text-3xl font-bold text-purple-700 mb-6">Inventory Management</h1>
 
         {/* 🔹 Tab Buttons */}
         <div className="flex gap-1">
@@ -67,7 +77,7 @@ const InventoryPage = () => {
 
         {/* 🔹 Tab Content - Available Products */}
         {activeTab === "available" && (
-          <div className="bg-gradient-to-b from-blue-500 to-blue-200 shadow-lg rounded-r rounded-b p-4 flex flex-col h-[80vh]">
+          <div className="bg-blue-400 shadow-lg rounded-r rounded-b p-4 flex flex-col h-[80vh]">
             <div className="overflow-auto flex-grow">
               <table className="min-w-full border border-gray-200 rounded">
                 <thead className="sticky top-0 bg-blue-300 text-left text-sm font-medium text-gray-800">
@@ -95,7 +105,10 @@ const InventoryPage = () => {
                       <td className="p-3 border">{item.location}</td>
                       <td className="p-3 border">{item.sellingPrice}</td>
                       <td className="p-3 border text-center">
-                        <button className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-700">
+                        <button
+                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-700"
+                          onClick={() => openInventoryModal(item)}
+                        >
                           View Details
                         </button>
                       </td>
@@ -109,7 +122,7 @@ const InventoryPage = () => {
 
         {/* 🔹 Tab Content - Damaged Products */}
         {activeTab === "damaged" && (
-          <div className="bg-gradient-to-b from-red-500 to-red-200 shadow-lg rounded-r rounded-b p-4 flex flex-col h-[80vh]">
+          <div className="bg-red-400 shadow-lg rounded-r rounded-b p-4 flex flex-col h-[80vh]">
             <div className="overflow-auto flex-grow">
               <table className="min-w-full border border-gray-200 rounded">
                 <thead className="sticky top-0 bg-red-300 text-left text-sm font-medium text-gray-800">
@@ -131,6 +144,36 @@ const InventoryPage = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* 🔹 Modal for Inventory Details */}
+        {isInventoryModalOpen && selectedItem && (
+          <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg w-[90%] max-w-xl shadow-lg">
+              <h2 className="text-xl font-semibold text-purple-700 mb-4">
+                Inventory Details
+              </h2>
+              <ul className="space-y-2 text-gray-700">
+                <li><strong>ID:</strong> {selectedItem.id}</li>
+                <li><strong>Serial Number:</strong> {selectedItem.serialNumber}</li>
+                <li><strong>Category:</strong> {selectedItem.category}</li>
+                <li><strong>Quantity Received:</strong> {selectedItem.quantityReceived}</li>
+                <li><strong>Quantity Available:</strong> {selectedItem.quantityAvailable}</li>
+                <li><strong>Stock Status:</strong> {selectedItem.stockStatus}</li>
+                <li><strong>Location:</strong> {selectedItem.location}</li>
+                <li><strong>Brand:</strong> {selectedItem.brand}</li>
+                <li><strong>Selling Price:</strong> {selectedItem.sellingPrice}</li>
+              </ul>
+              <div className="mt-6 text-right">
+                <button
+                  onClick={closeInventoryModal}
+                  className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}

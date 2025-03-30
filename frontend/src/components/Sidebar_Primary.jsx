@@ -28,84 +28,36 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
   // Menu Items with color theme
   const allMenuItems = [
     {
-      name: "Home",
-      path: "/dashboard",
-      icon: "🏠",
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
+      name: "Home",path: "/dashboard",icon: "🏠",
+      color: {default: "text-purple-100",hover: "hover:bg-purple-600",active: "bg-purple-500 text-white",},
     },
     {
-      name: "Account Info",
-      path: "/account-info",
-      icon: "👤",
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
+      name: "Account Info",path: "/account-info",icon: "👤",
+      color: {default: "text-purple-100",hover: "hover:bg-purple-600",active: "bg-purple-500 text-white",},
     },
     {
-      name: "Settings",
-      path: "/settings",
-      icon: "⚙️",
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
+      name: "Settings",path: "/settings",icon: "⚙️",
+      color: {default: "text-purple-100",hover: "hover:bg-purple-600",active: "bg-purple-500 text-white",},
     },
     {
-      name: "Inventory",
-      path: "/inventory",
-      icon: "📦",
-      color: {
-        default: "text-teal-100",
-        hover: "hover:bg-teal-600",
-        active: "bg-teal-500 text-white",
-      },
+      name: "Inventory",path: "/inventory",icon: "📦",
+      color: {default: "text-purple-100",hover: "hover:bg-purple-600",active: "bg-purple-500 text-white",},
     },
     {
-      name: "Sales",
-      path: "/sales",
-      icon: "💵",
-      color: {
-        default: "text-red-100",
-        hover: "hover:bg-red-600",
-        active: "bg-red-500 text-white",
-      },
+      name: "Sales",path: "/sales",icon: "💵",
+      color: {default: "text-purple-100",hover: "hover:bg-purple-600",active: "bg-purple-500 text-white",},
     },
     {
-      name: "Purchase Orders",
-      path: "/purchase-orders",
-      icon: "📋",
-      color: {
-        default: "text-yellow-100",
-        hover: "hover:bg-yellow-600",
-        active: "bg-yellow-500 text-white",
-      },
+      name: "Purchase Orders",path: "/purchase-orders",icon: "📋",
+      color: {default: "text-purple-100",hover: "hover:bg-purple-600",active: "bg-purple-500 text-white",},
     },
     {
-      name: "Returns",
-      path: "/return-warranty",
-      icon: "🔄",
-      color: {
-        default: "text-blue-100",
-        hover: "hover:bg-blue-600",
-        active: "bg-blue-500 text-white",
-      },
+      name: "Returns",path: "/return-warranty",icon: "🔄",
+      color: {default: "text-purple-100",hover: "hover:bg-purple-600",active: "bg-purple-500 text-white",},
     },
     {
-      name: "Reports",
-      path: "/reports",
-      icon: "📊",
-      color: {
-        default: "text-green-100",
-        hover: "hover:bg-green-600",
-        active: "bg-green-500 text-white",
-      },
+      name: "Reports",path: "/reports",icon: "📊",
+      color: {default: "text-purple-100",hover: "hover:bg-purple-600",active: "bg-purple-500 text-white",},
     },
   ];
 

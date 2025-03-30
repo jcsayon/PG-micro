@@ -705,7 +705,7 @@ const PurchaseOrderPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-2 rounded bg-gradient-to-r from-yellow-500 to-yellow-200 min-h-screen">
+      <div className="p-2 rounded bg-yellow-400 min-h-screen">
         {/* Page Header */}
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-purple-600">Issued Purchase Orders</h1>
