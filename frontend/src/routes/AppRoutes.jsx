@@ -8,6 +8,9 @@ import LoginPage from "../pages/LoginPage";
 import SignUpPage from "../pages/SignUpPage";
 import Dashboard from "../pages/Dashboard";
 import InventoryPage from "../pages/InventoryPage";
+import UserList from "../pages/UserManagement/UserlList";
+import AddUser from '../pages/UserManagement/AddUser';
+
 
 // Purchase Orders
 import PurchaseOrderPage from "../pages/PurchaseOrders/PurchaseOrderPage";
@@ -21,6 +24,7 @@ import SalesOrderPage from "../pages/Sales/SalesOrderPage";
 import ReturnWarrantyPage from "../pages/Returns/ReturnWarrantyPage";
 import ReturnsFormPage from "../pages/Returns/ReturnsFormPage";
 import ReturnDetailsPage from "../pages/Returns/ReturnDetailsPage"; 
+
 
 const AppRoutes = () => {
   // Load authentication state from sessionStorage
@@ -53,6 +57,8 @@ const AppRoutes = () => {
       {/* Public Routes */}
       <Route path="/" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/users" element={<UserList />} />
+      <Route path="/users/add" element={<AddUser />} />
 
       {/* Dashboard (Accessible to All Authenticated Users) */}
       <Route 
