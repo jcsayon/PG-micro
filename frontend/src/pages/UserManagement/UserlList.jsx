@@ -1,8 +1,16 @@
 // src/pages/UserManagement/UserList.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import DashboardLayout from '../../layouts/DashboardLayout';
 import { useNavigate } from 'react-router-dom';
+import DashboardLayout from '../../layouts/DashboardLayout';
+
+// Mapping for role descriptions
+const roleDescriptions = {
+  Admin: 'Full system access and management',
+  Employee: 'General employee access',
+  Inventory: 'Manage inventory and stock',
+  Sales: 'Handle sales orders and customer data',
+};
 
 const UserList = () => {
   const navigate = useNavigate();
@@ -14,7 +22,7 @@ const UserList = () => {
   const fetchUsers = async () => {
     try {
       const response = await axios.get('http://127.0.0.1:8000/api/users/', {
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
       setUsers(response.data);
     } catch (err) {
@@ -27,7 +35,7 @@ const UserList = () => {
     fetchUsers();
   }, []);
 
-  // Pagination calculation
+  // Pagination logic
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
@@ -43,42 +51,64 @@ const UserList = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold text-center mb-8">User Management</h1>
-        {error && <div className="text-red-500 text-center mb-4">{error}</div>}
-        <div className="flex justify-end mb-4">
+      <div className="container mx-auto p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
           <button
             onClick={() => navigate('/users/add')}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded shadow transition"
           >
             Add User
           </button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-200">
-            <thead className="bg-gray-100">
+
+        {error && <div className="text-red-500 text-center mb-4">{error}</div>}
+
+        <div className="overflow-x-auto shadow-lg rounded-lg">
+          <table className="min-w-full bg-white">
+            <thead className="bg-gray-200">
               <tr>
-                <th className="px-4 py-2 border">ID</th>
-                <th className="px-4 py-2 border">Username</th>
-                <th className="px-4 py-2 border">Email</th>
-                <th className="px-4 py-2 border">Name</th>
+                <th className="px-6 py-3 border text-left text-sm font-semibold text-gray-700">
+                  ID
+                </th>
+                <th className="px-6 py-3 border text-left text-sm font-semibold text-gray-700">
+                  Username
+                </th>
+                <th className="px-6 py-3 border text-left text-sm font-semibold text-gray-700">
+                  Email
+                </th>
+                <th className="px-6 py-3 border text-left text-sm font-semibold text-gray-700">
+                  Name
+                </th>
+                <th className="px-6 py-3 border text-left text-sm font-semibold text-gray-700">
+                  Role
+                </th>
+                <th className="px-6 py-3 border text-left text-sm font-semibold text-gray-700">
+                  Role Description
+                </th>
               </tr>
             </thead>
             <tbody>
               {currentUsers.length > 0 ? (
                 currentUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td className="px-4 py-2 border text-center">{user.id}</td>
-                    <td className="px-4 py-2 border">{user.username}</td>
-                    <td className="px-4 py-2 border">{user.email}</td>
-                    <td className="px-4 py-2 border">
+                  <tr key={user.id} className="border-t hover:bg-gray-50">
+                    <td className="px-6 py-3 border text-sm text-center">
+                      {user.id}
+                    </td>
+                    <td className="px-6 py-3 border text-sm">{user.username}</td>
+                    <td className="px-6 py-3 border text-sm">{user.email}</td>
+                    <td className="px-6 py-3 border text-sm">
                       {user.first_name} {user.last_name}
+                    </td>
+                    <td className="px-6 py-3 border text-sm">{user.role}</td>
+                    <td className="px-6 py-3 border text-sm">
+                      {roleDescriptions[user.role] || 'N/A'}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td className="px-4 py-2 border text-center" colSpan="4">
+                  <td className="px-6 py-3 border text-center" colSpan="6">
                     No users found.
                   </td>
                 </tr>
@@ -86,7 +116,8 @@ const UserList = () => {
             </tbody>
           </table>
         </div>
-        <div className="flex justify-center mt-4 space-x-4">
+
+        <div className="flex justify-center mt-6 space-x-4">
           <button
             onClick={goToPrevPage}
             disabled={currentPage === 1}

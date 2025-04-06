@@ -7,6 +7,7 @@ const Sidebar = () => {
     { name: "Account Info", path: "/account-info", icon: "👤" },
     { name: "Settings", path: "/settings", icon: "⚙️" },
     { name: "Inventory", path: "/inventory", icon: "📦" },
+    { name: "User Management", path: "/users", icon: "🧑‍💼" },
   ];
 
   return (
