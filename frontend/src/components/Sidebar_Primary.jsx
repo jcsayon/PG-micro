@@ -111,7 +111,8 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
 
       {/* Toggle Button */}
       <button
-        className="absolute bottom-20 right-0 bg-blue-600 border-2 border-blue-600 text-white w-8 h-8 flex items-center justify-center hover:bg-blue-500 rounded z-50"
+        className="absolute bottom-20 right-0 bg-purple-100 border-2 border-purple-300 border-r-purple-700
+        text-black w-8 h-8 flex items-center justify-center hover:bg-blue-500 rounded-l z-50"
         onClick={toggleSidebar}
       >
         {isCollapsed ? (

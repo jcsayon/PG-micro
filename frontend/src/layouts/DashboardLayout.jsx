@@ -22,7 +22,7 @@ const DashboardLayout = ({ children }) => {
     "/settings": "from-purple-500 to-purple-200",
 
     "/inventory": "bg-teal-400",
-    "/sales": "bg-red-300",
+    "/sales": "bg-red-400",
     "/purchase-orders": "bg-yellow-400",
     "/return-warranty": "bg-blue-400",
     "/reports": "bg-green-400",
@@ -51,7 +51,7 @@ const DashboardLayout = ({ children }) => {
 
           {/* Page Content with dynamic background */}
           <main
-            className={`flex-1 p-2 bg-gradient-to-r ${gradientClass} overflow-auto transition-all duration-300`}
+            className={`flex-1 p-2 bg-gradient-to-r ${gradientClass} transition-all duration-300`}
           >
             {children}
           </main>

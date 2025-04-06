@@ -5,7 +5,7 @@ const Header = () => {
   const location = useLocation();
 
   return (
-    <header className="bg-white shadow h-16 flex items-center justify-between px-8">
+    <header className="bg-purple-100 shadow h-16 flex items-center justify-between px-8">
       {/* ✅ Show heading only on /dashboard */}
       {location.pathname === "/dashboard" ? (
         <h1 className="text-xl font-bold text-purple-600">PG Micro Dashboard</h1>

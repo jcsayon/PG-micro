@@ -43,7 +43,7 @@ const ReturnDetailsPage = () => {
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
-      <Sidebar_Secondary />
+      {/* <Sidebar_Secondary /> */}
 
       {/* Main Content */}
       <main className="flex-1 bg-gray-100 p-6">
