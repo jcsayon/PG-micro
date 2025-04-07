@@ -18,19 +18,24 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
 
-    // Check if user exists in tempUsers
     const user = tempUsers.find(
       (u) => u.email === email && u.password === password
     );
 
     if (user) {
-      // Store user session (Temporary Storage)
+      // Set session data
       sessionStorage.setItem("isAuthenticated", "true");
       sessionStorage.setItem("userRole", user.role);
       sessionStorage.setItem("userEmail", user.email);
 
-      alert(`Welcome, ${user.role}! Redirecting to Dashboard...`);
-      navigate("/dashboard"); // Redirect to dashboard
+      // Redirect based on role
+      if (user.role === "Admin") {
+        alert("Welcome Admin! Redirecting to Dashboard...");
+        navigate("/dashboard");
+      } else if (user.role === "Employee") {
+        alert("Welcome Employee! Redirecting to Home...");
+        navigate("/inventory"); // or change to a route Employee is allowed to access
+      }
     } else {
       setError("Invalid email or password!");
     }
@@ -39,14 +44,12 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-purple-100">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        {/* Title Section */}
         <div className="text-center">
           <h2 className="text-2xl font-bold text-purple-800">
             PG MICRO WORLD COMPUTERS
           </h2>
         </div>
 
-        {/* Only Login tab (Sign Up removed) */}
         <div className="mt-6 flex justify-center border-b border-gray-300 pb-2">
           <span className="text-purple-800 font-semibold border-b-2 border-purple-600">
             Login
@@ -55,13 +58,11 @@ const LoginPage = () => {
 
         {error && <p className="text-red-500 text-center mt-4">{error}</p>}
 
-        {/* Optional Note: Only Admins can create accounts */}
         <p className="text-sm text-center text-gray-500 mt-2">
           Only Admins can create accounts for employees.
         </p>
 
         <form className="space-y-6 mt-6" onSubmit={handleLogin}>
-          {/* Email Field */}
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-purple-500">
               📧
@@ -78,7 +79,6 @@ const LoginPage = () => {
             />
           </div>
 
-          {/* Password Field */}
           <div className="relative">
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-purple-500">
               🔑
@@ -95,7 +95,6 @@ const LoginPage = () => {
             />
           </div>
 
-          {/* Remember Me */}
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <input
@@ -115,7 +114,6 @@ const LoginPage = () => {
             </a>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             className="w-full py-2 px-4 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
