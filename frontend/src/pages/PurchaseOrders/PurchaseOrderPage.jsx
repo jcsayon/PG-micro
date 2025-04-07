@@ -7,6 +7,14 @@ import DashboardLayout from "../../layouts/DashboardLayout";
 // -----------------------
 
 // Convert a warranty duration string to seconds (simplified).
+// ✅ Format date to YYYY-MM-DD
+function formatDateToYMD(dateObj) {
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function convertWarrantyDurationToSeconds(durationStr) {
   const lower = durationStr.toLowerCase().trim();
   if (lower.includes("year")) return 365 * 24 * 3600;
@@ -34,7 +42,7 @@ function formatTime(totalSeconds) {
 function getBackgroundColor(value) {
   switch (value) {
     case "All":
-      return "bg-white rounded";
+      return "bg-blue-300 rounded";
     case "Order Placed":
       return "bg-purple-300 rounded";
     case "Shipped":
@@ -42,7 +50,7 @@ function getBackgroundColor(value) {
     case "Delivered":
       return "bg-green-300 rounded";
     case "In Progress":
-      return "bg-yellow-300 rounded";
+      return "bg-amber-300 rounded";
     case "true": // for audit/damage = true
       return "bg-green-300 rounded";
     case "false": // for audit/damage = false
@@ -57,7 +65,7 @@ const statusOptions = [
   { label: "Order Placed", value: "Order Placed", colorClass: "bg-purple-200" },
   { label: "Shipped", value: "Shipped", colorClass: "bg-gray-200" },
   { label: "Delivered", value: "Delivered", colorClass: "bg-green-200" },
-  { label: "In Progress", value: "In Progress", colorClass: "bg-yellow-200" },
+  { label: "In Progress", value: "In Progress", colorClass: "bg-amber-200" },
 ];
 
 // -----------------------
@@ -98,13 +106,13 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded shadow-lg h-[700px] w-[900px] flex flex-col overflow-auto">
-        <h2 className="text-2xl font-bold mb-4">Purchase Order Details</h2>
+    <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+      <div className="bg-purple-100 text-purple-700 p-4 rounded shadow-lg h-[700px] w-[1200px] flex flex-col overflow-auto">
+        <h2 className="text-l font-bold mb-2">Purchase Order Details</h2>
 
         {/* PO Info */}
-        <table className="w-full border mb-4">
-          <tbody>
+        <table className="w-full border mb-1">
+          <tbody className="bg-purple-200">
             <tr>
               <td className="border p-2">PO Number: {order.poNumber}</td>
               <td className="border p-2">
@@ -128,7 +136,7 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
         </table>
 
         {/* Supplier Info */}
-        <table className="w-full border mb-4">
+        <table className="w-full border mb-2 bg-purple-200">
           <tbody>
             <tr>
               <td className="border p-2">
@@ -142,14 +150,14 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
         </table>
 
         {/* Order Items Details Section */}
-        <div className="mt-4">
-          <h3 className="text-xl font-bold mb-2">Order Items Details</h3>
+        <div>
+          <h3 className="text-l font-bold mb-2">Order Items Details</h3>
           {order.items && order.items.length > 0 ? (
             order.items.map((item, index) => (
               <div key={index} className="mb-4 border rounded p-2">
                 <table className="w-full border mb-2">
                   <thead>
-                    <tr className="bg-gray-100">
+                    <tr className="bg-purple-300">
                       <th className="border p-1 text-center">Product ID</th>
                       <th className="border p-1 text-center">Brand</th>
                       <th className="border p-1 text-center">Model</th>
@@ -174,11 +182,10 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
                 {item.serials && item.serials.length > 0 && (
                   <table className="w-full border">
                     <thead>
-                      <tr className="bg-gray-200">
+                      <tr className="bg-purple-300">
                         <th className="border p-1 text-center">Serial Number</th>
                         <th className="border p-1 text-center">Warranty Duration</th>
-                        <th className="border p-1 text-center">Warranty Time</th>
-                        <th className="border p-1 text-center">Audit</th>
+                        <th className="border p-1 text-center">Warranty Time</th>                        
                         <th className="border p-1 text-center">Damage</th>
                       </tr>
                     </thead>
@@ -202,10 +209,7 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
                               {poStatus === "Delivered"
                                 ? formatTime(remainingSeconds)
                                 : "Not started"}
-                            </td>
-                            <td className="border p-1 text-center">
-                              {serial.audit ? "✅" : "❌"}
-                            </td>
+                            </td>                            
                             <td className="border p-1 text-center">
                               {serial.damage ? "✅" : "❌"}
                             </td>
@@ -387,8 +391,8 @@ const PurchaseOrderPage = () => {
             quantity: 2,
             warrantyDuration: "1 Year",
             serials: [
-              { id: 1, audit: false, damage: false, isEditing: false },
-              { id: 2, audit: false, damage: false, isEditing: false },
+              { id: 1, damage: false, isEditing: false },
+              { id: 2, damage: false, isEditing: false },
             ],
           },
         ],
@@ -408,7 +412,7 @@ const PurchaseOrderPage = () => {
             purchasePrice: 50000,
             quantity: 1,
             warrantyDuration: "6 Months",
-            serials: [{ id: 1, audit: false, damage: false, isEditing: false }],
+            serials: [{ id: 1, damage: false, isEditing: false }],
           },
         ],
       },
@@ -448,8 +452,7 @@ const PurchaseOrderPage = () => {
       description: "Gaming Laptop",
       purchasePrice: 55000,
       reorderPoint: 10,
-      warrantyDuration: "1 Year",
-      audit: false,
+      warrantyDuration: "1 Year",      
       damage: false,
       isEditing: false,
     },
@@ -461,7 +464,6 @@ const PurchaseOrderPage = () => {
       purchasePrice: 3500,
       reorderPoint: 20,
       warrantyDuration: "6 Months",
-      audit: false,
       damage: false,
       isEditing: false,
     },
@@ -473,7 +475,6 @@ const PurchaseOrderPage = () => {
     warrantyDuration: "",
     model: "",
     brand: "",
-    audit: false,
     damage: false,
   });
 
@@ -486,7 +487,6 @@ const PurchaseOrderPage = () => {
       warrantyDuration: "",
       model: "",
       brand: "",
-      audit: false,
       damage: false,
     });
   };
@@ -494,10 +494,7 @@ const PurchaseOrderPage = () => {
     const updated = [...products];
     updated[index].isEditing = !updated[index].isEditing;
     setProducts(updated);
-  };
-  const handleAuditChange = (e, index) => {
-    handleChangeProduct(index, "audit", e.target.value === "true");
-  };
+  };  
   const handleDamageChange = (e, index) => {
     handleChangeProduct(index, "damage", e.target.value === "true");
   };
@@ -570,7 +567,7 @@ const PurchaseOrderPage = () => {
     const interval = setInterval(() => setPoCurrentTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
-  const poCurrentDate = poCurrentTime.toLocaleDateString();
+  const poCurrentDate = formatDateToYMD(poCurrentTime);
   const newPOId = 6;
   const [poStatus, setPoStatus] = useState("Order Placed");
 
@@ -625,8 +622,7 @@ const PurchaseOrderPage = () => {
         quantity: 1,
         serials: [
           {
-            id: 1,
-            audit: false,
+            id: 1,            
             damage: false,
             isEditing: false,
           },
@@ -652,7 +648,6 @@ const PurchaseOrderPage = () => {
     while (item.serials.length < qty) {
       item.serials.push({
         id: item.serials.length + 1,
-        audit: false,
         damage: false,
         isEditing: false,
       });
@@ -682,11 +677,12 @@ const PurchaseOrderPage = () => {
       id: newPOId,
       poNumber: `#${newPOId}`,
       supplier: poSelectedSupplier.name,
-      date: poCurrentDate,
+      date: formatDateToYMD(poCurrentTime),
       time: poCurrentTime.toLocaleTimeString(),
       status: poStatus,
       items: orderItems,
       total: orderTotal.toFixed(2),
+      employee: sessionStorage.getItem("userEmail") || "Unknown",
     };
     setPurchaseOrders([...purchaseOrders, newPO]);
     setShowCreatePOModal(false);
@@ -705,90 +701,94 @@ const PurchaseOrderPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-2 rounded bg-gradient-to-r from-yellow-500 to-yellow-200 min-h-screen">
-        {/* Page Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-purple-600">Issued Purchase Orders</h1>
-          <div className="flex gap-4">
-            <button
-              className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-800"
-              onClick={() => setShowProductModal(true)}
-            >
-              View Products
-            </button>
-            <button
-              className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-800"
-              onClick={() => setShowSupplierModal(true)}
-            >
-              View Suppliers
-            </button>
-            <button
-              className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-800"
-              onClick={() => setShowCreatePOModal(true)}
-            >
-              + Create PO
-            </button>
-          </div>
-        </div>
+      <div className="p-2 rounded bg-yellow-400 min-h-screen">
 
-        {/* Filters */}
-        <div className="flex gap-4 mb-4">
-          <button className="bg-gray-200 px-3 py-2 rounded">Status</button>
-          <select
-            className={`p-2 border border-purple-700 rounded ${getBackgroundColor(statusFilter)}`}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option className="bg-white" value="All">
-              All
-            </option>
-            <option className="bg-purple-300" value="Order Placed">
-              Order Placed
-            </option>
-            <option className="bg-gray-300" value="Shipped">
-              Shipped
-            </option>
-            <option className="bg-green-300" value="Delivered">
-              Delivered
-            </option>
-            <option className="bg-yellow-300" value="In Progress">
-              In Progress
-            </option>
-          </select>
-          <input
-            type="text"
-            placeholder="Search by PO id, Supplier, or Date"
-            className="p-2 border border-purple-700 rounded w-[400px]"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        {/* Sticky Header + Filters Container */}
+        <div className="bg-purple-300 rounded sticky top-0 z-20 px-2 space-y-2">
+          {/* Page Header */}
+          <h1 className="text-2xl font-bold text-purple-700">Issued Purchase Orders</h1>
+
+          {/* Filters and modals */}
+          <div className="flex gap-4 mb-4 justify-between items-center py-2">
+            <div className="flex gap-4">
+              <button className="bg-gray-300 px-3 py-2 rounded">Status</button>
+              <select
+                className={`p-2 border border-purple-700 rounded ${getBackgroundColor(statusFilter)}`}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option className="bg-blue-300" value="All">
+                  All
+                </option>
+                <option className="bg-purple-300" value="Order Placed">
+                  Order Placed
+                </option>
+                <option className="bg-gray-300" value="Shipped">
+                  Shipped
+                </option>
+                <option className="bg-green-300" value="Delivered">
+                  Delivered
+                </option>
+                <option className="bg-yellow-300" value="In Progress">
+                  In Progress
+                </option>
+              </select>
+              <input
+                type="text"
+                placeholder="Search by PO id, Supplier, or Date"
+                className="p-2 border border-purple-700 rounded w-[400px]"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-4">
+              <button
+                className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-800"
+                onClick={() => setShowProductModal(true)}
+              >
+                View Products
+              </button>
+              <button
+                className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-800"
+                onClick={() => setShowSupplierModal(true)}
+              >
+                View Suppliers
+              </button>
+              <button
+                className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-800"
+                onClick={() => setShowCreatePOModal(true)}
+              >
+                + Create PO
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Purchase Orders Table */}
         <table className="min-w-full bg-white border border-gray-300 rounded">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="p-3 text-left">Purchase Order ID</th>
-              <th className="p-3 text-left">Date</th>
-              <th className="p-3 text-left">Supplier</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 text-right">Total</th>
-              <th className="p-3 text-left">Actions</th>
+          <thead className="sticky top-[100px] z-20">
+            <tr className="bg-purple-300 text-purple-800">
+              <th className="p-2 text-left">Purchanse Order ID</th>
+              <th className="p-2 text-left">Employee</th>
+              <th className="p-2 text-left">Date Issued</th>
+              <th className="p-2 text-left">Supplier</th>
+              <th className="p-2 text-left">Status</th>
+              <th className="p-2 text-right">Total</th>
+              <th className="p-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredOrders.map((order) => (
-              <tr key={order.id} className="border-t">
-                <td className="p-3">{order.poNumber}</td>
-                <td className="p-3">{order.date}</td>
-                <td className="p-3">{order.supplier}</td>
-                <td className="p-3">
+              <tr key={order.id} className="border-t bg-purple-200 text-purple-700">
+                <td className="p-2">{order.poNumber}</td>
+                <td className="p-2">{order.employee || "—"}</td>
+                <td className="p-2">{order.date}</td>
+                <td className="p-2">{order.supplier}</td>
+                <td className="p-2">
                   <select
                     value={order.status}
                     onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                    className={`border border-gray-300 rounded px-2 py-1 ${getBackgroundColor(
-                      order.status
-                    )}`}
+                    className={`border border-gray-300 rounded px-2 py-1 ${getBackgroundColor(order.status)}`}
                   >
                     {statusOptions.map((opt) => (
                       <option key={opt.value} value={opt.value} className={opt.colorClass}>
@@ -797,8 +797,8 @@ const PurchaseOrderPage = () => {
                     ))}
                   </select>
                 </td>
-                <td className="p-3 text-right">{order.total}</td>
-                <td className="p-3">
+                <td className="p-2 text-right">{order.total}</td>
+                <td className="p-2">
                   <button
                     onClick={() => {
                       setSelectedOrder(order);
@@ -816,17 +816,18 @@ const PurchaseOrderPage = () => {
 
         {/* CREATE PO MODAL */}
         {showCreatePOModal && (
-          <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
-            <div className="bg-white p-6 rounded shadow-lg h-[700px] w-[1100px] flex flex-col">
+          <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-20">
+            <div className="bg-purple-100 text-purple-800 p-6 rounded shadow-lg h-[700px] w-[1100px] flex flex-col">
               <h2 className="font-semibold">Create Purchase Order</h2>
 
               {/* PO Info Table */}
               <table className="w-full border">
                 <tbody>
-                  <tr>
+                  <tr className="bg-purple-200">
                     <td className="border p-2">Purchase Order ID: {newPOId}</td>
+                    <td className="border p-2">Employee: {sessionStorage.getItem("userEmail") || "Unknown"}</td> {/* New Field */}
                     <td className="border p-2">
-                      Status:{" "}
+                      Status:
                       <select
                         value={poStatus}
                         disabled
@@ -841,9 +842,7 @@ const PurchaseOrderPage = () => {
                       </select>
                     </td>
                     <td className="border p-2">Date: {poCurrentDate}</td>
-                    <td className="border p-2">
-                      Time: {poCurrentTime.toLocaleTimeString()}
-                    </td>
+                    <td className="border p-2">Time: {poCurrentTime.toLocaleTimeString()}</td>
                   </tr>
                 </tbody>
               </table>
@@ -856,7 +855,7 @@ const PurchaseOrderPage = () => {
                   value={poSupplierSearch}
                   onChange={handlePoSupplierSearchChange}
                   placeholder="Search Supplier"
-                  className="border p-2 rounded-t w-full"
+                  className="border p-2 rounded-t w-full bg-purple-200"
                 />
                 <button
                   className="bg-red-600 text-white px-4 py-2 rounded w-[140px]"
@@ -870,7 +869,7 @@ const PurchaseOrderPage = () => {
                   <option key={s.id} value={s.name} />
                 ))}
               </datalist>
-              <table className="w-full border mb-1">
+              <table className="w-full border mb-1 bg-purple-200">
                 <tbody className="rounded-b">
                   {poSelectedSupplier ? (
                     <tr>
@@ -899,13 +898,13 @@ const PurchaseOrderPage = () => {
 
               {/* Add Items Section */}
               <p className="font-semibold mb-1">Add Item/s</p>
-              <div className="flex gap-2 mb-2">
+              <div className="flex gap-2 mb-2 text-purple-800">
                 <input
                   list="productList"
                   value={poProductSearch}
                   onChange={handlePoProductSearchChange}
                   placeholder="Search Product"
-                  className="border p-2 rounded w-full"
+                  className="border p-2 rounded w-full bg-purple-200"
                 />
                 <datalist id="productList">
                   {products.map((p) => (
@@ -921,20 +920,20 @@ const PurchaseOrderPage = () => {
               </div>
 
               {/* Order Items List */}
-              <div className="flex-grow overflow-y-auto border rounded p-2 mb-2">
+              <div className="flex-grow overflow-y-auto border rounded p-2 mb-2 bg-purple-200">
                 {orderItems.map((item) => {
                   const collapsed = serialsCollapsed[item.id] || false;
                   return (
                     <div
                       key={item.id}
                       className={`mb-4 rounded p-2 border ${
-                        item.id % 2 === 0 ? "bg-purple-300" : "bg-blue-300"
+                        item.id % 2 === 0 ? "bg-amber-200" : "bg-blue-200"
                       }`}
                     >
                       {/* Product Details Table */}
                       <table className="w-full mb-1">
                         <thead>
-                          <tr className="bg-gray-100">
+                          <tr className="bg-purple-300">
                             <th className="border p-1 text-center">Product ID</th>
                             <th className="border p-1 text-center">Brand</th>
                             <th className="border p-1 text-center">Model</th>
@@ -992,11 +991,10 @@ const PurchaseOrderPage = () => {
                       {!collapsed && (
                         <table className="w-full">
                           <thead>
-                            <tr className="bg-gray-100">
+                            <tr className="bg-purple-300">
                               <th className="border p-1 text-center">Serial Number</th>
                               <th className="border p-1 text-center">Warranty Duration</th>
                               <th className="border p-1 text-center">Warranty Time</th>
-                              <th className="border p-1 text-center">Audit</th>
                               <th className="border p-1 text-center">Damage</th>
                             </tr>
                           </thead>
@@ -1023,30 +1021,7 @@ const PurchaseOrderPage = () => {
                                     {poStatus === "Delivered"
                                       ? formatTime(remainingSeconds)
                                       : "Not started"}
-                                  </td>
-                                  <td className="border p-1 text-center">
-                                    <select
-                                      disabled={!serial.isEditing}
-                                      value={serial.audit ? "true" : "false"}
-                                      onChange={(e) => {
-                                        const idx = orderItems.findIndex((x) => x.id === item.id);
-                                        const updated = [...orderItems];
-                                        updated[idx].serials[sIndex].audit =
-                                          e.target.value === "true";
-                                        setOrderItems(updated);
-                                      }}
-                                      className={`px-2 py-1 ${getBackgroundColor(
-                                        serial.audit ? "true" : "false"
-                                      )}`}
-                                    >
-                                      <option className="bg-green-200" value="true">
-                                        ✅
-                                      </option>
-                                      <option className="bg-red-200" value="false">
-                                        ❌
-                                      </option>
-                                    </select>
-                                  </td>
+                                  </td>                                  
                                   <td className="border p-1 text-center">
                                     <select
                                       disabled={!serial.isEditing}
@@ -1106,8 +1081,8 @@ const PurchaseOrderPage = () => {
 
         {/* PRODUCT MODAL */}
         {showProductModal && (
-          <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
-            <div className="bg-white p-6 rounded shadow-lg h-[600px] w-[1450px] flex flex-col">
+          <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-20">
+            <div className="bg-purple-100 text-purple-700 p-6 rounded shadow-lg h-[600px] w-[1450px] flex flex-col">
               <div
                 className={`overflow-x-auto flex-grow ${
                   products.length >= 4 ? "max-h-96 overflow-y-auto" : ""
@@ -1115,7 +1090,7 @@ const PurchaseOrderPage = () => {
               >
                 <h3 className="text-lg font-bold">Product List</h3>
                 <table className="min-w-full bg-white border border-gray-300 rounded">
-                  <thead className="sticky top-0 bg-gray-100">
+                  <thead className="sticky top-0 bg-purple-300">
                     <tr>
                       <th className="p-3 text-left w-[110px]">Product ID</th>
                       <th className="p-3 text-left">Brand</th>
@@ -1124,7 +1099,6 @@ const PurchaseOrderPage = () => {
                       <th className="p-3 text-left">Purchase Price</th>
                       <th className="p-3 text-left">Reorder Point</th>
                       <th className="p-3 text-left">Warranty Duration</th>
-                      <th className="p-3 text-left">Audit</th>
                       <th className="p-3 text-left">Damage</th>
                       <th className="p-3 text-center">Actions</th>
                     </tr>
@@ -1133,7 +1107,7 @@ const PurchaseOrderPage = () => {
                     {products.map((product, index) => (
                       <tr
                         key={product.id}
-                        className={`border-t ${product.isEditing ? "bg-yellow-100" : ""}`}
+                        className={`border-t bg-purple-200 ${product.isEditing ? "bg-yellow-100" : ""}`}
                       >
                         <td className="p-1">{product.id}</td>
                         <td className="p-1">
@@ -1198,22 +1172,7 @@ const PurchaseOrderPage = () => {
                               handleChangeProduct(index, "warrantyDuration", e.target.value)
                             }
                           />
-                        </td>
-                        <td className="p-1">
-                          <select
-                            value={product.audit ? "true" : "false"}
-                            disabled={!product.isEditing}
-                            onChange={(e) => handleAuditChange(e, index)}
-                            className={getBackgroundColor(product.audit ? "true" : "false")}
-                          >
-                            <option className="bg-green-200" value="true">
-                              ✅
-                            </option>
-                            <option className="bg-red-200" value="false">
-                              ❌
-                            </option>
-                          </select>
-                        </td>
+                        </td>                        
                         <td className="p-1">
                           <select
                             value={product.damage ? "true" : "false"}
@@ -1254,8 +1213,7 @@ const PurchaseOrderPage = () => {
               {/* Add New Product */}
               <div className="mt-4 grid grid-cols-3 gap-1">
                 <h3 className="text-lg font-bold">New Product</h3>
-                <div></div>
-                <div></div>
+                <div></div><div></div>
                 <input
                   type="text"
                   placeholder="Brand"
@@ -1299,31 +1257,22 @@ const PurchaseOrderPage = () => {
                     setNewProduct({ ...newProduct, warrantyDuration: e.target.value })
                   }
                   className="border p-2 rounded w-full mb-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Audit"
-                  value={newProduct.audit}
-                  onChange={(e) => setNewProduct({ ...newProduct, audit: e.target.value })}
-                  className="border p-2 rounded w-full mb-2"
-                />
+                />                
                 <input
                   type="text"
                   placeholder="Damage"
                   value={newProduct.damage}
                   onChange={(e) => setNewProduct({ ...newProduct, damage: e.target.value })}
                   className="border p-2 rounded w-full mb-2"
-                />
-                <div></div>
-                <div></div>
+                />                
                 <button
-                  className="mt-4 bg-green-500 text-white px-4 py-2 rounded w-full"
+                  className="bg-green-500 text-white py-2 rounded w-full"
                   onClick={handleAddProduct}
                 >
                   Add Product
                 </button>
                 <button
-                  className="mt-4 bg-gray-500 text-white px-4 py-2 rounded w-full"
+                  className="bg-red-500 text-white py-2 rounded w-full"
                   onClick={() => setShowProductModal(false)}
                 >
                   Close
@@ -1335,17 +1284,17 @@ const PurchaseOrderPage = () => {
 
         {/* SUPPLIER MODAL */}
         {showSupplierModal && (
-          <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
-            <div className="bg-white p-6 rounded shadow-lg h-[600px] w-[1200px] flex flex-col">
+          <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-20">
+            <div className="bg-purple-100 p-6 rounded shadow-lg h-[600px] w-[1200px] flex flex-col text-purple-700">
               <div
                 className={`overflow-x-auto flex-grow ${
                   suppliers.length >= 4 ? "max-h-96 overflow-y-auto" : ""
                 }`}
               >
                 <h3 className="text-lg font-bold">Supplier List</h3>
-                <table className="min-w-full bg-white border border-gray-300 rounded">
-                  <thead className="sticky top-0 bg-gray-100">
-                    <tr className="bg-gray-100">
+                <table className="min-w-full bg-purple-200 border border-gray-300 rounded">
+                  <thead className="sticky top-0">
+                    <tr className="bg-purple-300 text-purple-700">
                       <th className="p-3 text-left w-[110px]">Supplier ID</th>
                       <th className="p-3 text-left">Name</th>
                       <th className="p-3 text-left">Address</th>
@@ -1462,7 +1411,7 @@ const PurchaseOrderPage = () => {
                   Add Supplier
                 </button>
                 <button
-                  className="mt-4 bg-gray-500 text-white px-4 py-2 rounded w-full"
+                  className="mt-4 bg-red-500 text-white px-4 py-2 rounded w-full"
                   onClick={() => setShowSupplierModal(false)}
                 >
                   Close

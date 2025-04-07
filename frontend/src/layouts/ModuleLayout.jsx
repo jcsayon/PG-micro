@@ -8,7 +8,7 @@ const ModuleLayout = ({ children }) => {
       <Sidebar_Primary />
       <div className="flex-1 flex flex-col ml-64"> {/* Added ml-64 to account for the sidebar */}
         <Header />
-        <main className="p-6 flex-1 overflow-auto">{children}</main>
+        <main className="p-6 flex-1">{children}</main>
       </div>
     </div>
   );
