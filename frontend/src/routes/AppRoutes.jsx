@@ -26,6 +26,7 @@ import ReportModule from "../pages/ReportModule/ReportModule";
 // ✅ Corrected User Management Page import
 import UserManagementPage from "../pages/UserManagement/UserManagementPage";
 
+// 🔐 Protected route wrapper
 const ProtectedRoute = ({ element, allowedRoles }) => {
   const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
   const role = sessionStorage.getItem("userRole");
@@ -42,16 +43,19 @@ const ProtectedRoute = ({ element, allowedRoles }) => {
 };
 
 const AppRoutes = () => {
-  const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
-
   return (
     <Routes>
+      {/* Public Login Page */}
       <Route path="/" element={<LoginPage />} />
 
+      {/* ✅ Protected Dashboard with proper roles */}
       <Route
         path="/dashboard"
         element={
-          isAuthenticated ? <Dashboard /> : <Navigate to="/" replace />
+          <ProtectedRoute
+            element={<Dashboard />}
+            allowedRoles={["Admin", "Employee", "Inventory", "Sales", "Returns"]}
+          />
         }
       />
 
@@ -150,11 +154,14 @@ const AppRoutes = () => {
       <Route
         path="/reports"
         element={
-          <ProtectedRoute element={<ReportModule />} allowedRoles={["Admin"]} />
+          <ProtectedRoute
+            element={<ReportModule />}
+            allowedRoles={["Admin"]}
+          />
         }
       />
 
-      {/* ✅ User Management (Admin only) */}
+      {/* User Management (Admin Only) */}
       <Route
         path="/user-management"
         element={
