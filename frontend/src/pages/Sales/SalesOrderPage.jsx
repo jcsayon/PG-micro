@@ -388,7 +388,7 @@ const SalesOrderPage = () => {
           </div>
         )}
       </div>
-    </ModuleLayout>
+    </DashboardLayout>
   );
 };
 
