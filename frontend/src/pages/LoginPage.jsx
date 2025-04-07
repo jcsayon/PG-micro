@@ -46,23 +46,19 @@ const LoginPage = () => {
           </h2>
         </div>
 
-        {/* Tab Menu */}
-        <div className="mt-6 flex justify-center space-x-6 border-b border-gray-300 pb-2">
-          <a
-            href="#"
-            className="text-purple-800 font-semibold border-b-2 border-purple-600"
-          >
+        {/* Only Login tab (Sign Up removed) */}
+        <div className="mt-6 flex justify-center border-b border-gray-300 pb-2">
+          <span className="text-purple-800 font-semibold border-b-2 border-purple-600">
             Login
-          </a>
-          <a
-            href="/signup"
-            className="text-gray-500 hover:text-purple-600 hover:border-purple-600 border-b-2"
-          >
-            Sign Up
-          </a>
+          </span>
         </div>
 
         {error && <p className="text-red-500 text-center mt-4">{error}</p>}
+
+        {/* Optional Note: Only Admins can create accounts */}
+        <p className="text-sm text-center text-gray-500 mt-2">
+          Only Admins can create accounts for employees.
+        </p>
 
         <form className="space-y-6 mt-6" onSubmit={handleLogin}>
           {/* Email Field */}

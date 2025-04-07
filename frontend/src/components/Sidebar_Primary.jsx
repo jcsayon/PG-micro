@@ -4,8 +4,8 @@ import { NavLink, useLocation } from "react-router-dom";
 const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggleCollapse }) => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const userRole = sessionStorage.getItem("userRole");
 
-  // Handle collapse logic
   const [internalCollapsed, setInternalCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true"
   );
@@ -25,7 +25,7 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     }
   };
 
-  // Menu Items with color theme
+  // All menu items
   const allMenuItems = [
     {
       name: "Home",
@@ -65,6 +65,17 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
         default: "text-teal-100",
         hover: "hover:bg-teal-600",
         active: "bg-teal-500 text-white",
+      },
+    },
+    {
+      name: "User Management",
+      path: "/user-management",
+      icon: "🧑‍💼",
+      adminOnly: true,
+      color: {
+        default: "text-pink-100",
+        hover: "hover:bg-pink-600",
+        active: "bg-pink-500 text-white",
       },
     },
     {
@@ -109,16 +120,17 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     },
   ];
 
-  // Define allowed items by group
-  const groupAPaths = ["/dashboard", "/account-info", "/settings"];
-  const groupBPaths = ["/purchase-orders", "/sales", "/return-warranty", "/reports"];
-  const groupCPaths = ["/inventory"];
+// Allowed items by route group
+const groupAPaths = ["/dashboard", "/account-info", "/settings", "/user-management"];
+const groupBPaths = ["/purchase-orders", "/sales", "/return-warranty", "/reports"];
+const groupCPaths = ["/inventory"];
 
-  const groupAAllowed = ["Home", "Account Info", "Settings", "Inventory"];
-  const groupBAllowed = ["Home", "Purchase Orders", "Sales", "Returns", "Inventory", "Reports"];
-  const groupCAllowed = groupBAllowed; // Same as B
+const groupAAllowed = ["Home", "Account Info", "Settings", "Inventory", "User Management"];
+const groupBAllowed = ["Home", "Purchase Orders", "Sales", "Returns", "Inventory", "Reports"];
+const groupCAllowed = groupBAllowed;
 
-  // Apply filtering based on current route
+
+  // Filter by group
   let visibleMenuItems = allMenuItems;
   if (groupAPaths.includes(currentPath)) {
     visibleMenuItems = allMenuItems.filter(item => groupAAllowed.includes(item.name));
@@ -128,11 +140,11 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     visibleMenuItems = allMenuItems.filter(item => groupCAllowed.includes(item.name));
   }
 
+  // Filter out admin-only if not Admin
+  visibleMenuItems = visibleMenuItems.filter(item => !(item.adminOnly && userRole !== "Admin"));
+
   return (
-    <div
-      className={`h-screen ${isCollapsed ? "w-16" : "w-64"} bg-purple-700 text-white fixed top-0 left-0 flex flex-col transition-all duration-300`}
-    >
-      {/* Logo */}
+    <div className={`h-screen ${isCollapsed ? "w-16" : "w-64"} bg-purple-700 text-white fixed top-0 left-0 flex flex-col transition-all duration-300`}>
       <div className="p-4 text-center font-bold text-2xl bg-purple-800">
         {!isCollapsed && "PG Micro World"}
       </div>
@@ -157,8 +169,7 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
       </nav>
 
       <button
-        className="absolute bottom-20 right-0 bg-purple-100 border-2 border-purple-300 border-r-purple-700
-        text-black w-8 h-8 flex items-center justify-center hover:bg-blue-500 rounded-l z-50"
+        className="absolute bottom-20 right-0 bg-purple-100 border-2 border-purple-300 border-r-purple-700 text-black w-8 h-8 flex items-center justify-center hover:bg-blue-500 rounded-l z-50"
         onClick={toggleSidebar}
       >
         {isCollapsed ? (
@@ -172,7 +183,6 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
         )}
       </button>
 
-      {/* Footer */}
       <div className="p-4 text-center text-sm bg-purple-800">
         {!isCollapsed && "© 2025 PG Micro World"}
       </div>
