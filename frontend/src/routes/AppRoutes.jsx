@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 // Import Pages
 import LoginPage from "../pages/LoginPage";
-import SignUpPage from "../pages/SignUpPage";
 import Dashboard from "../pages/Dashboard";
 import InventoryPage from "../pages/InventoryPage";
 import DamagedProductsPage from "../pages/DamageProductsPage";
@@ -24,38 +23,35 @@ import ReturnDetailsPage from "../pages/Returns/ReturnDetailsPage";
 // Reports Module
 import ReportModule from "../pages/ReportModule/ReportModule";
 
+// ✅ Corrected User Management Page import
+import UserManagementPage from "../pages/UserManagement/UserManagementPage";
+
+const ProtectedRoute = ({ element, allowedRoles }) => {
+  const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
+  const role = sessionStorage.getItem("userRole");
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (!allowedRoles.includes(role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return element;
+};
+
 const AppRoutes = () => {
-  const [auth, setAuth] = useState({
-    isAuthenticated: sessionStorage.getItem("isAuthenticated") === "true",
-    role: sessionStorage.getItem("userRole") || null,
-  });
-
-  useEffect(() => {
-    setAuth({
-      isAuthenticated: sessionStorage.getItem("isAuthenticated") === "true",
-      role: sessionStorage.getItem("userRole") || null,
-    });
-  }, []);
-
-  const ProtectedRoute = ({ element, allowedRoles }) => {
-    if (!auth.isAuthenticated) {
-      return <Navigate to="/" replace />;
-    }
-    if (!allowedRoles.includes(auth.role)) {
-      return <Navigate to="/dashboard" replace />;
-    }
-    return element;
-  };
+  const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
 
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
-      <Route path="/signup" element={<SignUpPage />} />
 
       <Route
         path="/dashboard"
         element={
-          auth.isAuthenticated ? <Dashboard /> : <Navigate to="/" replace />
+          isAuthenticated ? <Dashboard /> : <Navigate to="/" replace />
         }
       />
 
@@ -70,7 +66,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* ✅ Damaged Products Page Route */}
+      {/* Damaged Products Page */}
       <Route
         path="/damaged-products"
         element={
@@ -155,6 +151,17 @@ const AppRoutes = () => {
         path="/reports"
         element={
           <ProtectedRoute element={<ReportModule />} allowedRoles={["Admin"]} />
+        }
+      />
+
+      {/* ✅ User Management (Admin only) */}
+      <Route
+        path="/user-management"
+        element={
+          <ProtectedRoute
+            element={<UserManagementPage />}
+            allowedRoles={["Admin"]}
+          />
         }
       />
     </Routes>
