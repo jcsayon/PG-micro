@@ -14,7 +14,7 @@ const ReturnWarrantyPage = () => {
           <p className="text-gray-600 mb-4">
             Form pages are used to collect or verify information from users.
           </p>
-          
+
           {/* Filter Buttons */}
           <div className="flex flex-wrap space-x-2 mt-4 mb-4">
             {[
@@ -33,16 +33,20 @@ const ReturnWarrantyPage = () => {
               </button>
             ))}
           </div>
-          
+
           {/* Search Bar */}
-          <div className="mt-4 mb-4">
+          <div className="mt-4 mb-4 relative">
+            <label htmlFor="return-search" className="sr-only">Search</label>
             <input
+              id="return-search"
+              name="return-search"
               type="text"
+              autoComplete="off"
               placeholder="Search by order ID, customer name, or email"
               className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-          
+
           {/* Table */}
           <div className="mt-4 overflow-x-auto">
             <table className="w-full border-collapse bg-white shadow-md rounded-lg">

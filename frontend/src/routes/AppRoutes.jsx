@@ -25,17 +25,25 @@ import ReportModule from "../pages/ReportModule/ReportModule";
 
 // ✅ Corrected User Management Page import
 import UserManagementPage from "../pages/UserManagement/UserManagementPage";
+import { ROLES } from "../utils/roleConfig";
 
 // 🔐 Protected route wrapper
 const ProtectedRoute = ({ element, allowedRoles }) => {
   const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
-  const role = sessionStorage.getItem("userRole");
+  const userRole = sessionStorage.getItem("userRole");
+
+  console.group("Protected Route Check");
+  console.log("Is Authenticated:", isAuthenticated);
+  console.log("User Role:", userRole);
+  console.log("Allowed Roles:", allowedRoles);
+  console.groupEnd();
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  if (!allowedRoles.includes(role)) {
+  if (!allowedRoles.includes(userRole)) {
+    console.error("Access Denied", { userRole, allowedRoles });
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -54,7 +62,13 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<Dashboard />}
-            allowedRoles={["Admin", "Employee", "Inventory", "Sales", "Returns"]}
+            allowedRoles={[
+              ROLES.ADMIN, 
+              ROLES.EMPLOYEE, 
+              ROLES.INVENTORY, 
+              ROLES.SALES, 
+              ROLES.RETURNS
+            ]}
           />
         }
       />
@@ -65,7 +79,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<InventoryPage />}
-            allowedRoles={["Admin", "Inventory"]}
+            allowedRoles={[ROLES.ADMIN, ROLES.INVENTORY]}
           />
         }
       />
@@ -76,7 +90,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<DamagedProductsPage />}
-            allowedRoles={["Admin", "Inventory"]}
+            allowedRoles={[ROLES.ADMIN, ROLES.INVENTORY]}
           />
         }
       />
@@ -87,7 +101,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<PurchaseOrderPage />}
-            allowedRoles={["Admin", "Inventory"]}
+            allowedRoles={[ROLES.ADMIN, ROLES.INVENTORY]}
           />
         }
       />
@@ -96,7 +110,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<CreatePurchaseOrder />}
-            allowedRoles={["Admin", "Inventory"]}
+            allowedRoles={[ROLES.ADMIN, ROLES.INVENTORY]}
           />
         }
       />
@@ -105,7 +119,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<ViewPurchaseOrder />}
-            allowedRoles={["Admin", "Inventory"]}
+            allowedRoles={[ROLES.ADMIN, ROLES.INVENTORY]}
           />
         }
       />
@@ -116,7 +130,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<SalesOrderPage />}
-            allowedRoles={["Admin", "Sales"]}
+            allowedRoles={[ROLES.ADMIN, ROLES.SALES]}
           />
         }
       />
@@ -127,7 +141,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<ReturnWarrantyPage />}
-            allowedRoles={["Admin", "Returns"]}
+            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS]}
           />
         }
       />
@@ -136,7 +150,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<ReturnsFormPage />}
-            allowedRoles={["Admin", "Returns"]}
+            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS]}
           />
         }
       />
@@ -145,7 +159,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<ReturnDetailsPage />}
-            allowedRoles={["Admin", "Returns"]}
+            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS]}
           />
         }
       />
@@ -156,7 +170,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<ReportModule />}
-            allowedRoles={["Admin"]}
+            allowedRoles={[ROLES.ADMIN]}
           />
         }
       />
@@ -167,7 +181,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<UserManagementPage />}
-            allowedRoles={["Admin"]}
+            allowedRoles={[ROLES.ADMIN]}
           />
         }
       />
