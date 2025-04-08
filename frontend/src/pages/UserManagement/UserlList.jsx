@@ -83,9 +83,7 @@ const UserList = () => {
                 <th className="px-6 py-3 border text-left text-sm font-semibold text-gray-700">
                   Role
                 </th>
-                <th className="px-6 py-3 border text-left text-sm font-semibold text-gray-700">
-                  Role Description
-                </th>
+                
               </tr>
             </thead>
             <tbody>
