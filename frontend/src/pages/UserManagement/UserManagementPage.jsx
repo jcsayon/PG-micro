@@ -98,7 +98,7 @@ const UserManagementPage = () => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  // Handle adding new user
+  // Handle adding new user - UPDATED FUNCTION
   const handleAddUser = () => {
     if (!form.username || !form.password || !form.role) {
       alert("Please fill all fields");
@@ -109,7 +109,7 @@ const UserManagementPage = () => {
     
     // Check for duplicate usernames
     if (users.some(user => 
-      user.username === normalizedUsername && 
+      user.username.toLowerCase() === normalizedUsername && 
       (!isEditing || user.id !== selectedUser?.id)
     )) {
       alert("Username already exists");
@@ -123,7 +123,7 @@ const UserManagementPage = () => {
           ? { 
               ...user, 
               username: normalizedUsername,
-              password: form.password === "********" || !form.password.trim() ? user.password : form.password,
+              password: form.password === "********" ? user.password : form.password.trim(),
               role: form.role,
               status: form.status,
               accessiblePages: getAccessiblePagesByRole(form.role)
@@ -135,15 +135,21 @@ const UserManagementPage = () => {
       setIsEditing(false);
       setSelectedUser(null);
     } else {
-      // Add new user
+      // Add new user with trimmed password
       const newUser = {
         id: Date.now(), // Use timestamp as unique ID
         username: normalizedUsername,
-        password: form.password,
+        password: form.password.trim(), // Explicitly trim the password
         role: form.role,
         status: form.status,
         accessiblePages: getAccessiblePagesByRole(form.role)
       };
+      
+      // Debug log for new user
+      console.log("Adding new user:", {
+        ...newUser,
+        password: '[REDACTED]' // Don't log actual password
+      });
       
       setUsers([...users, newUser]);
     }

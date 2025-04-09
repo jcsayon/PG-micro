@@ -53,19 +53,19 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  // Improved initialization of users in local storage
+  // Initialize users in localStorage only if not already present
   useEffect(() => {
     try {
-      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-
-      const isInvalid = existingUsers.some((u) => !u.username && u.email);
-      if (existingUsers.length === 0 || isInvalid) {
+      const storedUsers = localStorage.getItem("users");
+      if (!storedUsers) {
+        console.log("No users found in localStorage, initializing defaults");
         localStorage.setItem("users", JSON.stringify(defaultUsers));
-        console.log("Reinitialized default users in local storage");
+      } else {
+        console.log("Found existing users in localStorage");
       }
     } catch (error) {
-      localStorage.setItem("users", JSON.stringify(defaultUsers));
-      console.error("Error initializing users:", error);
+      console.error("Error accessing localStorage:", error);
+      // In case of localStorage error, continue without setting
     }
   }, []);
 
@@ -91,49 +91,51 @@ const LoginPage = () => {
       console.log("Stored Users JSON:", storedUsersString);
 
       if (!storedUsersString) {
+        console.log("No users found in localStorage, using defaults");
         localStorage.setItem("users", JSON.stringify(defaultUsers));
-        setError("User data reset. Please try again.");
-        return;
       }
 
-      let users;
+      // Use stored users if available, otherwise fallback to defaults
+      let users = defaultUsers;
       try {
-        users = JSON.parse(storedUsersString);
-        console.log("Parsed Users:", users);
+        const parsedUsers = JSON.parse(storedUsersString);
+        if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
+          users = parsedUsers;
+          console.log("Successfully parsed users from localStorage");
+        }
       } catch (parseError) {
-        console.error("Parsing Error:", parseError);
-        localStorage.setItem("users", JSON.stringify(defaultUsers));
-        setError("User data could not be read. Resetting...");
-        return;
+        console.error("Error parsing users from localStorage:", parseError);
+        // Continue with default users
       }
 
-      // Detailed user matching logging
-      console.log("User Matching Attempt:", {
-        trimmedEmail,
-        trimmedPassword,
-        usersCount: users.length,
+      // Debug each user's credential check
+      users.forEach((user, index) => {
+        console.log(`User ${index + 1}:`, {
+          username: user.username,
+          storedPassword: user.password,
+          inputPassword: trimmedPassword,
+          passwordMatch: user.password === trimmedPassword,
+          usernameMatch: user.username.toLowerCase() === trimmedEmail
+        });
       });
 
-      // Defensive user matching with detailed logging
-      const matchedUsers = users.filter(
-        (u) =>
-          (u?.username || "").toLowerCase().trim() === trimmedEmail &&
-          (u?.password || "") === trimmedPassword
+      // Find matching user with exact comparison
+      const matchedUser = users.find(
+        (u) => u.username.toLowerCase() === trimmedEmail && 
+              u.password === trimmedPassword
       );
 
-      console.log("Matched Users:", matchedUsers);
+      console.log("Matched User:", matchedUser);
       console.groupEnd();
 
-      const user = matchedUsers[0];
-
-      if (user) {
+      if (matchedUser) {
         // Authentication successful
         sessionStorage.setItem("isAuthenticated", "true");
-        sessionStorage.setItem("userRole", user.role);
-        sessionStorage.setItem("userEmail", user.username);
+        sessionStorage.setItem("userRole", matchedUser.role);
+        sessionStorage.setItem("userEmail", matchedUser.username);
 
         // Navigate based on role
-        switch (user.role) {
+        switch (matchedUser.role) {
           case ROLES.ADMIN:
             navigate("/dashboard");
             break;
@@ -147,13 +149,12 @@ const LoginPage = () => {
             navigate("/return-warranty");
             break;
           default:
-            navigate("/unauthorized");
+            navigate("/dashboard");
         }
       } else {
         console.error("No matching user found", {
           inputEmail: trimmedEmail,
-          inputPassword: trimmedPassword,
-          availableUsers: users,
+          inputPassword: trimmedPassword
         });
         setError("Invalid email or password!");
       }
@@ -162,6 +163,7 @@ const LoginPage = () => {
       setError("An unexpected error occurred. Please try again.");
     }
   };
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-purple-100">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
