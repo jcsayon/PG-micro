@@ -356,75 +356,22 @@ const PurchaseOrderPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
+  // Simulate fetching purchase orders (replace with API call as needed)
+  // DUMMY DATA FOR PURCHASE ORDER TABLE
   useEffect(() => {
-    // Simulate fetching purchase orders (replace with API call as needed)
-    setPurchaseOrders([
-      {
-        id: 1,
-        poNumber: "#1234",
-        supplier: "Hardware World",
-        date: "2023-01-01",
-        total: "₱199,100.00",
-        status: "Order Placed",
-      },
-      {
-        id: 2,
-        poNumber: "#5678",
-        supplier: "CD-R King",
-        date: "2023-01-02",
-        total: "₱50,050.00",
-        status: "Shipped",
-      },
-      {
-        id: 3,
-        poNumber: "#9101",
-        supplier: "MGM Marketing Inc.",
-        date: "2023-01-03",
-        total: "₱12,075.00",
-        status: "Delivered",
-        items: [
-          {
-            id: 101,
-            brand: "Acer",
-            model: "Predator",
-            purchasePrice: 55000,
-            quantity: 2,
-            warrantyDuration: "1 Year",
-            serials: [
-              { id: 1, damage: false, isEditing: false },
-              { id: 2, damage: false, isEditing: false },
-            ],
-          },
-        ],
-      },
-      {
-        id: 4,
-        poNumber: "#2345",
-        supplier: "Sara Davis",
-        date: "2023-01-04",
-        total: "₱100,125.00",
-        status: "Delivered",
-        items: [
-          {
-            id: 102,
-            brand: "Dell",
-            model: "XPS",
-            purchasePrice: 50000,
-            quantity: 1,
-            warrantyDuration: "6 Months",
-            serials: [{ id: 1, damage: false, isEditing: false }],
-          },
-        ],
-      },
-      {
-        id: 5,
-        poNumber: "#6789",
-        supplier: "Mike Tyson Inc.",
-        date: "2023-01-05",
-        total: "₱55,625.00",
-        status: "In Progress",
-      },
-    ]);
+    const suppliers = [
+      { name: "Hardware World" },{ name: "CD-R King" },{ name: "MGM Marketing Inc." },{ name: "Sara Davis" },{ name: "Mike Tyson Inc." },
+    ];
+    
+    setPurchaseOrders([...Array(5)].map((_, i) => ({
+      id: i + 1,
+      poNumber: `#PO${(i + 1).toString().padStart(2, '0')}`,
+      supplier: suppliers[i % suppliers.length].name,
+      date: `2023-01-${(i + 1).toString().padStart(2, '0')}`,
+      total: `₱${(10000 + i * 1000).toLocaleString()}.00`,
+      status: i % 4 === 0 ? "Order Placed" : i % 4 === 1 ? "Shipped" : i % 4 === 2 ? "Delivered" : "In Progress",
+      employee: "admin@pgmicro.com",
+    })));
   }, []);
 
   const filteredOrders = purchaseOrders.filter((order) => {
@@ -468,6 +415,7 @@ const PurchaseOrderPage = () => {
       isEditing: false,
     },
   ]);
+
   const [newProduct, setNewProduct] = useState({
     description: "",
     purchasePrice: 0,
@@ -768,7 +716,7 @@ const PurchaseOrderPage = () => {
         <table className="min-w-full bg-white border border-gray-300 rounded">
           <thead className="sticky top-[100px] z-20">
             <tr className="bg-purple-300 text-purple-800">
-              <th className="p-2 text-left">Purchanse Order ID</th>
+              <th className="p-2 text-left">Purchase Order ID</th>
               <th className="p-2 text-left">Employee</th>
               <th className="p-2 text-left">Date Issued</th>
               <th className="p-2 text-left">Supplier</th>
@@ -780,11 +728,11 @@ const PurchaseOrderPage = () => {
           <tbody>
             {filteredOrders.map((order) => (
               <tr key={order.id} className="border-t bg-purple-200 text-purple-700">
-                <td className="p-2">{order.poNumber}</td>
-                <td className="p-2">{order.employee || "—"}</td>
-                <td className="p-2">{order.date}</td>
-                <td className="p-2">{order.supplier}</td>
-                <td className="p-2">
+                <td className="p-1">{order.poNumber}</td>
+                <td className="p-1">{order.employee}</td>
+                <td className="p-1">{order.date}</td>
+                <td className="p-1">{order.supplier}</td>
+                <td className="p-1">
                   <select
                     value={order.status}
                     onChange={(e) => handleStatusChange(order.id, e.target.value)}
@@ -797,13 +745,9 @@ const PurchaseOrderPage = () => {
                     ))}
                   </select>
                 </td>
-                <td className="p-2 text-right">{order.total}</td>
-                <td className="p-2">
-                  <button
-                    onClick={() => {
-                      setSelectedOrder(order);
-                      setShowViewModal(true);
-                    }}
+                <td className="p-1 text-right">{order.total}</td>
+                <td className="p-1">
+                  <button onClick={() => {setSelectedOrder(order); setShowViewModal(true);}}
                     className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-800"
                   >
                     View details
@@ -1263,16 +1207,16 @@ const PurchaseOrderPage = () => {
                   placeholder="Damage"
                   value={newProduct.damage}
                   onChange={(e) => setNewProduct({ ...newProduct, damage: e.target.value })}
-                  className="border p-2 rounded w-full mb-2"
+                  className="border p-2 rounded w-full"
                 />                
                 <button
-                  className="bg-green-500 text-white py-2 rounded w-full"
+                  className="bg-green-600 text-white rounded w-full"
                   onClick={handleAddProduct}
                 >
                   Add Product
                 </button>
                 <button
-                  className="bg-red-500 text-white py-2 rounded w-full"
+                  className="bg-red-600 text-white rounded w-full"
                   onClick={() => setShowProductModal(false)}
                 >
                   Close
