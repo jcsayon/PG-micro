@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 // Import Pages
@@ -51,6 +51,55 @@ const ProtectedRoute = ({ element, allowedRoles }) => {
 };
 
 const AppRoutes = () => {
+  // Initialize inventory from localStorage if available
+  const [inventory, setInventory] = useState(() => {
+    try {
+      const savedInventory = localStorage.getItem('inventoryData');
+      return savedInventory ? JSON.parse(savedInventory) : [];
+    } catch (error) {
+      console.error("Error loading inventory from localStorage:", error);
+      return [];
+    }
+  });
+
+  // Save inventory to localStorage whenever it changes
+  useEffect(() => {
+    if (inventory && inventory.length > 0) {
+      try {
+        localStorage.setItem('inventoryData', JSON.stringify(inventory));
+        console.log("Saved inventory to localStorage:", inventory.length);
+      } catch (error) {
+        console.error("Error saving inventory to localStorage:", error);
+      }
+    }
+  }, [inventory]);
+
+  // Function to handle inventory updates from InventoryPage
+  const handleInventoryUpdate = (updatedInventory) => {
+    console.log("Inventory updated with", updatedInventory.length, "items");
+    setInventory(updatedInventory);
+  };
+
+  // Function to update product status (used by SalesOrderPage)
+  const updateInventoryStatus = async (productId, status) => {
+    console.log(`Updating product ${productId} status to ${status}`);
+    
+    const updatedInventory = inventory.map(product => 
+      product.id === productId ? {...product, saleStatus: status} : product
+    );
+    
+    setInventory(updatedInventory);
+    
+    // Save to localStorage immediately for extra safety
+    try {
+      localStorage.setItem('inventoryData', JSON.stringify(updatedInventory));
+    } catch (error) {
+      console.error("Error saving updated inventory to localStorage:", error);
+    }
+    
+    return updatedInventory; // Return value for promise chaining
+  };
+
   return (
     <Routes>
       {/* Public Login Page */}
@@ -73,12 +122,12 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Inventory */}
+      {/* Inventory - Pass onInventoryUpdate function */}
       <Route
         path="/inventory"
         element={
           <ProtectedRoute
-            element={<InventoryPage />}
+            element={<InventoryPage onInventoryUpdate={handleInventoryUpdate} />}
             allowedRoles={[ROLES.ADMIN, ROLES.INVENTORY]}
           />
         }
@@ -124,12 +173,15 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Sales */}
+      {/* Sales - Pass inventory data and update function */}
       <Route
         path="/sales"
         element={
           <ProtectedRoute
-            element={<SalesOrderPage />}
+            element={<SalesOrderPage 
+              inventoryData={inventory} 
+              updateInventoryStatus={updateInventoryStatus} 
+            />}
             allowedRoles={[ROLES.ADMIN, ROLES.SALES]}
           />
         }
