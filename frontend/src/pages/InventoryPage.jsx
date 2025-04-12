@@ -1,7 +1,56 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 
-const InventoryPage = () => {
+// API endpoints and utility functions (commented out until backend is ready)
+/*
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const ENDPOINTS = {
+  INVENTORY: `${API_BASE_URL}/inventory/`,
+  DAMAGED_INVENTORY: `${API_BASE_URL}/damaged-inventory/`,
+};
+
+// API utility functions
+const fetchInventory = async () => {
+  try {
+    const response = await fetch(ENDPOINTS.INVENTORY);
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching inventory:", error);
+    return null;
+  }
+};
+
+const fetchDamagedInventory = async () => {
+  try {
+    const response = await fetch(ENDPOINTS.DAMAGED_INVENTORY);
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching damaged inventory:", error);
+    return null;
+  }
+};
+
+const updateProductStatusAPI = async (productId, updates) => {
+  try {
+    const response = await fetch(`${ENDPOINTS.INVENTORY}${productId}/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error(`Error updating product ${productId}:`, error);
+    return null;
+  }
+};
+*/
+
+const InventoryPage = ({ onInventoryUpdate }) => {
   const [products, setProducts] = useState([]);
   const [damagedProducts, setDamagedProducts] = useState([]);
   const [activeTab, setActiveTab] = useState("available");
@@ -9,23 +58,76 @@ const InventoryPage = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [categoryStats, setCategoryStats] = useState({});
+  // Add loading state for API calls
+  const [isLoading, setIsLoading] = useState(false);
 
-  const categories = ["All", "Laptop", "Keyboard", "Mouse", "Router", "Switch", "RAM"];
+  const categories = ["All", "Processor", "Motherboards", "Video Cards", "Monitors", "Laptops", "Printers", "Toners", "Inks", "Networking", "DSLR Camera", "CCTV Camera", "Keyboard & Mouse", "Webcam", "Power Supply", "Thin Client"];
 
   useEffect(() => {
-    generateProductData();
+    loadInventoryData();
   }, []);
+  
+  // Function to load inventory data (will be switched to API when ready)
+  const loadInventoryData = () => {
+    setIsLoading(true);
+    
+    /* 
+    // When API is ready, uncomment this section
+    Promise.all([fetchInventory(), fetchDamagedInventory()])
+      .then(([inventoryData, damagedData]) => {
+        if (inventoryData) {
+          setProducts(inventoryData);
+          // Update localStorage for other components to use
+          localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
+          
+          // Calculate category statistics
+          const stats = calculateCategoryStats(inventoryData);
+          setCategoryStats(stats);
+          
+          // Notify parent component if needed
+          if (onInventoryUpdate) {
+            onInventoryUpdate(inventoryData);
+          }
+        }
+        
+        if (damagedData) {
+          setDamagedProducts(damagedData);
+        }
+        
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error("Error loading inventory data:", error);
+        // Fall back to generating mock data
+        generateProductData();
+        setIsLoading(false);
+      });
+    */
+    
+    // For now, generate mock data
+    generateProductData();
+    setIsLoading(false);
+  };
 
   const generateProductData = () => {
-    const productCategories = ["Laptop", "Keyboard", "Mouse", "Router", "Switch", "RAM"];
-    const brands = ["Dell", "Lenovo", "HP", "Asus", "Acer", "Logitech", "Microsoft", "Cisco", "TP-Link", "Kingston", "Crucial"];
+    const productCategories = ["Processor", "Motherboards", "Video Cards", "Monitors", "Laptops", "Printers", "Toners", "Inks", "Networking", "DSLR Camera", "CCTV Camera", "Keyboard & Mouse", "Webcam", "Power Supply", "Thin Client"];
+    const brands = ["Dell", "Lenovo", "HP", "Asus", "Acer", "Logitech", "Microsoft", "Cisco", "TP-Link", "Kingston", "Crucial", "Intel", "AMD", "MSI", "Gigabyte", "EVGA", "Samsung", "LG", "Canon", "Epson", "Brother", "Hikvision", "Dahua", "Nikon", "Sony", "Corsair"];
     const models = {
-      Laptop: ["XPS 15", "ThinkPad X1", "EliteBook", "ROG Strix", "Predator"],
-      Keyboard: ["K380", "MX Keys", "G915", "Huntsman", "K70"],
-      Mouse: ["MX Master", "G502", "DeathAdder", "M590", "M720"],
-      Router: ["RT-AX86U", "Nighthawk", "Archer C7", "WRT3200ACM", "AC1900"],
-      Switch: ["SG300", "JL385A", "DGS-1100", "TL-SG108", "GS308"],
-      RAM: ["Fury", "Vengeance", "Ripjaws", "Ballistix", "Trident Z"],
+      "Processor": ["Core i9", "Core i7", "Core i5", "Ryzen 9", "Ryzen 7", "Ryzen 5"],
+      "Motherboards": ["Z690", "B550", "X570", "H610", "B660", "TUF Gaming"],
+      "Video Cards": ["RTX 4090", "RTX 4080", "RTX 3080", "RX 6900 XT", "RX 6800", "GTX 1660"],
+      "Monitors": ["Odyssey G7", "UltraGear", "ProArt", "UltraSharp", "Predator"],
+      "Laptops": ["XPS 15", "ThinkPad X1", "EliteBook", "ROG Strix", "Predator"],
+      "Printers": ["LaserJet Pro", "PIXMA", "EcoTank", "WorkForce", "OfficeJet Pro"],
+      "Toners": ["TN-760", "CF410X", "CE505X", "TK-5240", "MLT-D101S"],
+      "Inks": ["HP 67XL", "Canon PG-245", "Epson 702", "Brother LC3033", "HP 910"],
+      "Networking": ["Nighthawk", "Archer", "UniFi", "EdgeRouter", "Catalyst"],
+      "DSLR Camera": ["EOS 90D", "D7500", "Alpha a7 III", "EOS R6", "Z6 II"],
+      "CCTV Camera": ["Dome 4MP", "Bullet 8MP", "PTZ 2MP", "Turret 5MP", "Fisheye 12MP"],
+      "Keyboard & Mouse": ["MX Keys", "G502", "DeathAdder", "M590", "MX Master"],
+      "Webcam": ["BRIO 4K", "StreamCam", "Facecam", "Kiyo Pro", "C920"],
+      "Power Supply": ["RM850x", "SuperNOVA 750", "TUF 650W", "Focus GX-750", "MWE 650"],
+      "Thin Client": ["T640", "t640", "mt45", "t430", "t558"]
     };
 
     // Create products with unique IDs by category
@@ -75,6 +177,14 @@ const InventoryPage = () => {
     });
 
     setDamagedProducts(damagedData);
+    
+    // Save inventory data to localStorage for SalesOrderPage to access
+    localStorage.setItem('inventoryData', JSON.stringify(productData));
+    
+    // If there's a parent component callback, inform it about the initial inventory
+    if (onInventoryUpdate) {
+      onInventoryUpdate(productData);
+    }
   };
 
   const calculateCategoryStats = (productData) => {
@@ -111,18 +221,106 @@ const InventoryPage = () => {
     return stats;
   };
 
-  const openInventoryModal = (item) => {setSelectedItem(item);setIsInventoryModalOpen(true);};  
-  const closeInventoryModal = () => {setSelectedItem(null);setIsInventoryModalOpen(false);};
+  const openInventoryModal = (item) => {
+    setSelectedItem(item);
+    setIsInventoryModalOpen(true);
+  };  
+  
+  const closeInventoryModal = () => {
+    setSelectedItem(null);
+    setIsInventoryModalOpen(false);
+  };
+
+  // Function to update product status - this will be used by SalesOrderPage
+  const updateProductStatus = (productId, newStatus) => {
+    /* 
+    // When API is ready, uncomment this section
+    return updateProductStatusAPI(productId, { saleStatus: newStatus })
+      .then(updatedProduct => {
+        if (updatedProduct) {
+          // Update local state with the updated product
+          const updatedProducts = products.map(product => 
+            product.id === productId ? updatedProduct : product
+          );
+          
+          setProducts(updatedProducts);
+          
+          // Update category statistics
+          const stats = calculateCategoryStats(updatedProducts);
+          setCategoryStats(stats);
+          
+          // Update localStorage for other components
+          localStorage.setItem('inventoryData', JSON.stringify(updatedProducts));
+          
+          // If there's a parent component callback, inform it
+          if (onInventoryUpdate) {
+            onInventoryUpdate(updatedProducts);
+          }
+          
+          return true;
+        }
+        return false;
+      })
+      .catch(error => {
+        console.error(`Error updating product ${productId} status:`, error);
+        return false;
+      });
+    */
+    
+    // For now, continue using local state updates
+    const updatedProducts = products.map(product => 
+      product.id === productId 
+        ? { ...product, saleStatus: newStatus } 
+        : product
+    );
+    
+    setProducts(updatedProducts);
+    
+    // Update category statistics after updating product status
+    const stats = calculateCategoryStats(updatedProducts);
+    setCategoryStats(stats);
+    
+    // Update localStorage with the updated products
+    localStorage.setItem('inventoryData', JSON.stringify(updatedProducts));
+    
+    // If there's a parent component callback for inventory updates, call it
+    if (onInventoryUpdate) {
+      onInventoryUpdate(updatedProducts);
+    }
+    
+    return updatedProducts;
+  };
+
+  // Expose getProducts function to allow SalesOrderPage to access inventory
+  const getProducts = () => {
+    return products;
+  };
 
   const filteredProducts = products.filter(product => 
     categoryFilter === "All" || product.category === categoryFilter
   );
 
+  // Add refresh button functionality
+  const handleRefreshInventory = () => {
+    loadInventoryData();
+  };
+
   return (
     <DashboardLayout>
       <div className="p-2 from-purple-500 to-purple-200 min-h-screen">
         <div className="sticky top-0 z-20 space-y-2 px-2 pb-2 bg-purple-300 rounded mb-2">
-          <h1 className="text-2xl font-bold text-purple-700 mb-4">Inventory Management</h1>
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-purple-700 mb-4">Inventory Management</h1>
+            
+            {/* Add refresh button */}
+            <button 
+              onClick={handleRefreshInventory} 
+              className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 flex items-center"
+              disabled={isLoading}
+            >
+              {isLoading ? "Loading..." : "Refresh Inventory"}
+            </button>
+          </div>
         
           {/* Tab Buttons */}
           <div className="flex gap-1 mb-4">
@@ -166,29 +364,23 @@ const InventoryPage = () => {
                   </div>
                 )}
               </div>
-              
-              {/* Display all category counts when "All" is selected */}
-              {categoryFilter === "All" && (
-                <div className="grid grid-cols-3 gap-2 mb-2">
-                  {categories.filter(cat => cat !== "All").map(cat => (
-                    <div key={cat} className="bg-gray-300 px-3 py-2 rounded">
-                      <span className="font-semibold mr-2">{cat}:</span>
-                      Quantity: <span className="font-semibold mr-2">{categoryStats[cat]?.quantity || 0}</span> 
-                      Available: <span className="font-semibold">{categoryStats[cat]?.available || 0}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
         </div>
 
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex justify-center items-center h-40">
+            <div className="text-xl text-purple-600">Loading inventory data...</div>
+          </div>
+        )}
+
         {/* Tab Content - Table Available Products */}
-        {activeTab === "available" && (
-          <div className="bg-blue-400 shadow-lg flex flex-col">
-            <div className="flex-grow">
+        {!isLoading && activeTab === "available" && (
+          <div className="bg-blue-400 shadow-lg flex flex-col h-[calc(100vh-170px)] overflow-hidden">
+            <div className="flex-grow overflow-auto">
               <table className="min-w-full border border-black">
-                <thead className={`sticky ${categoryFilter === "All" ? "top-[265px]" : "top-[170px]"} z-20 border-black bg-blue-300 text-left text-sm font-medium text-gray-800`}>
+                <thead className="sticky top-0 z-20 border-black bg-blue-300 text-left text-sm font-medium text-gray-800">
                   <tr>
                     <th className="p-2 border">Item ID</th>
                     <th className="p-2 border">Serial Number</th>
@@ -234,11 +426,11 @@ const InventoryPage = () => {
         )}
 
         {/* Tab Content - Table Damaged Products */}
-        {activeTab === "damaged" && (
-          <div className="bg-red-400 shadow-lg flex flex-col">
-            <div className="flex-grow">
+        {!isLoading && activeTab === "damaged" && (
+          <div className="bg-red-400 shadow-lg flex flex-col h-[calc(100vh-170px)] overflow-hidden">
+            <div className="flex-grow overflow-auto">
               <table className="min-w-full border border-black rounded">
-                <thead className="sticky top-[100px] bg-red-300 text-left text-sm font-medium text-gray-800">
+                <thead className="sticky top-0 bg-red-300 text-left text-sm font-medium text-gray-800">
                   <tr>
                     <th className="p-2 border">Item ID</th>
                     <th className="p-2 border">Serial Number</th>
@@ -298,4 +490,6 @@ const InventoryPage = () => {
   );
 };
 
+// Export the component along with utility functions for accessing from other components
+export { InventoryPage };
 export default InventoryPage;
