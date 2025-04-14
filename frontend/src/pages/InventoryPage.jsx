@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 
 // API endpoints and utility functions (commented out until backend is ready)
-/*
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+//const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'; // Default to local API if not set
+//const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const ENDPOINTS = {
   INVENTORY: `${API_BASE_URL}/inventory/`,
   DAMAGED_INVENTORY: `${API_BASE_URL}/damaged-inventory/`,
@@ -48,7 +50,7 @@ const updateProductStatusAPI = async (productId, updates) => {
     return null;
   }
 };
-*/
+
 
 const InventoryPage = ({ onInventoryUpdate }) => {
   const [products, setProducts] = useState([]);
@@ -71,7 +73,6 @@ const InventoryPage = ({ onInventoryUpdate }) => {
   const loadInventoryData = () => {
     setIsLoading(true);
     
-    /* 
     // When API is ready, uncomment this section
     Promise.all([fetchInventory(), fetchDamagedInventory()])
       .then(([inventoryData, damagedData]) => {
@@ -102,11 +103,6 @@ const InventoryPage = ({ onInventoryUpdate }) => {
         generateProductData();
         setIsLoading(false);
       });
-    */
-    
-    // For now, generate mock data
-    generateProductData();
-    setIsLoading(false);
   };
 
   const generateProductData = () => {
@@ -233,7 +229,6 @@ const InventoryPage = ({ onInventoryUpdate }) => {
 
   // Function to update product status - this will be used by SalesOrderPage
   const updateProductStatus = (productId, newStatus) => {
-    /* 
     // When API is ready, uncomment this section
     return updateProductStatusAPI(productId, { saleStatus: newStatus })
       .then(updatedProduct => {
@@ -265,30 +260,6 @@ const InventoryPage = ({ onInventoryUpdate }) => {
         console.error(`Error updating product ${productId} status:`, error);
         return false;
       });
-    */
-    
-    // For now, continue using local state updates
-    const updatedProducts = products.map(product => 
-      product.id === productId 
-        ? { ...product, saleStatus: newStatus } 
-        : product
-    );
-    
-    setProducts(updatedProducts);
-    
-    // Update category statistics after updating product status
-    const stats = calculateCategoryStats(updatedProducts);
-    setCategoryStats(stats);
-    
-    // Update localStorage with the updated products
-    localStorage.setItem('inventoryData', JSON.stringify(updatedProducts));
-    
-    // If there's a parent component callback for inventory updates, call it
-    if (onInventoryUpdate) {
-      onInventoryUpdate(updatedProducts);
-    }
-    
-    return updatedProducts;
   };
 
   // Expose getProducts function to allow SalesOrderPage to access inventory
