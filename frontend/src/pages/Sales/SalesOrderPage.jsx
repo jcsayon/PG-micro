@@ -179,6 +179,24 @@ const SalesOrderPage = () => {
   const saveOrdersToLocalStorage = (orders) => {
     localStorage.setItem('salesOrdersData', JSON.stringify(orders));
   };
+  const saveCustomersToLocalStorage = (customers) => {
+    localStorage.setItem('customersData', JSON.stringify(customers));
+  };
+  useEffect(() => {
+    const savedCustomers = localStorage.getItem('customersData');
+    if (savedCustomers) {
+      try {
+        const parsedCustomers = JSON.parse(savedCustomers);
+        setCustomers(parsedCustomers);
+      } catch (error) {
+        console.error("Error parsing customers from localStorage:", error);
+        // Keep the default customers if parsing fails
+      }
+    } else {
+      // If no customers in localStorage, save the initial ones
+      localStorage.setItem('customersData', JSON.stringify(customers));
+    }
+  }, []);
 
   // Load inventory data
   useEffect(() => {
@@ -654,6 +672,8 @@ const SalesOrderPage = () => {
         customer.id === editingCustomerId ? { ...newCustomer, id: editingCustomerId } : customer
       );
       setCustomers(updatedCustomers);
+      // Save to localStorage for persistence
+      localStorage.setItem('customersData', JSON.stringify(updatedCustomers));
       setIsEditing(false);
       setEditingCustomerId(null);
       alert("Customer updated successfully!");
@@ -680,10 +700,13 @@ const SalesOrderPage = () => {
         ? Math.max(...customers.map(c => c.id)) + 1 
         : 1;
         
-      setCustomers([...customers, {
+      const updatedCustomers = [...customers, {
         ...newCustomer,
         id: newCustomerId
-      }]);
+      }];
+      setCustomers(updatedCustomers);
+      // Save to localStorage for persistence
+      localStorage.setItem('customersData', JSON.stringify(updatedCustomers));
       alert("Customer added successfully!");
     }
     
@@ -732,7 +755,10 @@ const SalesOrderPage = () => {
       */
       
       // For now, delete from local state
-      setCustomers(customers.filter(c => c.id !== customerId));
+      const updatedCustomers = customers.filter(c => c.id !== customerId);
+      setCustomers(updatedCustomers);
+      // Save to localStorage for persistence
+      localStorage.setItem('customersData', JSON.stringify(updatedCustomers));
       
       if (isEditing && editingCustomerId === customerId) {
         resetCustomerForm();
@@ -934,9 +960,9 @@ const SalesOrderPage = () => {
   
   return (
     <DashboardLayout>
-      <div className="p-4 bg-purple-50 min-h-screen">
+      <div className="p-4 bg-white min-h-screen">
         {/* Header and controls section */}
-        <div className="bg-purple-200 p-4 rounded-lg mb-4">
+        <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold text-purple-800">Issued Sale Orders</h1>
             
@@ -1002,7 +1028,7 @@ const SalesOrderPage = () => {
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white">
                 <thead>
-                  <tr className="bg-purple-300 text-purple-900">
+                <tr className="bg-gray-100 text-gray-800">
                     <th className="p-3 text-left">Sale Order ID</th>
                     <th className="p-3 text-left">Employee</th>
                     <th className="p-3 text-left">Date Sold</th>
@@ -1019,7 +1045,7 @@ const SalesOrderPage = () => {
                     </tr>
                   ) : (
                     filteredOrders.map((order, index) => (
-                      <tr key={order.id} className={index % 2 === 0 ? "bg-purple-100" : "bg-white"}>
+                      <tr key={order.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
                         <td className="p-3 text-purple-700">{order.id}</td>
                         <td className="p-3">{order.employee}</td>
                         <td className="p-3">{order.dateSold}</td>
@@ -1053,7 +1079,7 @@ const SalesOrderPage = () => {
       {/* Customer List Modal */}
       {showCustomerModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.05)'}}>
-          <div className="bg-purple-50 rounded-lg p-6 w-[90%] max-w-4xl h-[650px] flex flex-col">
+          <div className="bg-white rounded-lg p-6 w-[90%] max-w-4xl h-[650px] flex flex-col shadow-lg">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-purple-800">Customer List</h2>
               <button 
@@ -1071,7 +1097,7 @@ const SalesOrderPage = () => {
             
             <div className="bg-white rounded-lg mb-6 overflow-auto shadow-md flex-grow">
               <table className="min-w-full">
-                <thead className="bg-purple-200 sticky top-0">
+              <thead className="bg-gray-100 sticky top-0">
                   <tr>
                     <th className="p-3 text-left">Customer ID</th>
                     <th className="p-3 text-left">Name</th>
@@ -1089,7 +1115,7 @@ const SalesOrderPage = () => {
                     </tr>
                   ) : (
                     customers.map((customer) => (
-                      <tr key={customer.id} className="border-b hover:bg-purple-50">
+                      <tr key={customer.id} className="border-b hover:bg-gray-50">
                         <td className="p-3">{customer.id}</td>
                         <td className="p-3 font-medium">{customer.name}</td>
                         <td className="p-3">
@@ -1125,7 +1151,7 @@ const SalesOrderPage = () => {
               </table>
             </div>
             
-            <div className="bg-purple-100 p-4 rounded-lg shadow-sm">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
               <h3 className="text-lg font-bold mb-3 text-purple-800">
                 {isEditing ? "Edit Customer" : "New Customer"}
               </h3>
@@ -1213,7 +1239,7 @@ const SalesOrderPage = () => {
           <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-6xl max-h-[90vh] flex flex-col">
             <div className="p-4 border-b border-gray-200">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-purple-800">Create Sales Order</h2>
+              <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
                 <button 
                   onClick={() => {
                     setShowCreateModal(false);
@@ -1326,7 +1352,7 @@ const SalesOrderPage = () => {
                           product.saleStatus !== "Sold" && (
                             <div 
                               key={product.id} 
-                              className="p-3 border rounded bg-purple-50 flex justify-between items-center"
+                              className="p-3 border rounded bg-white flex justify-between items-center"
                               style={{minHeight: "80px"}}>
                               <div>
                                 {/* Log for debugging */}
