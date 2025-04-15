@@ -31,13 +31,8 @@ const dummyInventory = {
   ]
 };
 
-// Dummy warranty data
-const dummyWarranties = [
-  { id: 1, type: "Customer Warranty", product: "ACER Aspire 5", customer: "Juan Dela Cruz", issueDate: "2023-01-05", expiryDate: "2024-01-05", status: "Active" },
-  { id: 2, type: "Customer Warranty", product: "HP Pavilion 14", customer: "Maria Santos", issueDate: "2023-02-15", expiryDate: "2024-02-15", status: "Active" },
-  { id: 3, type: "Supplier Warranty", product: "LENOVO IdeaPad 3", supplier: "LenovoPH", issueDate: "2022-11-20", expiryDate: "2023-11-20", status: "Expired" },
-  { id: 4, type: "Supplier Warranty", product: "ASUS VivoBook", supplier: "ASUS Philippines", issueDate: "2023-03-10", expiryDate: "2024-03-10", status: "Active" },
-];
+// Define the warranty storage key (same as in sales module)
+const WARRANTY_STORAGE_KEY = 'warrantyData';
 
 const ReturnWarrantyPage = () => {
   const navigate = useNavigate();
@@ -45,13 +40,14 @@ const ReturnWarrantyPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   
-
   // VIEW WARRANTIES MODAL
   const [showWarrantiesModal, setShowWarrantiesModal] = useState(false);
-  const [warranties, setWarranties] = useState(dummyWarranties);
+  const [warranties, setWarranties] = useState([]);
   const [warrantyTypeFilter, setWarrantyTypeFilter] = useState("All");
   const [editingWarranty, setEditingWarranty] = useState(null);
   const [editedWarranty, setEditedWarranty] = useState(null);
+  const [selectedWarranty, setSelectedWarranty] = useState(null);
+  const [showWarrantyDetailsModal, setShowWarrantyDetailsModal] = useState(false);
 
   // RETURN ORDER TABLE STATUS DROPDOWN COLOR
   const statusOptions = [
@@ -189,31 +185,69 @@ const ReturnWarrantyPage = () => {
     });
   };
 
-  // ADD THESE FUNCTIONS HERE, after handleCreateReturnOrder:
-const handleEditWarranty = (warranty) => {
-  setEditingWarranty(warranty.id);
-  setEditedWarranty({...warranty});
-};
+  // WARRANTY MANAGEMENT FUNCTIONS
+  const handleEditWarranty = (warranty) => {
+    setEditingWarranty(warranty.id);
+    setEditedWarranty({...warranty});
+  };
 
-const handleSaveWarranty = () => {
-  setWarranties(warranties.map(w => 
-    w.id === editedWarranty.id ? editedWarranty : w
-  ));
-  setEditingWarranty(null);
-  setEditedWarranty(null);
-};
+  const handleSaveWarranty = () => {
+    const updatedWarranties = warranties.map(w => 
+      w.id === editedWarranty.id ? editedWarranty : w
+    );
+    setWarranties(updatedWarranties);
+    saveWarrantiesToLocalStorage(updatedWarranties);
+    setEditingWarranty(null);
+    setEditedWarranty(null);
+  };
 
-const handleCancelEdit = () => {
-  setEditingWarranty(null);
-  setEditedWarranty(null);
-};
+  const handleCancelEdit = () => {
+    setEditingWarranty(null);
+    setEditedWarranty(null);
+  };
 
-const handleWarrantyChange = (field, value) => {
-  setEditedWarranty({
-    ...editedWarranty,
-    [field]: value
-  });
-};
+  const handleWarrantyChange = (field, value) => {
+    setEditedWarranty({
+      ...editedWarranty,
+      [field]: value
+    });
+  };
+
+  // Function to view warranty details
+  const handleViewWarrantyDetails = (warranty) => {
+    setSelectedWarranty(warranty);
+    setShowWarrantyDetailsModal(true);
+  };
+
+  // Function to save warranties to localStorage
+  const saveWarrantiesToLocalStorage = (warrantyData) => {
+    localStorage.setItem(WARRANTY_STORAGE_KEY, JSON.stringify(warrantyData));
+  };
+  
+  // Function to load warranties from localStorage
+  const loadWarranties = () => {
+    try {
+      // Load warranties from localStorage
+      const savedWarranties = localStorage.getItem(WARRANTY_STORAGE_KEY);
+      
+      if (savedWarranties) {
+        // Parse and set the warranties
+        const parsedWarranties = JSON.parse(savedWarranties);
+        setWarranties(parsedWarranties);
+      } else {
+        // Initialize with empty array if no data exists
+        setWarranties([]);
+      }
+    } catch (error) {
+      console.error("Error loading warranty data:", error);
+      setWarranties([]);
+    }
+  };
+
+  // Load warranties when component mounts
+  useEffect(() => {
+    loadWarranties();
+  }, []);
 
   // DUMMY DATA FOR RETURN ORDER TABLE
   useEffect(() => {
@@ -477,7 +511,7 @@ const handleWarrantyChange = (field, value) => {
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Address</th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Email</th>
                       <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Contact Number</th>
-                      <th className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">Actions</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900" style={{ width: "150px" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
@@ -618,8 +652,8 @@ const handleWarrantyChange = (field, value) => {
             </div>
           </div>
         )}
-  
-        {/* VIEW WARRANTIES MODAL - New modal for viewing warranties */}
+        
+        {/* VIEW WARRANTIES MODAL */}
         {showWarrantiesModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-20">
             <div className="bg-white p-6 rounded-lg shadow-lg h-[600px] w-[1200px] flex flex-col">
@@ -649,21 +683,27 @@ const handleWarrantyChange = (field, value) => {
               
               <div className="overflow-x-auto flex-grow max-h-96 overflow-y-auto">
                 <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50 sticky top-0">
-                      <tr>
-                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
-                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Product</th>
-                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Customer/Supplier</th>
-                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Issue Date</th>
-                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Expiry Date</th>
-                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
-                        {/* ADD THIS NEW COLUMN */}
-                        <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Actions</th>
-                      </tr>
-                    </thead>
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Product</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Customer/Supplier</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Issue Date</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Expiry Date</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
+                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900" style={{ width: "150px" }}>Actions</th>
+                    </tr>
+                  </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                  {filteredWarranties.map((warranty) => (
-                        <tr key={warranty.id} className="hover:bg-gray-50">
+                    {filteredWarranties.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="px-3 py-4 text-sm text-gray-500 text-center">
+                          No warranties found. Create sales orders to generate warranties automatically.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredWarranties.map((warranty) => (
+                        <tr key={warranty.id} className="hover:bg-gray-50 w-full">
                           <td className="px-3 py-4 text-sm text-gray-900">
                             {editingWarranty === warranty.id ? (
                               <select
@@ -685,11 +725,12 @@ const handleWarrantyChange = (field, value) => {
                           <td className="px-3 py-4 text-sm text-gray-900">
                             {editingWarranty === warranty.id ? (
                               <input
-                                type="text"
-                                className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                                value={editedWarranty.product}
-                                onChange={(e) => handleWarrantyChange("product", e.target.value)}
-                              />
+                              type="text"
+                              className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                              style={{ minWidth: "120px", maxWidth: "100%" }}
+                              value={editedWarranty.product}
+                              onChange={(e) => handleWarrantyChange("product", e.target.value)}
+                            />
                             ) : (
                               warranty.product
                             )}
@@ -773,16 +814,25 @@ const handleWarrantyChange = (field, value) => {
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                className="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded-md text-xs"
-                                onClick={() => handleEditWarranty(warranty)}
-                              >
-                                Edit
-                              </button>
+                              <div className="flex space-x-2">
+                                <button
+                                  className="bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded-md text-xs"
+                                  onClick={() => handleEditWarranty(warranty)}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-md text-xs"
+                                  onClick={() => handleViewWarrantyDetails(warranty)}
+                                >
+                                  View Details
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
-                      ))}
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -798,8 +848,103 @@ const handleWarrantyChange = (field, value) => {
             </div>
           </div>
         )}
+
+        {/* WARRANTY DETAILS MODAL */}
+        {showWarrantyDetailsModal && selectedWarranty && (
+          <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg p-6 w-[600px] shadow-xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Warranty Details</h2>
+                <button
+                  onClick={() => setShowWarrantyDetailsModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Warranty ID:</p>
+                    <p className="text-base">#{selectedWarranty.id.toString().padStart(3, '0')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Type:</p>
+                    <p className="inline-block px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                      {selectedWarranty.type}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Product:</p>
+                    <p className="text-base">{selectedWarranty.product}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Serial Number:</p>
+                    <p className="text-base">{selectedWarranty.serialNumber || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Item ID:</p>
+                    <p className="text-base">{selectedWarranty.itemId || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Customer/Supplier:</p>
+                    <p className="text-base">{selectedWarranty.customer || selectedWarranty.supplier}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Status:</p>
+                    <p className={`inline-block px-2 py-1 rounded-full text-xs ${
+                      selectedWarranty.status === "Active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                    }`}>
+                      {selectedWarranty.status}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Issue Date:</p>
+                    <p className="text-base">{selectedWarranty.issueDate}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Expiry Date:</p>
+                    <p className="text-base">{selectedWarranty.expiryDate}</p>
+                  </div>
+                  {selectedWarranty.salesOrderId && (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-700">Sales Order ID:</p>
+                      <p className="text-base">{selectedWarranty.salesOrderId}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Warranty Use:</p>
+                    <p className="text-base">{selectedWarranty.warrantyUse || 0} times</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
+                <button
+                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 font-medium"
+                  onClick={() => setShowWarrantyDetailsModal(false)}
+                >
+                  Close
+                </button>
+                <button
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 font-medium"
+                  onClick={() => {
+                    setEditingWarranty(selectedWarranty.id);
+                    setEditedWarranty({...selectedWarranty});
+                    setShowWarrantyDetailsModal(false);
+                  }}
+                >
+                  Edit Warranty
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
-        {/* CREATE RO MODAL - Redesigned to show only the form */}
+        {/* CREATE RO MODAL */}
         {showCreateROModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
             <div className="bg-white rounded-lg p-6 w-[900px] max-h-[90vh] overflow-y-auto shadow-xl">
@@ -1008,3 +1153,4 @@ const handleWarrantyChange = (field, value) => {
 };
 
 export default ReturnWarrantyPage;
+              
