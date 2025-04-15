@@ -4,6 +4,9 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import DashboardLayout from "../../layouts/DashboardLayout";
 
+// Define a constant for warranty storage
+const WARRANTY_STORAGE_KEY = 'warrantyData';
+
 // API endpoints and utility functions (commented out until backend is ready)
 /*
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -798,14 +801,59 @@ const SalesOrderPage = () => {
     setCart([...cart, product]);
   };
 
-  // Remove product from cart
-  const removeFromCart = (productId) => {
+   // Remove product from cart
+   const removeFromCart = (productId) => {
     setCart(cart.filter(item => item.id !== productId));
   };
 
   //---------------------------------------------
   // ORDER MANAGEMENT FUNCTIONS
   //---------------------------------------------
+  
+  // NEW FUNCTION: Create warranty entries for purchased products
+  const createWarrantyEntries = (order) => {
+    try {
+      // Get existing warranty data from localStorage or initialize empty array
+      const existingWarranties = JSON.parse(localStorage.getItem(WARRANTY_STORAGE_KEY) || '[]');
+      
+      // Calculate next warranty ID
+      const nextId = existingWarranties.length > 0 
+        ? Math.max(...existingWarranties.map(w => w.id)) + 1 
+        : 1;
+      
+      // Create warranty entries for each product in the order
+      const newWarranties = order.items.map((item, index) => {
+        // Calculate warranty period (1 year from purchase date)
+        const issueDate = order.dateSold;
+        const expiryDate = new Date(issueDate);
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+        
+        return {
+          id: nextId + index,
+          type: "Customer Warranty", // Since it's from a sales order
+          product: `${item.brand || ''} ${item.model || item.category || 'Unknown Product'}`.trim(),
+          customer: order.customer,
+          salesOrderId: order.id, // Link to the sales order
+          itemId: item.id, // Link to the specific product
+          serialNumber: item.serialNumber,
+          issueDate: issueDate,
+          expiryDate: expiryDate.toISOString().split('T')[0],
+          status: "Active",
+          warrantyUse: 0 // Initialize usage counter to 0
+        };
+      });
+      
+      // Combine existing and new warranties
+      const updatedWarranties = [...existingWarranties, ...newWarranties];
+      
+      // Save updated warranties to localStorage
+      localStorage.setItem(WARRANTY_STORAGE_KEY, JSON.stringify(updatedWarranties));
+      
+      console.log(`Created ${newWarranties.length} warranty entries for order ${order.id}`);
+    } catch (error) {
+      console.error("Error creating warranty entries:", error);
+    }
+  };
   
   // Create new sales order
   const handleCreateOrder = async () => {
@@ -886,6 +934,9 @@ const SalesOrderPage = () => {
       
       // Save to localStorage so orders persist after refresh
       saveOrdersToLocalStorage(updatedOrders);
+      
+      // NEW CODE: Create warranty entries for each purchased product
+      createWarrantyEntries(newOrder);
       
       // Immediately open the invoice in a new window
       const pdfWindow = window.open("", "_blank");
@@ -1355,8 +1406,6 @@ const SalesOrderPage = () => {
                               className="p-3 border rounded bg-white flex justify-between items-center"
                               style={{minHeight: "80px"}}>
                               <div>
-                                {/* Log for debugging */}
-                                {console.log("Rendering product:", product)}
                                 <p className="font-semibold">{product.category || "Unknown Category"}</p>
                                 <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
                                 <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
@@ -1387,7 +1436,7 @@ const SalesOrderPage = () => {
                       <table className="min-w-full">
                         <thead className="bg-gray-100 sticky top-0">
                           <tr>
-                            <th className="p-2 text-left">Item</th>
+                          <th className="p-2 text-left">Item ID</th>
                             <th className="p-2 text-left">Brand</th>
                             <th className="p-2 text-left">Model</th>
                             <th className="p-2 text-right">Price</th>
@@ -1397,7 +1446,7 @@ const SalesOrderPage = () => {
                         <tbody>
                           {cart.map(item => (
                             <tr key={item.id} className="border-b">
-                              <td className="p-2">{item.category}</td>
+                              <td className="p-2">{item.id}</td>
                               <td className="p-2">{item.brand}</td>
                               <td className="p-2">{item.model}</td>
                               <td className="p-2 text-right">{item.sellingPrice}</td>
@@ -1435,7 +1484,7 @@ const SalesOrderPage = () => {
                 className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
               >
                 Cancel
-              </button>
+                </button>
               <button
                 onClick={handleCreateOrder}
                 disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}
