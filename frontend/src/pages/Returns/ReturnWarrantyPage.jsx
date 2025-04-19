@@ -191,14 +191,37 @@ const ReturnWarrantyPage = () => {
     setEditedWarranty({...warranty});
   };
 
-  const handleSaveWarranty = () => {
-    const updatedWarranties = warranties.map(w => 
-      w.id === editedWarranty.id ? editedWarranty : w
-    );
-    setWarranties(updatedWarranties);
-    saveWarrantiesToLocalStorage(updatedWarranties);
-    setEditingWarranty(null);
-    setEditedWarranty(null);
+  const handleSaveWarranty = async () => {
+    try {
+      /*
+      // When API is ready, uncomment this section
+      const response = await fetch(`${API_BASE_URL}/warranties/${editedWarranty.id}/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editedWarranty),
+      });
+      
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      
+      // Refresh the warranties list after update
+      loadWarranties();
+      */
+      
+      // For now, continue using localStorage
+      const updatedWarranties = warranties.map(w => 
+        w.id === editedWarranty.id ? editedWarranty : w
+      );
+      setWarranties(updatedWarranties);
+      saveWarrantiesToLocalStorage(updatedWarranties);
+      
+      setEditingWarranty(null);
+      setEditedWarranty(null);
+    } catch (error) {
+      console.error("Error saving warranty:", error);
+      alert("Failed to save warranty changes");
+    }
   };
 
   const handleCancelEdit = () => {
@@ -225,17 +248,24 @@ const ReturnWarrantyPage = () => {
   };
   
   // Function to load warranties from localStorage
-  const loadWarranties = () => {
+  const loadWarranties = async () => {
     try {
-      // Load warranties from localStorage
+      /*
+      // When API is ready, uncomment this section
+      const response = await fetch(`${API_BASE_URL}/warranties/`);
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      
+      const warrantyData = await response.json();
+      setWarranties(warrantyData);
+      */
+      
+      // For now, continue using localStorage
       const savedWarranties = localStorage.getItem(WARRANTY_STORAGE_KEY);
       
       if (savedWarranties) {
-        // Parse and set the warranties
         const parsedWarranties = JSON.parse(savedWarranties);
         setWarranties(parsedWarranties);
       } else {
-        // Initialize with empty array if no data exists
         setWarranties([]);
       }
     } catch (error) {
@@ -485,7 +515,7 @@ const ReturnWarrantyPage = () => {
           </div>
         )}
 
-        {/* VIEW CUSTOMER MODAL - Kept the original functionality */}
+        {/* VIEW CUSTOMER MODAL */}
         {showCustomerModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-20">
             <div className="bg-white p-6 rounded-lg shadow-lg h-[600px] w-[1200px] flex flex-col">
@@ -668,7 +698,7 @@ const ReturnWarrantyPage = () => {
                   </svg>
                 </button>
               </div>
-  
+ 
               <div className="mb-4 flex gap-4">
                 <select 
                   className="border border-gray-300 p-2 rounded-md shadow-sm"
