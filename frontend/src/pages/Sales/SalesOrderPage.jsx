@@ -3,9 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import IncomeList from "../../pages/Sales/IncomeList";
 
 // Define a constant for warranty storage
 const WARRANTY_STORAGE_KEY = 'warrantyData';
+
+// Define constants
+const INCOME_STORAGE_KEY = 'incomeData';
 
 // API endpoints and utility functions (commented out until backend is ready)
 /*
@@ -142,12 +146,13 @@ const SalesOrderPage = () => {
   //---------------------------------------------
   
   // Sales order management states
-  const [salesOrders, setSalesOrders] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("All");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+const [salesOrders, setSalesOrders] = useState([]);
+const [searchTerm, setSearchTerm] = useState("");
+const [filterType, setFilterType] = useState("All");
+const [showCreateModal, setShowCreateModal] = useState(false);
+const [showCustomerModal, setShowCustomerModal] = useState(false);
+const [isLoading, setIsLoading] = useState(false);
+const [showIncomeList, setShowIncomeList] = useState(false); // Add this line
   
   // Order creation states
   const [newOrderId, setNewOrderId] = useState("");
@@ -200,6 +205,16 @@ const SalesOrderPage = () => {
       localStorage.setItem('customersData', JSON.stringify(customers));
     }
   }, []);
+  // Add this after the other useEffect hooks
+// Add this useEffect hook to automatically set order type based on selected customer
+useEffect(() => {
+  if (selectedCustomer) {
+    const customer = customers.find(c => c.id === parseInt(selectedCustomer));
+    if (customer) {
+      setOrderType(customer.type);
+    }
+  }
+}, [selectedCustomer, customers]);
 
   // Load inventory data
   useEffect(() => {
@@ -566,41 +581,43 @@ const SalesOrderPage = () => {
         doc.text(`Email: ${customer?.email || 'N/A'}`, 120, 80);
         doc.text(`Contact: ${customer?.phone || 'N/A'}`, 120, 85);
         
+       // Items table with improved styling
         // Items table with improved styling
         doc.setFillColor(240, 236, 255);
         doc.rect(15, 100, 180, 10, 'F');
         doc.setDrawColor(200, 200, 200);
         doc.line(15, 100, 195, 100);
-        
+
         doc.setFont("helvetica", "bold");
-        doc.text("Item", 20, 107);
-        doc.text("Brand/Model", 70, 107);
-        doc.text("Serial Number", 130, 107);
+        doc.text("Item ID", 20, 107);
+        doc.text("Item", 60, 107);
+        doc.text("Brand/Model", 100, 107);
+        doc.text("Serial Number", 140, 107); // Changed from 150 to 140
         doc.text("Price", 180, 107, { align: "right" });
-        
         doc.line(15, 110, 195, 110);
-        
-        // Items list with subtle alternating backgrounds
-        let yPos = 120;
-        if (order.items && order.items.length > 0) {
-          order.items.forEach((item, index) => {
-            if (index % 2 === 0) {
-              doc.setFillColor(248, 248, 252);
-              doc.rect(15, yPos - 6, 180, 14, 'F');
-            }
-            
-            doc.setFont("helvetica", "normal");
-            doc.text(item.category || "Unknown", 20, yPos);
-            doc.text(`${item.brand || ""} ${item.model || ""}`, 70, yPos);
-            doc.text(item.serialNumber || "N/A", 130, yPos);
-            doc.text(`₱${formatPrice(item.sellingPrice)}`, 180, yPos, { align: "right" });
-            
-            doc.setDrawColor(240, 240, 240);
-            doc.line(15, yPos + 4, 195, yPos + 4);
-            
-            yPos += 15;
-          });
-        }
+
+// Items list with subtle alternating backgrounds
+          let yPos = 120;
+          if (order.items && order.items.length > 0) {
+            order.items.forEach((item, index) => {
+              if (index % 2 === 0) {
+                doc.setFillColor(248, 248, 252);
+                doc.rect(15, yPos - 6, 180, 14, 'F');
+              }
+              
+              doc.setFont("helvetica", "normal");
+              doc.text(item.id.toString(), 20, yPos);
+              doc.text(item.category || "Unknown", 60, yPos);
+              doc.text(`${item.brand || ""} ${item.model || ""}`, 100, yPos);
+              doc.text(item.serialNumber || "N/A", 140, yPos); // Changed from 150 to 140
+              doc.text(`₱${formatPrice(item.sellingPrice)}`, 180, yPos, { align: "right" });
+                            
+              doc.setDrawColor(240, 240, 240);
+              doc.line(15, yPos + 4, 195, yPos + 4);
+              
+              yPos += 15;
+            });
+          }
         
         // Total section with stronger styling
         yPos += 5;
@@ -809,7 +826,7 @@ const SalesOrderPage = () => {
   //---------------------------------------------
   // ORDER MANAGEMENT FUNCTIONS
   //---------------------------------------------
-  
+
   // NEW FUNCTION: Create warranty entries for purchased products
   const createWarrantyEntries = (order) => {
     try {
@@ -830,16 +847,16 @@ const SalesOrderPage = () => {
         
         return {
           id: nextId + index,
-          type: "Customer Warranty", // Since it's from a sales order
+          type: "Customer Warranty",
           product: `${item.brand || ''} ${item.model || item.category || 'Unknown Product'}`.trim(),
           customer: order.customer,
-          salesOrderId: order.id, // Link to the sales order
-          itemId: item.id, // Link to the specific product
+          salesOrderId: order.id,
+          itemId: item.id, // Ensure this is properly passed
           serialNumber: item.serialNumber,
           issueDate: issueDate,
           expiryDate: expiryDate.toISOString().split('T')[0],
           status: "Active",
-          warrantyUse: 0 // Initialize usage counter to 0
+          warrantyUse: 0
         };
       });
       
@@ -854,6 +871,49 @@ const SalesOrderPage = () => {
       console.error("Error creating warranty entries:", error);
     }
   };
+
+  // Create income record for the order
+const createIncomeRecord = (order) => {
+  try {
+    // Get existing income records from localStorage or initialize empty array
+    const existingIncomes = JSON.parse(localStorage.getItem(INCOME_STORAGE_KEY) || '[]');
+    
+    // Calculate next income ID
+    const nextId = existingIncomes.length > 0 
+      ? Math.max(...existingIncomes.map(income => income.id)) + 1 
+      : 1;
+    
+    // For now, simple calculation where netIncome is 70% of total
+    // In a real implementation, you'd calculate this based on actual costs
+    const netIncome = order.total * 0.7;
+    
+    // Create the income record
+    const newIncome = {
+      id: nextId,
+      incomeAmount: order.total,
+      netIncome: netIncome,
+      status: "Received", // Default status for completed orders
+      paymentMethod: order.paymentMethod,
+      dateReceived: new Date().toISOString(),
+      orderId: order.id,
+      customerName: order.customer,
+      notes: ""
+    };
+    
+    // Add the new income record to the array
+    const updatedIncomes = [...existingIncomes, newIncome];
+    
+    // Save updated incomes to localStorage
+    localStorage.setItem(INCOME_STORAGE_KEY, JSON.stringify(updatedIncomes));
+    
+    console.log(`Created income record #${nextId} for order ${order.id}`);
+    
+    return newIncome;
+  } catch (error) {
+    console.error("Error creating income record:", error);
+    return null;
+  }
+};
   
   // Create new sales order
   const handleCreateOrder = async () => {
@@ -902,26 +962,6 @@ const SalesOrderPage = () => {
       
       newOrder.invoiceUrl = invoiceUrl;
       
-      /* 
-      // When API is ready, uncomment this section
-      // Create the order in the backend
-      const createdOrder = await createSalesOrder(newOrder);
-      if (!createdOrder) {
-        throw new Error("Failed to save order to server");
-      }
-        // Mark items as sold in inventory via API
-      const inventoryUpdates = [];
-      for (const item of cart) {
-        inventoryUpdates.push(updateInventoryItemStatus(item.id, "Sold"));
-      }
-      
-      await Promise.all(inventoryUpdates);
-      
-      // Refresh orders and inventory from server
-      loadSalesOrdersData();
-      loadInventoryData();
-      */
-      
       // For now, mark items as sold in localStorage inventory
       for (const item of cart) {
         const updated = await updateInventoryStatus(item.id, "Sold");
@@ -935,10 +975,52 @@ const SalesOrderPage = () => {
       // Save to localStorage so orders persist after refresh
       saveOrdersToLocalStorage(updatedOrders);
       
-      // NEW CODE: Create warranty entries for each purchased product
+      // Create warranty entries for each purchased product
       createWarrantyEntries(newOrder);
+  
+      // Create income record for the order
+      const incomeRecord = createIncomeRecord(newOrder);
+  
+      /* 
+      // When API is ready, uncomment this section - This is correctly placed here
+      try {
+        const response = await fetch(`${API_BASE_URL}/income/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            orderId: newOrder.id,
+            customerName: newOrder.customer,
+            incomeAmount: newOrder.total,
+            netIncome: newOrder.total * 0.7,
+            status: "Received",
+            paymentMethod: newOrder.paymentMethod,
+            dateReceived: new Date().toISOString(),
+            notes: ""
+          }),
+        });
+  
+        if (!response.ok) throw new Error("Failed to create income record");
+        const incomeData = await response.json();
+        console.log("Income record created:", incomeData);
+      } catch (error) {
+        console.error("Error creating income record in API:", error);
+        // Continue with the order process even if API fails
+      }
+      */
+  
+      // FIRST: Reset the form and close the modal
+      setCart([]);
+      setSelectedCustomer("");
+      setPaymentMethod("");
+      setShowCreateModal(false);
       
-      // Immediately open the invoice in a new window
+      // THEN: Generate next order ID
+      const nextOrderNumber = parseInt(newOrderId.replace("#SO", "")) + 1;
+      setNewOrderId(`#SO${nextOrderNumber}`);
+      
+      // NEXT: Open the invoice in a new window
       const pdfWindow = window.open("", "_blank");
       if (pdfWindow) {
         pdfWindow.document.write(
@@ -948,17 +1030,11 @@ const SalesOrderPage = () => {
         alert("Pop-up blocked. Please allow pop-ups to view the invoice.");
       }
       
-      // Reset the form
-      setCart([]);
-      setSelectedCustomer("");
-      setPaymentMethod("");
-      setShowCreateModal(false);
+      // FINALLY: Ask if they want to view the income list (only once)
+      if (incomeRecord && window.confirm("Order created successfully! Would you like to view the income list?")) {
+        setShowIncomeList(true);
+      }
       
-      // Generate next order ID
-      const nextOrderNumber = parseInt(newOrderId.replace("#SO", "")) + 1;
-      setNewOrderId(`#SO${nextOrderNumber}`);
-      
-      alert("Order created successfully!");
     } catch (error) {
       console.error("Error creating order:", error);
       alert(`Failed to create order: ${error.message || "Unknown error"}`);
@@ -1004,504 +1080,520 @@ const SalesOrderPage = () => {
     loadCustomerData();
     setTimeout(() => setIsLoading(false), 500); // Add a small delay for UX
   };
-
-  //---------------------------------------------
+//---------------------------------------------
   // RENDER UI
   //---------------------------------------------
   
   return (
     <DashboardLayout>
-      <div className="p-4 bg-white min-h-screen">
-        {/* Header and controls section */}
-        <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold text-purple-800">Issued Sale Orders</h1>
+      {showIncomeList ? (
+        // Show Income List when showIncomeList is true
+        <div className="p-4">
+          <IncomeList 
+            onBack={() => setShowIncomeList(false)} 
+            storageKey={INCOME_STORAGE_KEY} 
+          />
+        </div>
+      ) : (
+        // Show the original Sales Orders UI when showIncomeList is false
+        <div className="p-4 bg-white min-h-screen">
+          {/* Header and controls section */}
+          <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h1 className="text-2xl font-bold text-purple-800">Issued Sale Orders</h1>
+              
+              <div className="flex space-x-2">
+                <button 
+                  onClick={handleRefreshData} 
+                  className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 flex items-center"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Loading..." : "Refresh Data"}
+                </button>
+                
+                {/* View Income List button */}
+                <button 
+                  onClick={() => setShowIncomeList(true)} 
+                  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 flex items-center"
+                >
+                  View Income List
+                </button>
+              </div>
+            </div>
             
-            {/* Add refresh button */}
-            <button 
-              onClick={handleRefreshData} 
-              className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 flex items-center"
-              disabled={isLoading}
-            >
-              {isLoading ? "Loading..." : "Refresh Data"}
-            </button>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <div>
-              <label htmlFor="type-filter" className="mr-2">Type:</label>
-              <select
-                id="type-filter"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="p-2 border rounded bg-white"
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <div>
+                <label htmlFor="type-filter" className="mr-2">Type:</label>
+                <select
+                  id="type-filter"
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="p-2 border rounded bg-white"
+                >
+                  <option value="All">All</option>
+                  <option value="Walk-In">Walk-In</option>
+                  <option value="Contract">Contract</option>
+                </select>
+              </div>
+              
+              <div className="flex-grow">
+                <input
+                  type="text"
+                  placeholder="Search by SO ID, Customer, or Date"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="p-2 border rounded w-full max-w-xl"
+                />
+              </div>
+              
+              <button 
+                onClick={() => setShowCustomerModal(true)}
+                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
               >
-                <option value="All">All</option>
-                <option value="Walk-In">Walk-In</option>
-                <option value="Contract">Contract</option>
-              </select>
+                View Customers
+              </button>
+              
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              >
+                + Create SO
+              </button>
             </div>
             
-            <div className="flex-grow">
-              <input
-                type="text"
-                placeholder="Search by SO ID, Customer, or Date"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="p-2 border rounded w-full max-w-xl"
-              />
-            </div>
+            {/* Loading indicator */}
+            {isLoading && (
+              <div className="flex justify-center items-center py-4">
+                <p className="text-purple-700 text-lg">Loading data...</p>
+              </div>
+            )}
             
-            <button 
-              onClick={() => setShowCustomerModal(true)}
-              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-            >
-              View Customers
-            </button>
-            
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-            >
-              + Create SO
-            </button>
+            {/* Sales Orders Table */}
+            {!isLoading && (
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-white">
+                  <thead>
+                  <tr className="bg-gray-100 text-gray-800">
+                      <th className="p-3 text-left">Sale Order ID</th>
+                      <th className="p-3 text-left">Employee</th>
+                      <th className="p-3 text-left">Date Sold</th>
+                      <th className="p-3 text-left">Customer</th>
+                      <th className="p-3 text-left">Type</th>
+                      <th className="p-3 text-right">Total</th>
+                      <th className="p-3 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="p-4 text-center text-gray-500">No sales orders found</td>
+                      </tr>
+                    ) : (
+                      filteredOrders.map((order, index) => (
+                        <tr key={order.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                          <td className="p-3 text-purple-700">{order.id}</td>
+                          <td className="p-3">{order.employee}</td>
+                          <td className="p-3">{order.dateSold}</td>
+                          <td className="p-3">{order.customer}</td>
+                          <td className="p-3">
+                            <span className={`px-2 py-1 rounded-full text-white ${
+                              order.type === "Walk-In" ? "bg-green-500" : "bg-yellow-500"
+                            }`}>
+                              {order.type}
+                            </span>
+                          </td>
+                          <td className="p-3 text-right">₱{formatPrice(order.total)}</td>
+                          <td className="p-3 text-center">
+                            <button
+                              onClick={() => viewOrderDetails(order)}
+                              className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
+                            >
+                              View details
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Customer List Modal */}
+{showCustomerModal && (
+  <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+    <div className="bg-white rounded-lg p-6 w-[90%] max-w-4xl h-[650px] flex flex-col shadow-lg">
+      {/* Modal content for customers */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-purple-800">Customer List</h2>
+        <button 
+          onClick={() => {
+            setShowCustomerModal(false);
+            resetCustomerForm();
+          }}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="bg-white rounded-lg mb-6 overflow-auto shadow-md flex-grow">
+        <table className="min-w-full">
+          <thead className="bg-gray-100 sticky top-0">
+            <tr>
+              <th className="p-3 text-left">Customer ID</th>
+              <th className="p-3 text-left">Name</th>
+              <th className="p-3 text-left">Type</th>
+              <th className="p-3 text-left">Address</th>
+              <th className="p-3 text-left">Email</th>
+              <th className="p-3 text-left">Contact Number</th>
+              <th className="p-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          {/* Insert the first code block here - your tbody content */}
+                    <tbody>
+            {customers.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="p-4 text-center text-gray-500">No customers found</td>
+              </tr>
+            ) : (
+              customers.map((customer) => (
+                <tr key={customer.id} className="border-b hover:bg-gray-50">
+                  <td className="p-3">{customer.id}</td>
+                  <td className="p-3 font-medium">{customer.name}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded-full text-white ${
+                      customer.type === "Walk-In" ? "bg-green-500" : "bg-yellow-500"
+                    }`}>
+                      {customer.type}
+                    </span>
+                  </td>
+                  <td className="p-3">{customer.address}</td>
+                  <td className="p-3">{customer.email}</td>
+                  <td className="p-3">{customer.phone}</td>
+                  <td className="p-3 text-center">
+                    <div className="flex justify-center space-x-2">
+                      <button 
+                        onClick={() => handleEditCustomer(customer.id)}
+                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-16"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteCustomer(customer.id)}
+                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 w-16"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Insert the second code block here - the customer form */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <h3 className="text-lg font-bold mb-3 text-purple-800">
+          {isEditing ? "Edit Customer" : "New Customer"}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+            <input
+              type="text"
+              placeholder="Customer Name"
+              value={newCustomer.name}
+              onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+              className="p-2 border rounded w-full"
+            />
           </div>
           
-          {/* Loading indicator */}
-          {isLoading && (
-            <div className="flex justify-center items-center py-4">
-              <p className="text-purple-700 text-lg">Loading data...</p>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Customer Type</label>
+            <select
+              value={newCustomer.type}
+              onChange={(e) => setNewCustomer({...newCustomer, type: e.target.value})}
+              className="p-2 border rounded w-full"
+            >
+              <option value="Walk-In">Walk-In</option>
+              <option value="Contract">Contract</option>
+            </select>
+          </div>
           
-          {/* Sales Orders Table */}
-          {!isLoading && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white">
-                <thead>
-                <tr className="bg-gray-100 text-gray-800">
-                    <th className="p-3 text-left">Sale Order ID</th>
-                    <th className="p-3 text-left">Employee</th>
-                    <th className="p-3 text-left">Date Sold</th>
-                    <th className="p-3 text-left">Customer</th>
-                    <th className="p-3 text-left">Type</th>
-                    <th className="p-3 text-right">Total</th>
-                    <th className="p-3 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="p-4 text-center text-gray-500">No sales orders found</td>
-                    </tr>
-                  ) : (
-                    filteredOrders.map((order, index) => (
-                      <tr key={order.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                        <td className="p-3 text-purple-700">{order.id}</td>
-                        <td className="p-3">{order.employee}</td>
-                        <td className="p-3">{order.dateSold}</td>
-                        <td className="p-3">{order.customer}</td>
-                        <td className="p-3">
-                          <span className={`px-2 py-1 rounded-full text-white ${
-                            order.type === "Walk-In" ? "bg-green-500" : "bg-yellow-500"
-                          }`}>
-                            {order.type}
-                          </span>
-                        </td>
-                        <td className="p-3 text-right">₱{formatPrice(order.total)}</td>
-                        <td className="p-3 text-center">
-                          <button
-                            onClick={() => viewOrderDetails(order)}
-                            className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
-                          >
-                            View details
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <input
+              type="text"
+              placeholder="Customer Address"
+              value={newCustomer.address}
+              onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
+              className="p-2 border rounded w-full"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              placeholder="Customer Email"
+              value={newCustomer.email}
+              onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
+              className="p-2 border rounded w-full"
+            />
+          </div>
+          
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+            <input
+              type="text"
+              placeholder="Contact Number"
+              value={newCustomer.phone}
+              onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+              className="p-2 border rounded w-full"
+            />
+          </div>
+        </div>
+        
+        <div className="flex justify-between">
+          <button
+            onClick={resetCustomerForm}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
+          >
+            Clear
+          </button>
+          
+          <button
+            onClick={handleAddCustomer}
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-auto min-w-[120px]"
+          >
+            {isEditing ? "Update Customer" : "Add Customer"}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+      
+      {/* Create Sales Order Modal */}
+{showCreateModal && (
+  <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+    <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-6xl max-h-[90vh] flex flex-col">
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
+          <button 
+            onClick={() => {
+              setShowCreateModal(false);
+              setCart([]);
+              setSelectedCustomer("");
+              setPaymentMethod("");
+            }}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-600">Sales Order ID:</label>
+            <p className="font-semibold">{newOrderId}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600">Employee:</label>
+            <p className="font-semibold">sales@pgmicro.com</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600">Date:</label>
+            <p className="font-semibold">{new Date().toISOString().split('T')[0]}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600">Status:</label>
+            <p className="font-semibold">{orderType}</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600">Time:</label>
+            <p className="font-semibold">
+              {new Date().toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: true 
+              })}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600">Payment Method:</label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="p-1 border rounded w-full"
+              required
+            >
+              <option value="">Select Payment Method</option>
+              <option value="Cash">Cash</option>
+              <option value="Credit Card">Credit Card</option>
+              <option value="Debit Card">Debit Card</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Online Payment">Online Payment</option>
+            </select>
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-600 mb-1">Select Customer:</label>
+          <select
+            value={selectedCustomer}
+            onChange={(e) => setSelectedCustomer(e.target.value)}
+            className="p-2 border rounded w-full"
+            required
+          >
+            <option value="">Select Customer</option>
+            {customers.map(customer => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name} - {customer.email}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
       
-      {/* Customer List Modal */}
-      {showCustomerModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.05)'}}>
-          <div className="bg-white rounded-lg p-6 w-[90%] max-w-4xl h-[650px] flex flex-col shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-purple-800">Customer List</h2>
-              <button 
-                onClick={() => {
-                  setShowCustomerModal(false);
-                  resetCustomerForm();
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+      <div className="flex-1 overflow-hidden flex flex-col md:flex-row p-4">
+        {/* Product Selection */}
+        <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
+          <div className="mb-2">
+            <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="p-2 border rounded w-full"
+            >
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="border rounded p-2 h-[420px] flex flex-col">
+            <h3 className="font-semibold mb-2">Available Products:</h3>
+            <div className="flex-1 overflow-y-auto">
+              {filteredProducts.length === 0 ? (
+                <p className="text-gray-500 italic text-center p-4">No products available</p>
+              ) : (
+                <div className="space-y-2">
+                  {filteredProducts.map(product => (
+                    product.saleStatus !== "Sold" && (
+                      <div 
+                        key={product.id} 
+                        className="p-3 border rounded bg-white flex justify-between items-center"
+                        style={{minHeight: "80px"}}
+                      >
+                        <div>
+                          <p className="font-semibold">{product.category || "Unknown Category"}</p>
+                          <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
+                          <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
+                          <p>{product.sellingPrice || "Price not available"}</p>
+                        </div>
+                        <button
+                          onClick={() => addToCart(product)}
+                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                        >
+                          Add to Cart
+                        </button>
+                      </div>
+                    )
+                  ))}
+                </div>
+              )}
             </div>
-            
-            <div className="bg-white rounded-lg mb-6 overflow-auto shadow-md flex-grow">
-              <table className="min-w-full">
-              <thead className="bg-gray-100 sticky top-0">
-                  <tr>
-                    <th className="p-3 text-left">Customer ID</th>
-                    <th className="p-3 text-left">Name</th>
-                    <th className="p-3 text-left">Type</th>
-                    <th className="p-3 text-left">Address</th>
-                    <th className="p-3 text-left">Email</th>
-                    <th className="p-3 text-left">Contact Number</th>
-                    <th className="p-3 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.length === 0 ? (
+          </div>
+        </div>
+        
+        {/* Shopping Cart */}
+        <div className="md:w-1/2 pl-0 md:pl-2">
+          <div className="border rounded flex flex-col h-[420px]">
+            <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
+            <div className="flex-1 overflow-y-auto">
+              {cart.length === 0 ? (
+                <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
+              ) : (
+                <table className="min-w-full">
+                  <thead className="bg-gray-100 sticky top-0">
                     <tr>
-                      <td colSpan="7" className="p-4 text-center text-gray-500">No customers found</td>
+                      <th className="p-2 text-left">Item ID</th>
+                      <th className="p-2 text-left">Brand</th>
+                      <th className="p-2 text-left">Model</th>
+                      <th className="p-2 text-right">Price</th>
+                      <th className="p-2 text-center">Action</th>
                     </tr>
-                  ) : (
-                    customers.map((customer) => (
-                      <tr key={customer.id} className="border-b hover:bg-gray-50">
-                        <td className="p-3">{customer.id}</td>
-                        <td className="p-3 font-medium">{customer.name}</td>
-                        <td className="p-3">
-                          <span className={`px-2 py-1 rounded-full text-white ${
-                            customer.type === "Walk-In" ? "bg-green-500" : "bg-yellow-500"
-                          }`}>
-                            {customer.type}
-                          </span>
-                        </td>
-                        <td className="p-3">{customer.address}</td>
-                        <td className="p-3">{customer.email}</td>
-                        <td className="p-3">{customer.phone}</td>
-                        <td className="p-3 text-center">
-                          <div className="flex justify-center space-x-2">
-                            <button 
-                              onClick={() => handleEditCustomer(customer.id)}
-                              className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-16"
-                            >
-                              Edit
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteCustomer(customer.id)}
-                              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 w-16"
-                            >
-                              Delete
-                            </button>
-                          </div>
+                  </thead>
+                  <tbody>
+                    {cart.map(item => (
+                      <tr key={item.id} className="border-b">
+                        <td className="p-2">{item.id}</td>
+                        <td className="p-2">{item.brand}</td>
+                        <td className="p-2">{item.model}</td>
+                        <td className="p-2 text-right">{item.sellingPrice}</td>
+                        <td className="p-2 text-center">
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
+                          >
+                            Remove
+                          </button>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="text-lg font-bold mb-3 text-purple-800">
-                {isEditing ? "Edit Customer" : "New Customer"}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-                  <input
-                    type="text"
-                    placeholder="Customer Name"
-                    value={newCustomer.name}
-                    onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
-                    className="p-2 border rounded w-full"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Type</label>
-                  <select
-                    value={newCustomer.type}
-                    onChange={(e) => setNewCustomer({...newCustomer, type: e.target.value})}
-                    className="p-2 border rounded w-full"
-                  >
-                    <option value="Walk-In">Walk-In</option>
-                    <option value="Contract">Contract</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                  <input
-                    type="text"
-                    placeholder="Customer Address"
-                    value={newCustomer.address}
-                    onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
-                    className="p-2 border rounded w-full"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input
-                    type="email"
-                    placeholder="Customer Email"
-                    value={newCustomer.email}
-                    onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
-                    className="p-2 border rounded w-full"
-                  />
-                </div>
-                
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-                  <input
-                    type="text"
-                    placeholder="Contact Number"
-                    value={newCustomer.phone}
-                    onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
-                    className="p-2 border rounded w-full"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-between">
-                <button
-                  onClick={resetCustomerForm}
-                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
-                >
-                  Clear
-                </button>
-                
-                <button
-                  onClick={handleAddCustomer}
-                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-auto min-w-[120px]"
-                >
-                  {isEditing ? "Update Customer" : "Add Customer"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Create Sales Order Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.05)'}}>
-          <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-6xl max-h-[90vh] flex flex-col">
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
-                <button 
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setCart([]);
-                    setSelectedCustomer("");
-                    setPaymentMethod("");
-                  }}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Sales Order ID:</label>
-                  <p className="font-semibold">{newOrderId}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Employee:</label>
-                  <p className="font-semibold">sales@pgmicro.com</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Date:</label>
-                  <p className="font-semibold">{new Date().toISOString().split('T')[0]}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Status:</label>
-                  <select
-                    value={orderType}
-                    onChange={(e) => setOrderType(e.target.value)}
-                    className="p-1 border rounded w-full"
-                  >
-                    <option value="Walk-In">Walk-In</option>
-                    <option value="Contract">Contract</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Time:</label>
-                  <p className="font-semibold">
-                    {new Date().toLocaleTimeString('en-US', { 
-                      hour: '2-digit', 
-                      minute: '2-digit', 
-                      hour12: true 
-                    })}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Payment Method:</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="p-1 border rounded w-full"
-                    required
-                  >
-                    <option value="">Select Payment Method</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Credit Card">Credit Card</option>
-                    <option value="Debit Card">Debit Card</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Online Payment">Online Payment</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-600 mb-1">Select Customer:</label>
-                <select
-                  value={selectedCustomer}
-                  onChange={(e) => setSelectedCustomer(e.target.value)}
-                  className="p-2 border rounded w-full"
-                  required
-                >
-                  <option value="">Select Customer</option>
-                  {customers.map(customer => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name} - {customer.email}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-hidden flex flex-col md:flex-row p-4">
-              {/* Product Selection */}
-              <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
-                <div className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="p-2 border rounded w-full"
-                  >
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
                     ))}
-                  </select>
-                </div>
-                
-                <div className="border rounded p-2 h-[420px] flex flex-col">
-                  <h3 className="font-semibold mb-2">Available Products:</h3>
-                  <div className="flex-1 overflow-y-auto">
-                    {filteredProducts.length === 0 ? (
-                      <p className="text-gray-500 italic text-center p-4">No products available</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {filteredProducts.map(product => (
-                          product.saleStatus !== "Sold" && (
-                            <div 
-                              key={product.id} 
-                              className="p-3 border rounded bg-white flex justify-between items-center"
-                              style={{minHeight: "80px"}}>
-                              <div>
-                                <p className="font-semibold">{product.category || "Unknown Category"}</p>
-                                <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
-                                <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
-                                <p>{product.sellingPrice || "Price not available"}</p>
-                              </div>
-                              <button
-                                onClick={() => addToCart(product)}
-                                className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
-                                Add to Cart
-                              </button>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Shopping Cart */}
-              <div className="md:w-1/2 pl-0 md:pl-2">
-                <div className="border rounded flex flex-col h-[420px]">
-                  <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
-                  <div className="flex-1 overflow-y-auto">
-                    {cart.length === 0 ? (
-                      <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
-                    ) : (
-                      <table className="min-w-full">
-                        <thead className="bg-gray-100 sticky top-0">
-                          <tr>
-                          <th className="p-2 text-left">Item ID</th>
-                            <th className="p-2 text-left">Brand</th>
-                            <th className="p-2 text-left">Model</th>
-                            <th className="p-2 text-right">Price</th>
-                            <th className="p-2 text-center">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {cart.map(item => (
-                            <tr key={item.id} className="border-b">
-                              <td className="p-2">{item.id}</td>
-                              <td className="p-2">{item.brand}</td>
-                              <td className="p-2">{item.model}</td>
-                              <td className="p-2 text-right">{item.sellingPrice}</td>
-                              <td className="p-2 text-center">
-                                <button
-                                  onClick={() => removeFromCart(item.id)}
-                                  className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
-                                >
-                                  Remove
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                  <div className="bg-gray-100 p-2 border-t">
-                    <div className="font-semibold text-right">
-                      Total: ₱{totalAmount.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                  </tbody>
+                </table>
+              )}
             </div>
-            
-            <div className="p-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setCart([]);
-                  setSelectedCustomer("");
-                  setPaymentMethod("");
-                }}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
-              >
-                Cancel
-                </button>
-              <button
-                onClick={handleCreateOrder}
-                disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}
-                className={`px-4 py-2 rounded text-white w-32 ${
-                  !selectedCustomer || cart.length === 0 || !paymentMethod
-                    ? "bg-green-300 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
-              >
-                Create Order
-              </button>
+            <div className="bg-gray-100 p-2 border-t">
+              <div className="font-semibold text-right">
+                Total: ₱{totalAmount.toFixed(2)}
+              </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
+      
+      <div className="p-4 border-t border-gray-200 flex justify-end space-x-3">
+        <button
+          onClick={() => {
+            setShowCreateModal(false);
+            setCart([]);
+            setSelectedCustomer("");
+            setPaymentMethod("");
+          }}
+          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleCreateOrder}
+          disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}
+          className={`px-4 py-2 rounded text-white w-32 ${
+            !selectedCustomer || cart.length === 0 || !paymentMethod
+              ? "bg-green-300 cursor-not-allowed"
+              : "bg-green-600 hover:bg-green-700"
+          }`}
+        >
+          Create Order
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </DashboardLayout>
   );
 };
-
 export default SalesOrderPage;
