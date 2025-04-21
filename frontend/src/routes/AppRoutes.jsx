@@ -23,11 +23,11 @@ import ReturnDetailsPage from "../pages/Returns/ReturnDetailsPage";
 // Reports Module
 import ReportModule from "../pages/ReportModule/ReportModule";
 
-// ✅ Corrected User Management Page import
+// User Management Page import
 import UserManagementPage from "../pages/UserManagement/UserManagementPage";
 import { ROLES } from "../utils/roleConfig";
 
-// 🔐 Protected route wrapper
+// Protected route wrapper
 const ProtectedRoute = ({ element, allowedRoles }) => {
   const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
   const userRole = sessionStorage.getItem("userRole");
@@ -105,7 +105,7 @@ const AppRoutes = () => {
       {/* Public Login Page */}
       <Route path="/" element={<LoginPage />} />
 
-      {/* ✅ Protected Dashboard with proper roles */}
+      {/* Protected Dashboard with proper roles */}
       <Route
         path="/dashboard"
         element={
@@ -116,13 +116,15 @@ const AppRoutes = () => {
               ROLES.EMPLOYEE, 
               ROLES.INVENTORY, 
               ROLES.SALES, 
-              ROLES.RETURNS
+              ROLES.RETURNS,
+              ROLES.PURCHASE_ORDER,
+              ROLES.WARRANTY_LIST
             ]}
           />
         }
       />
 
-      {/* Inventory - Pass onInventoryUpdate function */}
+      {/* Inventory - Only Admin and Inventory roles */}
       <Route
         path="/inventory"
         element={
@@ -133,7 +135,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Damaged Products Page */}
+      {/* Damaged Products Page - Only Admin and Inventory roles */}
       <Route
         path="/damaged-products"
         element={
@@ -144,13 +146,13 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Purchase Orders */}
+      {/* Purchase Orders - Only Admin and Purchase Order roles */}
       <Route
         path="/purchase-orders"
         element={
           <ProtectedRoute
             element={<PurchaseOrderPage />}
-            allowedRoles={[ROLES.ADMIN, ROLES.INVENTORY]}
+            allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]} // Removed INVENTORY role
           />
         }
       />
@@ -159,7 +161,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<CreatePurchaseOrder />}
-            allowedRoles={[ROLES.ADMIN, ROLES.INVENTORY]}
+            allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]} // Removed INVENTORY role
           />
         }
       />
@@ -168,12 +170,12 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<ViewPurchaseOrder />}
-            allowedRoles={[ROLES.ADMIN, ROLES.INVENTORY]}
+            allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]} // Removed INVENTORY role
           />
         }
       />
 
-      {/* Sales - Pass inventory data and update function */}
+      {/* Sales - Only Admin and Sales roles */}
       <Route
         path="/sales"
         element={
@@ -187,13 +189,13 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Returns */}
+      {/* Returns - Admin, Returns, and Warranty List roles */}
       <Route
         path="/return-warranty"
         element={
           <ProtectedRoute
             element={<ReturnWarrantyPage />}
-            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS]}
+            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS, ROLES.WARRANTY_LIST]}
           />
         }
       />
@@ -202,7 +204,7 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<ReturnsFormPage />}
-            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS]}
+            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS, ROLES.WARRANTY_LIST]}
           />
         }
       />
@@ -211,12 +213,12 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<ReturnDetailsPage />}
-            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS]}
+            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS, ROLES.WARRANTY_LIST]}
           />
         }
       />
 
-      {/* Reports */}
+      {/* Reports - Admin only */}
       <Route
         path="/reports"
         element={
@@ -227,7 +229,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* User Management (Admin Only) */}
+      {/* User Management - Admin Only */}
       <Route
         path="/user-management"
         element={

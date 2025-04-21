@@ -1088,12 +1088,12 @@ const createIncomeRecord = (order) => {
     <DashboardLayout>
       {showIncomeList ? (
         // Show Income List when showIncomeList is true
-        <div className="p-4">
+        
           <IncomeList 
             onBack={() => setShowIncomeList(false)} 
             storageKey={INCOME_STORAGE_KEY} 
           />
-        </div>
+        
       ) : (
         // Show the original Sales Orders UI when showIncomeList is false
         <div className="p-4 bg-white min-h-screen">
