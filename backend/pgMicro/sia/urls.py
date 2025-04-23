@@ -1,13 +1,20 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
-from .views import *
+from .views import (
+    EmployeeViewSet, CustomerViewSet, ProductCategoryViewSet,
+    SupplierViewSet, AccountViewSet, ProductViewSet, ProductWarrantyViewSet,
+    InventoryViewSet, OrdersViewSet, OrderItemWarrantyViewSet, OrderItemDetailsViewSet,
+    OrderPaymentViewSet, ReturnsViewSet, RefundViewSet, ReplacementViewSet,
+    PurchaseOrderViewSet, PurchaseOrderDetailsViewSet, PurchaseOrderPaymentViewSet,
+    PurchaseOrderTrackingViewSet, ExpensesViewSet, IncomeViewSet, ReportModuleViewSet,
+    DamagedInventoryListView  # ✅ this one is not router-registered
+)
 
 router = DefaultRouter()
 router.register(r'employees', EmployeeViewSet)
 router.register(r'customers', CustomerViewSet)
 router.register(r'product-categories', ProductCategoryViewSet)
 router.register(r'suppliers', SupplierViewSet)
-router.register(r'damage-products', DamageProductViewSet)
 router.register(r'accounts', AccountViewSet)
 router.register(r'products', ProductViewSet)
 router.register(r'product-warranties', ProductWarrantyViewSet)
@@ -29,4 +36,5 @@ router.register(r'report-modules', ReportModuleViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('damaged-inventory/', DamagedInventoryListView.as_view(), name="damaged-inventory"),  # ✅ direct access
 ]
