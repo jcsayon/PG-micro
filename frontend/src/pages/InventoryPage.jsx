@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 
 // API endpoints and utility functions (commented out until backend is ready)
-/*
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 const ENDPOINTS = {
   INVENTORY: `${API_BASE_URL}/inventory/`,
   DAMAGED_INVENTORY: `${API_BASE_URL}/damaged-inventory/`,
@@ -48,7 +48,7 @@ const updateProductStatusAPI = async (productId, updates) => {
     return null;
   }
 };
-*/
+
 
 const InventoryPage = ({ onInventoryUpdate }) => {
   const [products, setProducts] = useState([]);
@@ -125,7 +125,7 @@ const loadProductsFromLocalStorage = () => {
       
       setIsLoading(false);
     } else {
-      /* 
+      
       // When API is ready, uncomment this section
       Promise.all([fetchInventory(), fetchDamagedInventory()])
         .then(([inventoryData, damagedData]) => {
@@ -156,11 +156,9 @@ const loadProductsFromLocalStorage = () => {
           generateProductData();
           setIsLoading(false);
         });
-      */
+      
       
       // For now, generate mock data only if nothing in localStorage
-      generateProductData();
-      setIsLoading(false);
     }
   };
 
