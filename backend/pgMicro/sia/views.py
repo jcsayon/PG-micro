@@ -1,7 +1,8 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, generics
 from .models import *
 from .serializers import *
 
+# 👇 VIEWSETS FOR ROUTER-REGISTERED ENDPOINTS
 class EmployeeViewSet(viewsets.ModelViewSet):
     queryset = Employee.objects.all()
     serializer_class = EmployeeSerializer
@@ -18,10 +19,6 @@ class SupplierViewSet(viewsets.ModelViewSet):
     queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
 
-class DamageProductViewSet(viewsets.ModelViewSet):
-    queryset = DamageProduct.objects.all()
-    serializer_class = DamageProductSerializer
-
 class AccountViewSet(viewsets.ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
@@ -34,7 +31,7 @@ class ProductWarrantyViewSet(viewsets.ModelViewSet):
     queryset = ProductWarranty.objects.all()
     serializer_class = ProductWarrantySerializer
 
-class InventoryViewSet(viewsets.ModelViewSet):
+class InventoryViewSet(viewsets.ModelViewSet):  # ✅ corrected to real ViewSet
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
 
@@ -93,3 +90,8 @@ class IncomeViewSet(viewsets.ModelViewSet):
 class ReportModuleViewSet(viewsets.ModelViewSet):
     queryset = ReportModule.objects.all()
     serializer_class = ReportModuleSerializer
+
+# 👇 EXTRA ENDPOINT NOT IN ROUTER (for filtered inventory)
+class DamagedInventoryListView(generics.ListAPIView):
+    queryset = Inventory.objects.filter(stock_status="Damaged")
+    serializer_class = InventorySerializer

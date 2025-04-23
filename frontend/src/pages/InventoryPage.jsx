@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 
-// API endpoints and utility functions (commented out until backend is ready)
-
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 const ENDPOINTS = {
   INVENTORY: `${API_BASE_URL}/inventory/`,
   DAMAGED_INVENTORY: `${API_BASE_URL}/damaged-inventory/`,
 };
+
+const categories = [
+  "All", "Processor", "Motherboards", "Video Cards", "Monitors", "Laptops", 
+  "Printers", "Toners", "Inks", "Networking", "DSLR Camera", "CCTV Camera", 
+  "Keyboard & Mouse", "Webcam", "Power Supply", "Thin Client"
+];
+
 
 // API utility functions
 const fetchInventory = async () => {
@@ -32,24 +37,6 @@ const fetchDamagedInventory = async () => {
   }
 };
 
-const updateProductStatusAPI = async (productId, updates) => {
-  try {
-    const response = await fetch(`${ENDPOINTS.INVENTORY}${productId}/`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
-    });
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error(`Error updating product ${productId}:`, error);
-    return null;
-  }
-};
-
-
 const InventoryPage = ({ onInventoryUpdate }) => {
   const [products, setProducts] = useState([]);
   const [damagedProducts, setDamagedProducts] = useState([]);
@@ -58,222 +45,69 @@ const InventoryPage = ({ onInventoryUpdate }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [categoryStats, setCategoryStats] = useState({});
-  // Add loading state for API calls
   const [isLoading, setIsLoading] = useState(false);
-  
-  // New states for enhanced functionality
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editedItem, setEditedItem] = useState(null);
-  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
-  const [newItem, setNewItem] = useState({
-    serialNumber: "",
-    category: "Processor",
-    brand: "",
-    model: "",
-    location: "Warehouse A",
-    sellingPrice: "₱0.00",
-    saleStatus: "Not Sold",
-    description: "",
-    purchasePrice: "₱0.00",
-    dateReceived: new Date().toISOString().split('T')[0],
-    warrantyDuration: "12",
-    isOldItem: false
-  });
-
-  // Function to save products to localStorage
-const saveProductsToLocalStorage = (products) => {
-  localStorage.setItem('inventoryData', JSON.stringify(products));
-};
-
-// Function to load products from localStorage (with fallback)
-const loadProductsFromLocalStorage = () => {
-  try {
-    const savedProducts = localStorage.getItem('inventoryData');
-    if (savedProducts) {
-      return JSON.parse(savedProducts);
-    }
-  } catch (error) {
-    console.error("Error loading inventory data:", error);
-  }
-  return null; // Return null if data couldn't be loaded
-};
-
-  const categories = ["All", "Processor", "Motherboards", "Video Cards", "Monitors", "Laptops", "Printers", "Toners", "Inks", "Networking", "DSLR Camera", "CCTV Camera", "Keyboard & Mouse", "Webcam", "Power Supply", "Thin Client"];
 
   useEffect(() => {
     loadInventoryData();
   }, []);
+
+  const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+
+  const openAddItemModal = () => {
+    setIsAddItemModalOpen(true);
+  };
   
-  // Function to load inventory data (will be switched to API when ready)
+  const closeAddItemModal = () => {
+    setIsAddItemModalOpen(false);
+  };
+  
+
   const loadInventoryData = () => {
     setIsLoading(true);
-    
-    // First try to load from localStorage
-    const savedData = loadProductsFromLocalStorage();
-    
-    if (savedData && savedData.length > 0) {
-      setProducts(savedData);
-      
-      // Calculate category statistics
-      const stats = calculateCategoryStats(savedData);
-      setCategoryStats(stats);
-      
-      // Notify parent component if needed
-      if (onInventoryUpdate) {
-        onInventoryUpdate(savedData);
-      }
-      
-      setIsLoading(false);
-    } else {
-      
-      // When API is ready, uncomment this section
-      Promise.all([fetchInventory(), fetchDamagedInventory()])
-        .then(([inventoryData, damagedData]) => {
-          if (inventoryData) {
-            setProducts(inventoryData);
-            // Update localStorage for other components to use
-            localStorage.setItem('inventoryData', JSON.stringify(inventoryData));
-            
-            // Calculate category statistics
-            const stats = calculateCategoryStats(inventoryData);
-            setCategoryStats(stats);
-            
-            // Notify parent component if needed
-            if (onInventoryUpdate) {
-              onInventoryUpdate(inventoryData);
-            }
-          }
-          
-          if (damagedData) {
-            setDamagedProducts(damagedData);
-          }
-          
-          setIsLoading(false);
-        })
-        .catch(error => {
-          console.error("Error loading inventory data:", error);
-          // Fall back to generating mock data
-          generateProductData();
-          setIsLoading(false);
-        });
-      
-      
-      // For now, generate mock data only if nothing in localStorage
-    }
+
+    Promise.all([fetchInventory(), fetchDamagedInventory()])
+      .then(([inventoryData, damagedData]) => {
+        if (inventoryData) {
+          setProducts(inventoryData);
+          const stats = calculateCategoryStats(inventoryData);
+          setCategoryStats(stats);
+          if (onInventoryUpdate) onInventoryUpdate(inventoryData);
+        }
+
+        if (damagedData) {
+          setDamagedProducts(damagedData);
+        }
+
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error("Error loading inventory data:", error);
+        setIsLoading(false);
+      });
   };
 
-  const generateProductData = () => {
-    const productCategories = ["Processor", "Motherboards", "Video Cards", "Monitors", "Laptops", "Printers", "Toners", "Inks", "Networking", "DSLR Camera", "CCTV Camera", "Keyboard & Mouse", "Webcam", "Power Supply", "Thin Client"];
-    const brands = ["Dell", "Lenovo", "HP", "Asus", "Acer", "Logitech", "Microsoft", "Cisco", "TP-Link", "Kingston", "Crucial", "Intel", "AMD", "MSI", "Gigabyte", "EVGA", "Samsung", "LG", "Canon", "Epson", "Brother", "Hikvision", "Dahua", "Nikon", "Sony", "Corsair"];
-    const models = {
-      "Processor": ["Core i9", "Core i7", "Core i5", "Ryzen 9", "Ryzen 7", "Ryzen 5"],
-      "Motherboards": ["Z690", "B550", "X570", "H610", "B660", "TUF Gaming"],
-      "Video Cards": ["RTX 4090", "RTX 4080", "RTX 3080", "RX 6900 XT", "RX 6800", "GTX 1660"],
-      "Monitors": ["Odyssey G7", "UltraGear", "ProArt", "UltraSharp", "Predator"],
-      "Laptops": ["XPS 15", "ThinkPad X1", "EliteBook", "ROG Strix", "Predator"],
-      "Printers": ["LaserJet Pro", "PIXMA", "EcoTank", "WorkForce", "OfficeJet Pro"],
-      "Toners": ["TN-760", "CF410X", "CE505X", "TK-5240", "MLT-D101S"],
-      "Inks": ["HP 67XL", "Canon PG-245", "Epson 702", "Brother LC3033", "HP 910"],
-      "Networking": ["Nighthawk", "Archer", "UniFi", "EdgeRouter", "Catalyst"],
-      "DSLR Camera": ["EOS 90D", "D7500", "Alpha a7 III", "EOS R6", "Z6 II"],
-      "CCTV Camera": ["Dome 4MP", "Bullet 8MP", "PTZ 2MP", "Turret 5MP", "Fisheye 12MP"],
-      "Keyboard & Mouse": ["MX Keys", "G502", "DeathAdder", "M590", "MX Master"],
-      "Webcam": ["BRIO 4K", "StreamCam", "Facecam", "Kiyo Pro", "C920"],
-      "Power Supply": ["RM850x", "SuperNOVA 750", "TUF 650W", "Focus GX-750", "MWE 650"],
-      "Thin Client": ["T640", "t640", "mt45", "t430", "t558"]
-    };
-
-    // Create products with unique IDs by category
-    const productData = [];
-    let idCounter = 1;
-
-    productCategories.forEach(category => {
-      // Create 10 products for each category
-      for (let i = 0; i < 30; i++) {
-        const brand = brands[Math.floor(Math.random() * brands.length)];
-        const model = models[category][Math.floor(Math.random() * models[category].length)];
-        const serialNumber = `SN${category.substring(0, 2).toUpperCase()}${10000 + idCounter}`;
-        const sold = Math.random() > 0.7; // 30% chance of being sold
-        
-        // Create product with additional fields
-        productData.push({
-          id: idCounter,
-          serialNumber,
-          category,
-          brand,
-          model: `${model} ${Math.floor(Math.random() * 100)}`,
-          location: `Warehouse ${String.fromCharCode(65 + (idCounter % 5))}`,
-          sellingPrice: `₱${(Math.random() * 10000 + 500).toFixed(2)}`,
-          saleStatus: sold ? "Sold" : "Not Sold",
-          // Additional fields
-          description: `${brand} ${model} for ${category} applications. High performance model.`,
-          purchasePrice: `₱${(Math.random() * 8000 + 300).toFixed(2)}`,
-          dateReceived: `2023-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-          warrantyDuration: `${Math.floor(Math.random() * 24) + 6}`,
-          isOldItem: Math.random() > 0.8 // 20% chance of being old item
-        });
-        
-        idCounter++;
-      }
-    });
-
-    // Calculate category statistics
-    const stats = calculateCategoryStats(productData);
-    
-    setProducts(productData);
-    setCategoryStats(stats);
-
-    // Generate damaged products
-    const damagedData = Array.from({ length: 20 }, (_, i) => {
-      const category = productCategories[i % productCategories.length];
-      return {
-        id: 1000 + i,
-        serialNumber: `SN-DMG${20000 + i}`,
-        category,
-        brand: brands[Math.floor(Math.random() * brands.length)],
-        model: models[category][Math.floor(Math.random() * models[category].length)],
-        location: `Warehouse ${String.fromCharCode(65 + (i % 5))}`,
-        // Additional fields
-        description: `Damaged ${category} item. Not functional.`,
-        purchasePrice: `₱${(Math.random() * 8000 + 300).toFixed(2)}`,
-        dateReceived: `2023-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-        warrantyDuration: "0",
-        isOldItem: true
-      };
-    });
-
-    setDamagedProducts(damagedData);
-    
-    // Save inventory data to localStorage for SalesOrderPage to access
-    localStorage.setItem('inventoryData', JSON.stringify(productData));
-    
-    // If there's a parent component callback, inform it about the initial inventory
-    if (onInventoryUpdate) {
-      onInventoryUpdate(productData);
-    }
+  const handleRefreshInventory = () => {
+    loadInventoryData();
   };
+  
 
   const calculateCategoryStats = (productData) => {
     const stats = {};
-    
-    // Calculate stats for each individual category
+    const categories = ["Processor", "Motherboards", "Video Cards", "Monitors", "Laptops", "Printers", "Toners", "Inks", "Networking", "DSLR Camera", "CCTV Camera", "Keyboard & Mouse", "Webcam", "Power Supply", "Thin Client"];
+
     categories.forEach(cat => {
-      if (cat !== "All") {
-        const categoryProducts = productData.filter(p => p.category === cat);
-        const totalCount = categoryProducts.length;
-        const availableCount = categoryProducts.filter(p => p.saleStatus === "Not Sold").length;
-        
-        stats[cat] = {
-          quantity: totalCount,
-          available: availableCount
-        };
-      }
+      const categoryProducts = productData.filter(p => p.category === cat);
+      const totalCount = categoryProducts.length;
+      const availableCount = categoryProducts.filter(p => p.saleStatus === "Not Sold").length;
+      stats[cat] = {
+        quantity: totalCount,
+        available: availableCount
+      };
     });
-    
-    // Calculate total stats
+
     const totalCount = productData.length;
     const totalAvailable = productData.filter(p => p.saleStatus === "Not Sold").length;
-    
+
     stats["All"] = {
       quantity: totalCount,
       available: totalAvailable,
@@ -283,194 +117,14 @@ const loadProductsFromLocalStorage = () => {
         available: stats[cat].available
       }))
     };
-    
+
     return stats;
   };
 
-  const openInventoryModal = (item) => {
-    setSelectedItem(item);
-    setEditedItem({...item});
-    setIsEditMode(false);
-    setIsInventoryModalOpen(true);
-  };  
-  
-  const closeInventoryModal = () => {
-    setSelectedItem(null);
-    setEditedItem(null);
-    setIsEditMode(false);
-    setIsInventoryModalOpen(false);
-  };
-
-  // Function to update product status - this will be used by SalesOrderPage
-  const updateProductStatus = (productId, newStatus) => {
-    /* 
-    // When API is ready, uncomment this section
-    return updateProductStatusAPI(productId, { saleStatus: newStatus })
-      .then(updatedProduct => {
-        if (updatedProduct) {
-          // Update local state with the updated product
-          const updatedProducts = products.map(product => 
-            product.id === productId ? updatedProduct : product
-          );
-          
-          setProducts(updatedProducts);
-          
-          // Update category statistics
-          const stats = calculateCategoryStats(updatedProducts);
-          setCategoryStats(stats);
-          
-          // Update localStorage for other components
-          localStorage.setItem('inventoryData', JSON.stringify(updatedProducts));
-          
-          // If there's a parent component callback, inform it
-          if (onInventoryUpdate) {
-            onInventoryUpdate(updatedProducts);
-          }
-          
-          return true;
-        }
-        return false;
-      })
-      .catch(error => {
-        console.error(`Error updating product ${productId} status:`, error);
-        return false;
-      });
-    */
-    
-    // For now, continue using local state updates
-    const updatedProducts = products.map(product => 
-      product.id === productId 
-        ? { ...product, saleStatus: newStatus } 
-        : product
-    );
-    
-    setProducts(updatedProducts);
-    
-    // Update category statistics after updating product status
-    const stats = calculateCategoryStats(updatedProducts);
-    setCategoryStats(stats);
-    
-    // Update localStorage with the updated products
-    localStorage.setItem('inventoryData', JSON.stringify(updatedProducts));
-    
-    // If there's a parent component callback for inventory updates, call it
-    if (onInventoryUpdate) {
-      onInventoryUpdate(updatedProducts);
-    }
-    
-    return updatedProducts;
-  };
-
-  // Expose getProducts function to allow SalesOrderPage to access inventory
-  const getProducts = () => {
-    return products;
-  };
-
-  // Add new functions for enhanced functionality
-  const toggleEditMode = () => {
-    setIsEditMode(!isEditMode);
-  };
-
-  const handleEditChange = (field, value) => {
-    setEditedItem({
-      ...editedItem,
-      [field]: value
-    });
-  };
-
-  const saveEditedItem = () => {
-    // In a real app, this would call an API
-    const updatedProducts = products.map(product => 
-      product.id === editedItem.id ? editedItem : product
-    );
-    
-    setProducts(updatedProducts);
-    setSelectedItem(editedItem);
-    setIsEditMode(false);
-    
-    // Update localStorage
-    localStorage.setItem('inventoryData', JSON.stringify(updatedProducts));
-    
-    // If there's a parent component callback for inventory updates, call it
-    if (onInventoryUpdate) {
-      onInventoryUpdate(updatedProducts);
-    }
-  };
-
-  const openAddItemModal = () => {
-    setIsAddItemModalOpen(true);
-  };
-
-  const closeAddItemModal = () => {
-    setIsAddItemModalOpen(false);
-    setNewItem({
-      serialNumber: "",
-      category: "Processor",
-      brand: "",
-      model: "",
-      location: "Warehouse A",
-      sellingPrice: "₱0.00",
-      saleStatus: "Not Sold",
-      description: "",
-      purchasePrice: "₱0.00",
-      dateReceived: new Date().toISOString().split('T')[0],
-      warrantyDuration: "12",
-      isOldItem: false
-    });
-  };
-
-  const handleNewItemChange = (field, value) => {
-    setNewItem({
-      ...newItem,
-      [field]: value
-    });
-  };
-
-  const addNewItem = () => {
-    // Generate a unique ID that won't conflict with existing ones
-    const existingIds = products.map(p => p.id);
-    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
-    const newId = maxId + 1;
-    
-    // Ensure unique serial number
-    const serialExists = products.some(p => p.serialNumber === newItem.serialNumber);
-    if (serialExists) {
-      alert("A product with this serial number already exists. Please use a unique serial number.");
-      return;
-    }
-    
-    const itemToAdd = {
-      ...newItem,
-      id: newId
-    };
-    
-    const updatedProducts = [...products, itemToAdd];
-    setProducts(updatedProducts);
-    
-    // Persist to localStorage using our helper function
-    saveProductsToLocalStorage(updatedProducts);
-    
-    // Update category statistics
-    const stats = calculateCategoryStats(updatedProducts);
-    setCategoryStats(stats);
-    
-    // Close modal
-    closeAddItemModal();
-    
-    // If there's a parent component callback for inventory updates, call it
-    if (onInventoryUpdate) {
-      onInventoryUpdate(updatedProducts);
-    }
-  };
-
-  const filteredProducts = products.filter(product => 
+  const filteredProducts = products.filter(product =>
     categoryFilter === "All" || product.category === categoryFilter
   );
-
-  // Add refresh button functionality
-  const handleRefreshInventory = () => {
-    loadInventoryData();
-  };
+  
 
   return (
     <DashboardLayout>
