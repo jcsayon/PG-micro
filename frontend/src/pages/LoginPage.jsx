@@ -9,7 +9,7 @@ const defaultUsers = [
     password: "admin123",
     role: ROLES.ADMIN,
     status: "Active",
-    accessiblePages: ["dashboard", "user-management", "inventory", "sales"],
+    accessiblePages: ["dashboard", "user-management", "inventory", "sales", "return-warranty", "purchase-orders", "reports"],
   },
   {
     id: 2,
@@ -122,7 +122,8 @@ const LoginPage = () => {
       // Find matching user with exact comparison
       const matchedUser = users.find(
         (u) => u.username.toLowerCase() === trimmedEmail && 
-              u.password === trimmedPassword
+              u.password === trimmedPassword &&
+              u.status === "Active" // Only allow active users to log in
       );
 
       console.log("Matched User:", matchedUser);
@@ -133,6 +134,12 @@ const LoginPage = () => {
         sessionStorage.setItem("isAuthenticated", "true");
         sessionStorage.setItem("userRole", matchedUser.role);
         sessionStorage.setItem("userEmail", matchedUser.username);
+        
+        // Store the user's accessible pages - THIS IS THE KEY ADDITION
+        sessionStorage.setItem("accessiblePages", 
+          JSON.stringify(matchedUser.accessiblePages || ["dashboard"]));
+        
+        console.log("User logged in with permissions:", matchedUser.accessiblePages);
 
         // Navigate based on role
         switch (matchedUser.role) {

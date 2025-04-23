@@ -62,9 +62,9 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
       path: "/inventory",
       icon: "📦",
       color: {
-        default: "text-teal-100",
-        hover: "hover:bg-teal-600",
-        active: "bg-teal-500 text-white",
+        default: "text-purple-100",
+        hover: "hover:bg-purple-600",
+        active: "bg-purple-500 text-white",
       },
     },
     {
@@ -73,9 +73,9 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
       icon: "🧑‍💼",
       adminOnly: true,
       color: {
-        default: "text-pink-100",
-        hover: "hover:bg-pink-600",
-        active: "bg-pink-500 text-white",
+        default: "text-purple-100",
+        hover: "hover:bg-purple-600",
+        active: "bg-purple-500 text-white",
       },
     },
     {
@@ -83,9 +83,9 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
       path: "/sales",
       icon: "💵",
       color: {
-        default: "text-red-100",
-        hover: "hover:bg-red-600",
-        active: "bg-red-500 text-white",
+        default: "text-purple-100",
+        hover: "hover:bg-purple-600",
+        active: "bg-purple-500 text-white",
       },
     },
     {
@@ -93,9 +93,9 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
       path: "/purchase-orders",
       icon: "📋",
       color: {
-        default: "text-yellow-100",
-        hover: "hover:bg-yellow-600",
-        active: "bg-yellow-500 text-white",
+        default: "text-purple-100",
+        hover: "hover:bg-purple-600",
+        active: "bg-purple-500 text-white",
       },
     },
     {
@@ -103,9 +103,9 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
       path: "/return-warranty",
       icon: "🔄",
       color: {
-        default: "text-blue-100",
-        hover: "hover:bg-blue-600",
-        active: "bg-blue-500 text-white",
+        default: "text-purple-100",
+        hover: "hover:bg-purple-600",
+        active: "bg-purple-500 text-white",
       },
     },
     {
@@ -113,9 +113,9 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
       path: "/reports",
       icon: "📊",
       color: {
-        default: "text-green-100",
-        hover: "hover:bg-green-600",
-        active: "bg-green-500 text-white",
+        default: "text-purple-100",
+        hover: "hover:bg-purple-600",
+        active: "bg-purple-500 text-white",
       },
     },
   ];

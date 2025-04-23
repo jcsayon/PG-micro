@@ -31,19 +31,39 @@ import { ROLES } from "../utils/roleConfig";
 const ProtectedRoute = ({ element, allowedRoles }) => {
   const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
   const userRole = sessionStorage.getItem("userRole");
+  const accessiblePages = JSON.parse(sessionStorage.getItem("accessiblePages") || "[]");
+  
+  // Get the base path from the current route
+  const currentPath = window.location.pathname;
+  const basePath = currentPath.split('/')[1]; // e.g., "inventory" from "/inventory"
 
   console.group("Protected Route Check");
   console.log("Is Authenticated:", isAuthenticated);
   console.log("User Role:", userRole);
   console.log("Allowed Roles:", allowedRoles);
+  console.log("Current Path:", currentPath);
+  console.log("Base Path:", basePath);
+  console.log("Accessible Pages:", accessiblePages);
+  console.log("Can Access Via Pages:", accessiblePages.includes(basePath));
   console.groupEnd();
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  if (!allowedRoles.includes(userRole)) {
-    console.error("Access Denied", { userRole, allowedRoles });
+  // Check if the user has access based on either role or accessible pages
+  const hasRoleAccess = allowedRoles.includes(userRole);
+  const hasPageAccess = accessiblePages.includes(basePath);
+  
+  if (!hasRoleAccess && !hasPageAccess) {
+    console.error("Access Denied", { 
+      userRole, 
+      allowedRoles, 
+      basePath, 
+      accessiblePages,
+      hasRoleAccess,
+      hasPageAccess
+    });
     return <Navigate to="/dashboard" replace />;
   }
 
