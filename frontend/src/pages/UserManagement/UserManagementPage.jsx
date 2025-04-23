@@ -13,17 +13,37 @@ const getStatusBadgeClass = (status) => {
   }
 };
 
+// Fixed function to correctly map roles to accessible pages
 const getAccessiblePagesByRole = (role) => {
+  // Debug the role being passed
+  console.log("Getting accessible pages for role:", role);
+  
+  // Make sure keys match the exact values used in your ROLES object and dropdown
   const accessMap = {
-    Admin: ['dashboard', 'user-management', 'inventory', 'sales', 'return-warranty', 'purchase-orders', 'reports'],
-    Inventory: ['dashboard', 'inventory'],
-    Sales: ['dashboard', 'sales'],
-    Returns: ['dashboard', 'return-warranty'],
-    Employee: ['dashboard'],
+    [ROLES.ADMIN]: ['dashboard', 'user-management', 'inventory', 'sales', 'return-warranty', 'purchase-orders', 'reports'],
+    [ROLES.INVENTORY]: ['dashboard', 'inventory'],
+    [ROLES.SALES]: ['dashboard', 'sales'],
+    "Returns": ['dashboard', 'return-warranty'],
+    "Employee": ['dashboard'],
     "Purchase Order": ['dashboard', 'purchase-orders'],
     "Warranty List": ['dashboard', 'return-warranty']
   };
-  return accessMap[role] || ['dashboard'];
+  
+  // Fallback options for string-based roles
+  const stringAccessMap = {
+    "Admin": ['dashboard', 'user-management', 'inventory', 'sales', 'return-warranty', 'purchase-orders', 'reports'],
+    "Inventory": ['dashboard', 'inventory'],
+    "Sales": ['dashboard', 'sales'],
+    "Returns": ['dashboard', 'return-warranty'],
+    "Employee": ['dashboard'],
+    "Purchase Order": ['dashboard', 'purchase-orders'],
+    "Warranty List": ['dashboard', 'return-warranty']
+  };
+  
+  // Try to get pages from the role-based map first, then try string map as fallback
+  const pages = accessMap[role] || stringAccessMap[role] || ['dashboard'];
+  console.log("Accessible pages assigned:", pages);
+  return pages;
 };
 
 const UserManagementPage = () => {
@@ -34,6 +54,11 @@ const UserManagementPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Debug ROLES on component mount
+  useEffect(() => {
+    console.log("ROLES object:", ROLES);
+  }, []);
 
   // Current logged-in user (would typically come from auth context)
   // For demo purposes, we'll set it as Admin
@@ -116,6 +141,13 @@ const UserManagementPage = () => {
       return;
     }
 
+    // Debug role and permissions before saving
+    console.log("Selected role:", form.role);
+    console.log("Role type:", typeof form.role);
+    console.log("Getting accessible pages for:", form.role);
+    const accessiblePages = getAccessiblePagesByRole(form.role);
+    console.log("Pages being assigned:", accessiblePages);
+
     if (isEditing && selectedUser) {
       // Update existing user
       const updatedUsers = users.map(user => 
@@ -126,7 +158,7 @@ const UserManagementPage = () => {
               password: form.password === "********" ? user.password : form.password.trim(),
               role: form.role,
               status: form.status,
-              accessiblePages: getAccessiblePagesByRole(form.role)
+              accessiblePages: accessiblePages
             } 
           : user
       );
@@ -142,13 +174,14 @@ const UserManagementPage = () => {
         password: form.password.trim(), // Explicitly trim the password
         role: form.role,
         status: form.status,
-        accessiblePages: getAccessiblePagesByRole(form.role)
+        accessiblePages: accessiblePages
       };
       
       // Debug log for new user
       console.log("Adding new user:", {
         ...newUser,
-        password: '[REDACTED]' // Don't log actual password
+        password: '[REDACTED]', // Don't log actual password
+        accessiblePages: newUser.accessiblePages
       });
       
       setUsers([...users, newUser]);
@@ -362,18 +395,20 @@ const UserManagementPage = () => {
                   
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-slate-700">Role Assignment</label>
-                    <select
-                      name="role"
-                      value={form.role}
-                      onChange={handleChange}
-                      className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
-                    >
-                      <option value={ROLES.INVENTORY}>Inventory</option>
-                      <option value={ROLES.SALES}>Sales</option>
-                      <option value="Purchase Order">Purchase Order</option>
-                      <option value="Warranty List">Warranty List</option>
-                      {currentUserRole === "Admin" && <option value={ROLES.ADMIN}>Admin</option>}
-                    </select>
+                  
+                  <select
+                    name="role"
+                    value={form.role}
+                    onChange={handleChange}
+                    className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
+                  >
+                    <option value={ROLES.INVENTORY}>Inventory</option>
+                    <option value={ROLES.SALES}>Sales</option>
+                    <option value={ROLES.PURCHASE_ORDER}>Purchase Order</option>
+                    <option value={ROLES.WARRANTY_LIST}>Warranty List</option>
+                    <option value={ROLES.RETURNS}>Returns</option>
+                    {currentUserRole === "Admin" && <option value={ROLES.ADMIN}>Admin</option>}
+                  </select>
                   </div>
                 </div>
                 
@@ -446,6 +481,7 @@ const UserManagementPage = () => {
                     <th className="py-4 px-6 text-sm font-medium text-slate-600">USERNAME</th>
                     <th className="py-4 px-6 text-sm font-medium text-slate-600">ROLE</th>
                     <th className="py-4 px-6 text-sm font-medium text-slate-600">STATUS</th>
+                    <th className="py-4 px-6 text-sm font-medium text-slate-600">PERMISSIONS</th>
                     <th className="py-4 px-6 text-sm font-medium text-slate-600 text-right">ACTIONS</th>
                   </tr>
                 </thead>
@@ -468,6 +504,15 @@ const UserManagementPage = () => {
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(user.status)}`}>
                             {user.status}
                           </span>
+                        </td>
+                        <td className="py-4 px-6">
+                          <div className="text-xs text-slate-600">
+                            {user.accessiblePages ? (
+                              <span>{user.accessiblePages.join(', ')}</span>
+                            ) : (
+                              <span className="text-red-500">No permissions</span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-4 px-6 text-right">
                           <div className="flex items-center justify-end gap-3">
@@ -506,7 +551,7 @@ const UserManagementPage = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="4" className="py-10 text-center text-slate-500">
+                      <td colSpan="5" className="py-10 text-center text-slate-500">
                         <div className="flex flex-col items-center">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-slate-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
