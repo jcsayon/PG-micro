@@ -59,6 +59,7 @@ class ProductWarranty(models.Model):
 
 
 class Inventory(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)  # ✅ add this line
     damage_product = models.ForeignKey(DamageProduct, on_delete=models.CASCADE)
     date_received = models.DateTimeField(auto_now_add=True)
     quantity_received = models.IntegerField()
@@ -68,6 +69,7 @@ class Inventory(models.Model):
     serial_number = models.TextField(unique=True)
     old_item = models.BooleanField()
     selling_price = models.DecimalField(max_digits=10, decimal_places=2)
+
 
 
 class Orders(models.Model):
