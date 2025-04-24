@@ -118,17 +118,40 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
         active: "bg-purple-500 text-white",
       },
     },
+    {
+      name: "Income List",
+      path: "/income-list",
+      icon: "💰",
+      isSubItem: true,
+      parentName: "Sales", // Change from "Reports" to "Sales"
+      color: {
+        default: "text-purple-100",
+        hover: "hover:bg-purple-600",
+        active: "bg-purple-500 text-white",
+      },
+    },
+    {
+      name: "Customer List",
+      path: "/customer-list",
+      icon: "👥",
+      isSubItem: true,
+      parentName: "Sales", // Change from "Reports" to "Sales"
+      color: {
+        default: "text-purple-100",
+        hover: "hover:bg-purple-600",
+        active: "bg-purple-500 text-white",
+      },
+    }
   ];
 
-// Allowed items by route group
-const groupAPaths = ["/dashboard", "/account-info", "/settings", "/user-management"];
-const groupBPaths = ["/purchase-orders", "/sales", "/return-warranty", "/reports"];
-const groupCPaths = ["/inventory"];
+  // Allowed items by route group
+  const groupAPaths = ["/dashboard", "/account-info", "/settings", "/user-management"];
+  const groupBPaths = ["/purchase-orders", "/sales", "/return-warranty", "/reports", "/income-list", "/customer-list"];
+  const groupCPaths = ["/inventory"];
 
-const groupAAllowed = ["Home", "Account Info", "Settings", "Inventory", "User Management"];
-const groupBAllowed = ["Home", "Purchase Orders", "Sales", "Returns", "Inventory", "Reports"];
-const groupCAllowed = groupBAllowed;
-
+  const groupAAllowed = ["Home", "Account Info", "Settings", "Inventory", "User Management"];
+  const groupBAllowed = ["Home", "Purchase Orders", "Sales", "Returns", "Inventory", "Reports", "Income List", "Customer List"];
+  const groupCAllowed = groupBAllowed;
 
   // Filter by group
   let visibleMenuItems = allMenuItems;
@@ -143,6 +166,19 @@ const groupCAllowed = groupBAllowed;
   // Filter out admin-only if not Admin
   visibleMenuItems = visibleMenuItems.filter(item => !(item.adminOnly && userRole !== "Admin"));
 
+  // Organize menu items by parent
+  const organizedMenuItems = visibleMenuItems.reduce((acc, item) => {
+    if (item.isSubItem && item.parentName) {
+      if (!acc.subItems[item.parentName]) {
+        acc.subItems[item.parentName] = [];
+      }
+      acc.subItems[item.parentName].push(item);
+    } else {
+      acc.mainItems.push(item);
+    }
+    return acc;
+  }, { mainItems: [], subItems: {} });
+
   return (
     <div className={`h-screen ${isCollapsed ? "w-16" : "w-64"} bg-purple-700 text-white fixed top-0 left-0 flex flex-col transition-all duration-300`}>
       <div className="p-4 text-center font-bold text-2xl bg-purple-800">
@@ -150,20 +186,46 @@ const groupCAllowed = groupBAllowed;
       </div>
 
       <nav className="flex-1 mt-6">
-        {visibleMenuItems.map((item, index) => {
+        {organizedMenuItems.mainItems.map((item, index) => {
           const isActive = currentPath === item.path;
+          const hasSubItems = organizedMenuItems.subItems[item.name]?.length > 0;
           const baseClass = isActive
             ? item.color.active
             : `${item.color.default} ${item.color.hover}`;
+          
           return (
-            <NavLink
-              key={index}
-              to={item.path}
-              className={`flex items-center gap-3 px-5 py-3 text-lg transition-all ${baseClass}`}
-            >
-              <span>{item.icon}</span>
-              {!isCollapsed && item.name}
-            </NavLink>
+            <div key={index}>
+              <NavLink
+                to={item.path}
+                className={`flex items-center gap-3 px-5 py-3 text-lg transition-all ${baseClass}`}
+              >
+                <span>{item.icon}</span>
+                {!isCollapsed && item.name}
+                {!isCollapsed && hasSubItems && <span className="ml-auto">▼</span>}
+              </NavLink>
+              
+              {hasSubItems && !isCollapsed && (
+                <div className="ml-5 border-l-2 border-purple-600 pl-2">
+                  {organizedMenuItems.subItems[item.name].map((subItem, subIndex) => {
+                    const isSubActive = currentPath === subItem.path;
+                    const subBaseClass = isSubActive
+                      ? subItem.color.active
+                      : `${subItem.color.default} ${subItem.color.hover}`;
+                      
+                    return (
+                      <NavLink
+                        key={`${index}-${subIndex}`}
+                        to={subItem.path}
+                        className={`flex items-center gap-3 px-5 py-2 text-md transition-all ${subBaseClass} pl-4`}
+                      >
+                        <span>{subItem.icon}</span>
+                        {!isCollapsed && subItem.name}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>

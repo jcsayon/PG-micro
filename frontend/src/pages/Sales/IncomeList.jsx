@@ -2,230 +2,230 @@
 import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import DashboardLayout from "../../layouts/DashboardLayout"; // Update path as needed
 
-const IncomeList = ({ onBack, storageKey }) => {
-  // State management
-  const [incomeRecords, setIncomeRecords] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showIncomeDetailsModal, setShowIncomeDetailsModal] = useState(false);
-  const [selectedIncome, setSelectedIncome] = useState(null);
-  const [editedIncome, setEditedIncome] = useState(null);
-  const [period, setPeriod] = useState("all");
+const IncomeList = ({ storageKey }) => {
+// State management
+const [incomeRecords, setIncomeRecords] = useState([]);
+const [searchTerm, setSearchTerm] = useState("");
+const [isLoading, setIsLoading] = useState(false);
+const [showIncomeDetailsModal, setShowIncomeDetailsModal] = useState(false);
+const [selectedIncome, setSelectedIncome] = useState(null);
+const [editedIncome, setEditedIncome] = useState(null);
+const [period, setPeriod] = useState("all");
+
+// Load income data
+useEffect(() => {
+  loadIncomeData();
+}, []);
+// Function to load income data
+const loadIncomeData = () => {
+  setIsLoading(true);
   
-  // Load income data
-  useEffect(() => {
-    loadIncomeData();
-  }, []);
+  /* 
+  // When API is ready, uncomment this section
+  fetch(`${API_BASE_URL}/income/`)
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    })
+    .then(data => {
+      setIncomeRecords(data);
+      setIsLoading(false);
+    })
+    .catch(error => {
+      console.error("Error loading income data from API:", error);
+      loadIncomeFromLocalStorage();
+      setIsLoading(false);
+    });
+  */
   
-  // Function to load income data
-  const loadIncomeData = () => {
-    setIsLoading(true);
+  // For now, load from localStorage
+  loadIncomeFromLocalStorage();
+  setIsLoading(false);
+};
+
+// Load income from localStorage
+const loadIncomeFromLocalStorage = () => {
+  const savedIncome = localStorage.getItem(storageKey);
+  
+  if (savedIncome) {
+    try {
+      const parsedIncome = JSON.parse(savedIncome);
+      console.log(`Loaded ${parsedIncome.length} income records from localStorage`);
+      setIncomeRecords(parsedIncome);
+    } catch (error) {
+      console.error("Error parsing income data:", error);
+      setIncomeRecords([]);
+    }
+  } else {
+    console.warn("No income data found in localStorage");
+    setIncomeRecords([]);
+  }
+};
+
+// Save income records to localStorage
+const saveIncomesToLocalStorage = (incomes) => {
+  localStorage.setItem(storageKey, JSON.stringify(incomes));
+};
+
+// Format price for display
+const formatPrice = (price) => {
+  if (!price && price !== 0) return "₱0.00";
+  
+  // Remove any existing formatting
+  const numericPrice = String(price).replace(/[₱,]/g, '');
+  
+  return `₱${parseFloat(numericPrice).toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+};
+
+// Format date for display
+const formatDate = (isoDate) => {
+  if (!isoDate) return "";
+  
+  const date = new Date(isoDate);
+  return date.toLocaleDateString('en-PH', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+};
+
+// Format time for display
+const formatTime = (isoDate) => {
+  if (!isoDate) return "";
+  
+  const date = new Date(isoDate);
+  return date.toLocaleTimeString('en-PH', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+// Handle viewing income details
+const handleViewDetails = (income) => {
+  setSelectedIncome(income);
+  setEditedIncome({...income});
+  setShowIncomeDetailsModal(true);
+};
+
+// Handle saving edited income
+const handleSaveIncome = () => {
+  if (editedIncome) {
+    // Update the income record
+    const updatedIncomes = incomeRecords.map(income => 
+      income.id === editedIncome.id ? editedIncome : income
+    );
+    
+    setIncomeRecords(updatedIncomes);
+    saveIncomesToLocalStorage(updatedIncomes);
+    setShowIncomeDetailsModal(false);
     
     /* 
     // When API is ready, uncomment this section
-    fetch(`${API_BASE_URL}/income/`)
+    fetch(`${API_BASE_URL}/income/${editedIncome.id}/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(editedIncome),
+    })
       .then(response => {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return response.json();
       })
       .then(data => {
-        setIncomeRecords(data);
-        setIsLoading(false);
+        // Refresh income list
+        loadIncomeData();
+        setShowIncomeDetailsModal(false);
       })
       .catch(error => {
-        console.error("Error loading income data from API:", error);
-        loadIncomeFromLocalStorage();
-        setIsLoading(false);
+        console.error("Error updating income:", error);
+        alert("Failed to update income record. Please try again.");
       });
     */
+  }
+};
+
+// Handle income field change
+const handleIncomeChange = (field, value) => {
+  setEditedIncome({
+    ...editedIncome,
+    [field]: value
+  });
+};
+
+// Generate income report
+const generateIncomeReport = async () => {
+  try {
+    // Filter records based on period if needed
+    let filteredRecords = [...incomeRecords];
+    let periodName = "All Time";
     
-    // For now, load from localStorage
-    loadIncomeFromLocalStorage();
-    setIsLoading(false);
-  };
-  
-  // Load income from localStorage
-  const loadIncomeFromLocalStorage = () => {
-    const savedIncome = localStorage.getItem(storageKey);
-    
-    if (savedIncome) {
-      try {
-        const parsedIncome = JSON.parse(savedIncome);
-        console.log(`Loaded ${parsedIncome.length} income records from localStorage`);
-        setIncomeRecords(parsedIncome);
-      } catch (error) {
-        console.error("Error parsing income data:", error);
-        setIncomeRecords([]);
-      }
-    } else {
-      console.warn("No income data found in localStorage");
-      setIncomeRecords([]);
+    if (period === "monthly") {
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      filteredRecords = incomeRecords.filter(income => {
+        const incomeDate = new Date(income.dateReceived);
+        return incomeDate.getMonth() === currentMonth && 
+               incomeDate.getFullYear() === currentYear;
+      });
+      
+      const monthName = new Date().toLocaleString('en-US', { month: 'long' });
+      periodName = `${monthName} ${currentYear}`;
+    } else if (period === "yearly") {
+      const currentYear = new Date().getFullYear();
+      filteredRecords = incomeRecords.filter(income => {
+        const incomeDate = new Date(income.dateReceived);
+        return incomeDate.getFullYear() === currentYear;
+      });
+      
+      periodName = `${currentYear}`;
     }
-  };
-  
-  // Save income records to localStorage
-  const saveIncomesToLocalStorage = (incomes) => {
-    localStorage.setItem(storageKey, JSON.stringify(incomes));
-  };
-  
-  // Format price for display
-  const formatPrice = (price) => {
-    if (!price && price !== 0) return "₱0.00";
     
-    // Remove any existing formatting
-    const numericPrice = String(price).replace(/[₱,]/g, '');
+    // Create PDF document
+    const doc = new jsPDF();
     
-    return `₱${parseFloat(numericPrice).toLocaleString('en-PH', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })}`;
-  };
-  
-  // Format date for display
-  const formatDate = (isoDate) => {
-    if (!isoDate) return "";
+    // Add header
+    doc.setFillColor(48, 44, 122);
+    doc.rect(0, 0, 210, 25, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("PG Micro World", 15, 17);
     
-    const date = new Date(isoDate);
-    return date.toLocaleDateString('en-PH', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-  };
-  
-  // Format time for display
-  const formatTime = (isoDate) => {
-    if (!isoDate) return "";
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "normal");
+    doc.text("Income Report", 160, 17);
     
-    const date = new Date(isoDate);
-    return date.toLocaleTimeString('en-PH', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-  
-  // Handle viewing income details
-  const handleViewDetails = (income) => {
-    setSelectedIncome(income);
-    setEditedIncome({...income});
-    setShowIncomeDetailsModal(true);
-  };
-  
-  // Handle saving edited income
-  const handleSaveIncome = () => {
-    if (editedIncome) {
-      // Update the income record
-      const updatedIncomes = incomeRecords.map(income => 
-        income.id === editedIncome.id ? editedIncome : income
-      );
-      
-      setIncomeRecords(updatedIncomes);
-      saveIncomesToLocalStorage(updatedIncomes);
-      setShowIncomeDetailsModal(false);
-      
-      /* 
-      // When API is ready, uncomment this section
-      fetch(`${API_BASE_URL}/income/${editedIncome.id}/`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editedIncome),
-      })
-        .then(response => {
-          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-          return response.json();
-        })
-        .then(data => {
-          // Refresh income list
-          loadIncomeData();
-          setShowIncomeDetailsModal(false);
-        })
-        .catch(error => {
-          console.error("Error updating income:", error);
-          alert("Failed to update income record. Please try again.");
-        });
-      */
-    }
-  };
-  
-  // Handle income field change
-  const handleIncomeChange = (field, value) => {
-    setEditedIncome({
-      ...editedIncome,
-      [field]: value
-    });
-  };
-  
-  // Generate income report
-  const generateIncomeReport = async () => {
-    try {
-      // Filter records based on period if needed
-      let filteredRecords = [...incomeRecords];
-      let periodName = "All Time";
-      
-      if (period === "monthly") {
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        filteredRecords = incomeRecords.filter(income => {
-          const incomeDate = new Date(income.dateReceived);
-          return incomeDate.getMonth() === currentMonth && 
-                 incomeDate.getFullYear() === currentYear;
-        });
-        
-        const monthName = new Date().toLocaleString('en-US', { month: 'long' });
-        periodName = `${monthName} ${currentYear}`;
-      } else if (period === "yearly") {
-        const currentYear = new Date().getFullYear();
-        filteredRecords = incomeRecords.filter(income => {
-          const incomeDate = new Date(income.dateReceived);
-          return incomeDate.getFullYear() === currentYear;
-        });
-        
-        periodName = `${currentYear}`;
-      }
-      
-      // Create PDF document
-      const doc = new jsPDF();
-      
-      // Add header
-      doc.setFillColor(48, 44, 122);
-      doc.rect(0, 0, 210, 25, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(22);
-      doc.setFont("helvetica", "bold");
-      doc.text("PG Micro World", 15, 17);
-      
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "normal");
-      doc.text("Income Report", 160, 17);
-      
-      // Reset text color
-      doc.setTextColor(0, 0, 0);
-      
-      // Add company info
-      doc.setFontSize(10);
-      doc.text("PG Micro World Inc.", 15, 35);
-      doc.text("123 Tech Plaza, Makati City", 15, 40);
-      doc.text("Philippines, 1200", 15, 45);
-      
-      // Add report details
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text(`Income Report - ${periodName}`, 15, 60);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 15, 67);
-      
-      // Calculate summary
-      const totalIncome = filteredRecords.reduce((sum, record) => sum + record.incomeAmount, 0);
-      const totalNetIncome = filteredRecords.reduce((sum, record) => sum + record.netIncome, 0);
-      
-      // Add summary section
-      doc.setFillColor(240, 240, 245);
-      doc.roundedRect(15, 75, 180, 25, 3, 3, 'F');
-      doc.setFont("helvetica", "bold");
+    // Reset text color
+    doc.setTextColor(0, 0, 0);
+    
+    // Add company info
+    doc.setFontSize(10);
+    doc.text("PG Micro World Inc.", 15, 35);
+    doc.text("123 Tech Plaza, Makati City", 15, 40);
+    doc.text("Philippines, 1200", 15, 45);
+    
+    // Add report details
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Income Report - ${periodName}`, 15, 60);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 15, 67);
+    
+    // Calculate summary
+    const totalIncome = filteredRecords.reduce((sum, record) => sum + record.incomeAmount, 0);
+    const totalNetIncome = filteredRecords.reduce((sum, record) => sum + record.netIncome, 0);
+    
+    // Add summary section
+    doc.setFillColor(240, 240, 245);
+    doc.roundedRect(15, 75, 180, 25, 3, 3, 'F');
+    doc.setFont("helvetica", "bold");
       doc.text("Summary", 20, 85);
       doc.setFont("helvetica", "normal");
       doc.text(`Total Income: ${formatPrice(totalIncome)}`, 20, 93);
@@ -302,7 +302,6 @@ const IncomeList = ({ onBack, storageKey }) => {
       recordCount: incomeRecords.length
     };
   };
-  
   const filteredIncomes = incomeRecords.filter(income => {
     const matchesSearch = searchTerm === "" || 
                          (income.id && income.id.toString().includes(searchTerm)) ||
@@ -313,60 +312,61 @@ const IncomeList = ({ onBack, storageKey }) => {
 
   // Get summary stats
   const summary = calculateSummary();
-  
   return (
-    <div className="p-4 bg-white min-h-screen">
-      {/* Header with back button and title */}
-      <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center">
-            <button 
-              onClick={onBack}
-              className="mr-4 bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition-colors"
-              aria-label="Go back"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clipRule="evenodd" />
+    <div className="p-4 bg-gray-50 min-h-screen">
+      {/* Header and title */}
+      <div className="bg-white p-5 rounded-lg mb-6 shadow-sm">
+        <h1 className="text-2xl font-bold text-purple-800 mb-4">Income Management</h1>
+        
+        <div className="flex flex-wrap items-center gap-3 mb-2">
+          <div className="flex-grow relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
               </svg>
-            </button>
-            <h1 className="text-2xl font-bold text-purple-800">Income Management</h1>
-          </div>
-        </div>
-        
-        
-        <div className="flex flex-wrap items-center gap-3 mb-4">
-          <div className="flex-grow">
+            </div>
             <input
               type="text"
               placeholder="Search by ID, Order, or Customer"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="p-2 border rounded w-full max-w-xl"
+              className="pl-10 p-2 border rounded-lg w-full shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             />
+          </div>
+          
+          <div className="flex">
+            <button
+              onClick={() => generateIncomeReport()}
+              className="ml-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors duration-300 flex items-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clipRule="evenodd" />
+              </svg>
+              Generate Report
+            </button>
           </div>
         </div>
       </div>
-      
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white shadow-md rounded-lg p-4 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
+        <div className="bg-white shadow-sm rounded-lg p-4 border-l-4 border-purple-500 hover:shadow-md transition-shadow">
           <h3 className="text-sm font-medium text-gray-500">Total Income</h3>
           <p className="text-2xl font-bold text-gray-900">{formatPrice(summary.totalIncome)}</p>
           <p className="text-xs text-gray-500 mt-1">From {summary.recordCount} transactions</p>
         </div>
-        <div className="bg-white shadow-md rounded-lg p-4 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
+        <div className="bg-white shadow-sm rounded-lg p-4 border-l-4 border-green-500 hover:shadow-md transition-shadow">
           <h3 className="text-sm font-medium text-gray-500">Net Income</h3>
           <p className="text-2xl font-bold text-gray-900">{formatPrice(summary.totalNetIncome)}</p>
           <p className="text-xs text-green-500 mt-1">
             {(summary.totalNetIncome / summary.totalIncome * 100 || 0).toFixed(1)}% margin
           </p>
         </div>
-        <div className="bg-white shadow-md rounded-lg p-4 border-l-4 border-yellow-500 hover:shadow-lg transition-shadow">
+        <div className="bg-white shadow-sm rounded-lg p-4 border-l-4 border-yellow-500 hover:shadow-md transition-shadow">
           <h3 className="text-sm font-medium text-gray-500">Average Income</h3>
           <p className="text-2xl font-bold text-gray-900">{formatPrice(summary.averageIncome)}</p>
           <p className="text-xs text-gray-500 mt-1">Per transaction</p>
         </div>
-        <div className="bg-white shadow-md rounded-lg p-4 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
+        <div className="bg-white shadow-sm rounded-lg p-4 border-l-4 border-blue-500 hover:shadow-md transition-shadow">
           <h3 className="text-sm font-medium text-gray-500">Record Count</h3>
           <p className="text-2xl font-bold text-gray-900">{summary.recordCount}</p>
           <p className="text-xs text-gray-500 mt-1">Total transactions</p>
@@ -383,28 +383,28 @@ const IncomeList = ({ onBack, storageKey }) => {
           <p className="text-lg font-medium text-purple-600">Loading data...</p>
         </div>
       )}
-      
       {/* Income Records Table */}
       {!isLoading && (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-purple-50">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">Income ID</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">Date</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">Order ID</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">Customer</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">Payment Method</th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase tracking-wider">Amount</th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase tracking-wider">Net Income</th>
-                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-purple-700 uppercase tracking-wider">Status</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Income ID</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Income</th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredIncomes.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
+                    <td colSpan="9" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center">
                         <svg className="h-16 w-16 text-purple-200 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -416,7 +416,7 @@ const IncomeList = ({ onBack, storageKey }) => {
                   </tr>
                 ) : (
                   filteredIncomes.map((income, index) => (
-                    <tr key={income.id} className={index % 2 === 0 ? "bg-white hover:bg-purple-50" : "bg-gray-50 hover:bg-purple-50"} style={{transition: "all 0.2s"}}>
+                    <tr key={income.id} className="hover:bg-gray-50 transition-colors duration-150">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-purple-600">#{income.id}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         <div>{formatDate(income.dateReceived)}</div>
@@ -436,6 +436,14 @@ const IncomeList = ({ onBack, storageKey }) => {
                           {income.status}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        <button 
+                          onClick={() => handleViewDetails(income)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition-colors duration-300"
+                        >
+                          View Details
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -444,11 +452,10 @@ const IncomeList = ({ onBack, storageKey }) => {
           </div>
         </div>
       )}
-      
       {/* Income Details Modal */}
       {showIncomeDetailsModal && selectedIncome && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
               <h2 className="text-xl font-bold text-purple-800">Income Details</h2>
               <button 
@@ -609,7 +616,6 @@ const IncomeList = ({ onBack, storageKey }) => {
           </div>
         </div>
       )}
-      
       {/* Footer */}
       <div className="mt-8 py-4 border-t border-gray-200 text-center text-sm text-gray-500">
         <p>© 2025 PG Micro World. All rights reserved.</p>
