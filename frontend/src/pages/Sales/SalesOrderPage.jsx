@@ -5,19 +5,16 @@ import "jspdf-autotable";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import IncomeList from "../../pages/Sales/IncomeList";
 
-// Define a constant for warranty storage
+
+// === API BASE ===
 const WARRANTY_STORAGE_KEY = 'warrantyData';
-
-// Define constants
 const INCOME_STORAGE_KEY = 'incomeData';
-
-// API endpoints and utility functions (commented out until backend is ready)
-/*
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 const ENDPOINTS = {
   INVENTORY: `${API_BASE_URL}/inventory/`,
-  SALES_ORDERS: `${API_BASE_URL}/sales-orders/`,
+  SALES_ORDERS: `${API_BASE_URL}/orders/`,
   CUSTOMERS: `${API_BASE_URL}/customers/`,
+  CATEGORIES: `${API_BASE_URL}/product-categories/`,
 };
 
 // Inventory API functions
@@ -136,11 +133,20 @@ const deleteCustomer = async (customerId) => {
     return false;
   }
 };
-*/
+
+
+
+const getCategoryName = (categoryId) => {
+  const category = categoriesData.find((cat) => cat.id === categoryId);
+  return category ? category.name : "Unknown Category";
+};
+
+
 
 const SalesOrderPage = () => {
   const navigate = useNavigate();
-  
+  const [categoriesData, setCategoriesData] = useState([]);
+  const [categoryMap, setCategoryMap] = useState({});
   //---------------------------------------------
   // STATE MANAGEMENT
   //---------------------------------------------
@@ -184,6 +190,8 @@ const [showIncomeList, setShowIncomeList] = useState(false); // Add this line
   //---------------------------------------------
   
   // Function to save orders to localStorage
+
+
   const saveOrdersToLocalStorage = (orders) => {
     localStorage.setItem('salesOrdersData', JSON.stringify(orders));
   };
@@ -237,7 +245,7 @@ useEffect(() => {
     setIsLoading(true);
     console.log("Loading inventory data...");
     
-    /* 
+    
     // When API is ready, uncomment this section
     fetchInventory().then(inventoryData => {
       if (inventoryData) {
@@ -256,11 +264,11 @@ useEffect(() => {
       loadInventoryFromLocalStorage();
       setIsLoading(false);
     });
-    */
+  
     
     // For now, load from localStorage
-    loadInventoryFromLocalStorage();
-    setIsLoading(false);
+    //loadInventoryFromLocalStorage();
+   // setIsLoading(false);
   };
   
   // Load inventory from localStorage (fallback)
@@ -292,7 +300,7 @@ useEffect(() => {
   const updateInventoryStatus = async (productId, newStatus) => {
     console.log(`Updating product status: ID=${productId}, Status=${newStatus}`);
     
-    /* 
+    
     // When API is ready, uncomment this section
     try {
       const updatedItem = await updateInventoryItemStatus(productId, newStatus);
@@ -306,144 +314,112 @@ useEffect(() => {
       console.error(`Error updating product ${productId} status:`, error);
       return false;
     }
-    */
+    
     
     // For now, update in localStorage
-    try {
-      const savedInventory = localStorage.getItem('inventoryData');
-      if (!savedInventory) {
-        console.error("No inventory data in localStorage");
-        return false;
-      }
+    // try {
+    //   const savedInventory = localStorage.getItem('inventoryData');
+    //   if (!savedInventory) {
+    //     console.error("No inventory data in localStorage");
+    //     return false;
+    //   }
       
-      const inventory = JSON.parse(savedInventory);
+    //   const inventory = JSON.parse(savedInventory);
       
-      // Find the item by ID
-      const itemIndex = inventory.findIndex(item => item.id === productId);
+    //   // Find the item by ID
+    //   const itemIndex = inventory.findIndex(item => item.id === productId);
       
-      if (itemIndex === -1) {
-        console.error(`Product with ID ${productId} not found in inventory`);
-        return false;
-      }
+    //   if (itemIndex === -1) {
+    //     console.error(`Product with ID ${productId} not found in inventory`);
+    //     return false;
+    //   }
       
-      // Update the item's status
-      inventory[itemIndex].saleStatus = newStatus;
-      console.log(`Updated item:`, inventory[itemIndex]);
+    //   // Update the item's status
+    //   inventory[itemIndex].saleStatus = newStatus;
+    //   console.log(`Updated item:`, inventory[itemIndex]);
       
-      // Save back to localStorage
-      localStorage.setItem('inventoryData', JSON.stringify(inventory));
+    //   // Save back to localStorage
+    //   localStorage.setItem('inventoryData', JSON.stringify(inventory));
       
-      // Update local state by reloading
-      loadInventoryData();
+    //   // Update local state by reloading
+    //   loadInventoryData();
       
-      return true;
-    } catch (error) {
-      console.error("Error updating inventory status:", error);
-      return false;
-    }
+    //   return true;
+    // } catch (error) {
+    //   console.error("Error updating inventory status:", error);
+    //   return false;
+    // }
   };
 
   // Load sales orders data
   useEffect(() => {
-    loadSalesOrdersData();
+    loadOrdersFromDatabase();
   }, []);
   
-  // Function to load sales orders data
-  const loadSalesOrdersData = () => {
-    setIsLoading(true);
-    
-    /* 
-    // When API is ready, uncomment this section
-    fetchSalesOrders().then(ordersData => {
-      if (ordersData) {
-        setSalesOrders(ordersData);
-        
-        // Set next order ID based on highest existing ID
-        if (ordersData.length > 0) {
-          const orderNumbers = ordersData.map(order => 
-            parseInt(order.id.replace('#SO', ''))
-          );
-          const maxOrderNumber = Math.max(...orderNumbers);
-          setNewOrderId(`#SO${maxOrderNumber + 1}`);
-        } else {
-          setNewOrderId('#SO1001');
-        }
+  // Function to load sales orders from database
+  const loadOrdersFromDatabase = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/orders/'); // Replace with your API endpoint
+      if (!response.ok) {
+        throw new Error('Failed to fetch sales orders');
+      }
+      const orders = await response.json();
+      setSalesOrders(orders);
+      if (orders.length > 0) {
+        const lastOrderId = orders[orders.length - 1].id;
+        const newOrderId = generateNextOrderId(lastOrderId); // Generate the next order ID based on the last one
+        setNewOrderId(newOrderId);
       } else {
-        // Fallback to localStorage if API fails
-        loadSalesOrdersFromLocalStorage();
+        setNewOrderId('#SO1001'); // Default order ID if no orders exist
       }
-      setIsLoading(false);
-    }).catch(error => {
-      console.error("Error loading sales orders from API:", error);
-      loadSalesOrdersFromLocalStorage();
-      setIsLoading(false);
-    });
-    */
-    
-    // For now, load from localStorage
-    loadSalesOrdersFromLocalStorage();
-    setIsLoading(false);
-  };
-  
-  // Load sales orders from localStorage (fallback)
-  const loadSalesOrdersFromLocalStorage = () => {
-    // Try to load from localStorage first
-    const savedOrders = localStorage.getItem('salesOrdersData');
-    
-    if (savedOrders) {
-      try {
-        const parsedOrders = JSON.parse(savedOrders);
-        setSalesOrders(parsedOrders);
-        
-        // Set next order ID based on highest existing ID
-        if (parsedOrders.length > 0) {
-          const orderNumbers = parsedOrders.map(order => 
-            parseInt(order.id.replace('#SO', ''))
-          );
-          const maxOrderNumber = Math.max(...orderNumbers);
-          setNewOrderId(`#SO${maxOrderNumber + 1}`);
-        } else {
-          setNewOrderId('#SO1001');
-        }
-      } catch (error) {
-        console.error("Error loading orders:", error);
-        loadInitialOrders(); // Fall back to mock data
-      }
-    } else {
-      // No saved orders found, load initial mock data
-      loadInitialOrders();
+    } catch (error) {
+      console.error('Error fetching sales orders:', error);
     }
   };
 
-  // Load initial mock sales orders
-  const loadInitialOrders = () => {
-    const initialOrders = [
-      { id: "#SO1001", employee: "sales@pgmicro.com", dateSold: "2023-01-01", customer: "Juan Dela Cruz", type: "Walk-In", total: 10000.00 },
-      { id: "#SO1002", employee: "sales@pgmicro.com", dateSold: "2023-01-02", customer: "Maria Santos", type: "Contract", total: 11000.00 },
-      { id: "#SO1003", employee: "sales@pgmicro.com", dateSold: "2023-01-03", customer: "Juan Dela Cruz", type: "Walk-In", total: 12000.00 },
-      { id: "#SO1004", employee: "sales@pgmicro.com", dateSold: "2023-01-04", customer: "Maria Santos", type: "Contract", total: 13000.00 },
-      { id: "#SO1005", employee: "sales@pgmicro.com", dateSold: "2023-01-05", customer: "Juan Dela Cruz", type: "Walk-In", total: 14000.00 },
-      { id: "#SO1006", employee: "sales@pgmicro.com", dateSold: "2023-01-06", customer: "Maria Santos", type: "Contract", total: 15000.00 },
-      { id: "#SO1007", employee: "sales@pgmicro.com", dateSold: "2023-01-07", customer: "Juan Dela Cruz", type: "Walk-In", total: 16000.00 },
-      { id: "#SO1008", employee: "sales@pgmicro.com", dateSold: "2023-01-08", customer: "Maria Santos", type: "Contract", total: 17000.00 },
-      { id: "#SO1009", employee: "sales@pgmicro.com", dateSold: "2023-01-09", customer: "Juan Dela Cruz", type: "Walk-In", total: 18000.00 },
-      { id: "#SO1010", employee: "sales@pgmicro.com", dateSold: "2023-01-10", customer: "Maria Santos", type: "Contract", total: 19000.00 }
-    ];
-    
-    setSalesOrders(initialOrders);
-    // Save initial orders to localStorage
-    saveOrdersToLocalStorage(initialOrders);
-    setNewOrderId('#SO1011');
+  // Helper function to generate the next order ID
+  const generateNextOrderId = (lastOrderId) => {
+    // If lastOrderId is a number, use it directly
+    const numericPart = typeof lastOrderId === "string"
+      ? parseInt(lastOrderId.replace('#SO', ''), 10)
+      : parseInt(lastOrderId);
+  
+    const nextNumericPart = numericPart + 1;
+    return `#SO${nextNumericPart.toString().padStart(4, '0')}`;
   };
   
+
   // Load customer data
   useEffect(() => {
     loadCustomerData();
   }, []);
+const fetchCategories = async () => {
+    try {
+      const response = await fetch(ENDPOINTS.CATEGORIES);
+      if (!response.ok) throw new Error("Failed to fetch categories");
+      const data = await response.json();
+      setCategoriesData(data); // ✅ Store fetched category data
+      const map = {};
+      data.forEach((cat) => {
+        map[cat.id] = cat.name;
+      });
+      setCategoryMap(map); // ✅ Set map from ID to name
+    } catch (err) {
+      console.error("Category fetch error:", err);
+    }
+  };
+  // Fetch categories when the component mounts
+  useEffect(() => {
+    fetchCategories();
+  }, []);
   
+  const getCategoryName = (categoryId) => {
+    const category = categoriesData.find((cat) => cat.id === categoryId);
+    return category ? category.name : "Unknown Category";
+  };
   // Function to load customer data
   const loadCustomerData = () => {
-    /* 
+    
     // When API is ready, uncomment this section
     fetchCustomers().then(customersData => {
       if (customersData) {
@@ -455,7 +431,7 @@ useEffect(() => {
     }).catch(error => {
       console.error("Error loading customers from API:", error);
     });
-    */
+    
     
     // For now, continue using the local customer data
     // It's already initialized in the state
@@ -945,10 +921,10 @@ const createIncomeRecord = (order) => {
         id: newOrderId,
         employee: "sales@pgmicro.com",
         dateSold: new Date().toISOString().split('T')[0],
-        customer: customer.name,
+        customer: customer.id,
         type: orderType,
         total: totalAmount,
-        items: cart,
+        items: cart.map((item) => item.id),
         paymentMethod: paymentMethod
       };
       
@@ -968,9 +944,16 @@ const createIncomeRecord = (order) => {
         console.log(`Updated item ${item.id} status:`, updated ? "Success" : "Failed");
       }
       
-      // Add the new order to the sales orders list
-      const updatedOrders = [...salesOrders, newOrder];
+      const createdOrder = await createSalesOrder(newOrder);
+      if (!createdOrder) {
+        alert("Failed to create order on server.");
+        return;
+        } 
+      
+      // Add the order returned by the backend to the list
+      const updatedOrders = [...salesOrders, createdOrder];
       setSalesOrders(updatedOrders);
+      
       
       // Save to localStorage so orders persist after refresh
       saveOrdersToLocalStorage(updatedOrders);
@@ -981,7 +964,7 @@ const createIncomeRecord = (order) => {
       // Create income record for the order
       const incomeRecord = createIncomeRecord(newOrder);
   
-      /* 
+      
       // When API is ready, uncomment this section - This is correctly placed here
       try {
         const response = await fetch(`${API_BASE_URL}/income/`, {
@@ -1008,7 +991,7 @@ const createIncomeRecord = (order) => {
         console.error("Error creating income record in API:", error);
         // Continue with the order process even if API fails
       }
-      */
+      
   
       // FIRST: Reset the form and close the modal
       setCart([]);
@@ -1076,7 +1059,7 @@ const createIncomeRecord = (order) => {
   const handleRefreshData = () => {
     setIsLoading(true);
     loadInventoryData();
-    loadSalesOrdersData();
+    loadOrdersFromDatabase();
     loadCustomerData();
     setTimeout(() => setIsLoading(false), 500); // Add a small delay for UX
   };
@@ -1497,12 +1480,12 @@ const createIncomeRecord = (order) => {
                         className="p-3 border rounded bg-white flex justify-between items-center"
                         style={{minHeight: "80px"}}
                       >
-                        <div>
-                          <p className="font-semibold">{product.category || "Unknown Category"}</p>
-                          <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
-                          <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
-                          <p>{product.sellingPrice || "Price not available"}</p>
-                        </div>
+                      <div>
+                        <p className="font-semibold">{getCategoryName(product.category)}</p>
+                        <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
+                        <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
+                        <p className="font-medium">₱{product.sellingPrice ? Number(product.sellingPrice).toLocaleString() : "Price not available"}</p>
+                      </div>
                         <button
                           onClick={() => addToCart(product)}
                           className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 const IncomeList = ({ onBack, storageKey }) => {
   // State management
@@ -21,9 +22,7 @@ const IncomeList = ({ onBack, storageKey }) => {
   // Function to load income data
   const loadIncomeData = () => {
     setIsLoading(true);
-    
-    /* 
-    // When API is ready, uncomment this section
+  
     fetch(`${API_BASE_URL}/income/`)
       .then(response => {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -35,14 +34,9 @@ const IncomeList = ({ onBack, storageKey }) => {
       })
       .catch(error => {
         console.error("Error loading income data from API:", error);
-        loadIncomeFromLocalStorage();
+        setIncomeRecords([]);
         setIsLoading(false);
       });
-    */
-    
-    // For now, load from localStorage
-    loadIncomeFromLocalStorage();
-    setIsLoading(false);
   };
   
   // Load income from localStorage
@@ -124,7 +118,7 @@ const IncomeList = ({ onBack, storageKey }) => {
       saveIncomesToLocalStorage(updatedIncomes);
       setShowIncomeDetailsModal(false);
       
-      /* 
+      
       // When API is ready, uncomment this section
       fetch(`${API_BASE_URL}/income/${editedIncome.id}/`, {
         method: 'PUT',
@@ -146,7 +140,7 @@ const IncomeList = ({ onBack, storageKey }) => {
           console.error("Error updating income:", error);
           alert("Failed to update income record. Please try again.");
         });
-      */
+      
     }
   };
   
