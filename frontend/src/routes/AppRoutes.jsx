@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import DashboardLayout from "../layouts/DashboardLayout";
 
 // Import Pages
 import LoginPage from "../pages/LoginPage";
@@ -14,6 +15,8 @@ import ViewPurchaseOrder from "../pages/PurchaseOrders/ViewPurchaseOrder";
 
 // Sales
 import SalesOrderPage from "../pages/Sales/SalesOrderPage";
+import IncomeList from "../pages/Sales/IncomeList"; 
+import CustomerList from "../pages/Sales/CustomerList";
 
 // Returns
 import ReturnWarrantyPage from "../pages/Returns/ReturnWarrantyPage";
@@ -31,19 +34,21 @@ import { ROLES } from "../utils/roleConfig";
 const ProtectedRoute = ({ element, allowedRoles }) => {
   const isAuthenticated = sessionStorage.getItem("isAuthenticated") === "true";
   const userRole = sessionStorage.getItem("userRole");
-
-  console.group("Protected Route Check");
-  console.log("Is Authenticated:", isAuthenticated);
-  console.log("User Role:", userRole);
-  console.log("Allowed Roles:", allowedRoles);
-  console.groupEnd();
+  const accessiblePages = JSON.parse(sessionStorage.getItem("accessiblePages") || "[]");
+  
+  // Get the base path from the current route
+  const currentPath = window.location.pathname;
+  const basePath = currentPath.split('/')[1]; // e.g., "inventory" from "/inventory"
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  if (!allowedRoles.includes(userRole)) {
-    console.error("Access Denied", { userRole, allowedRoles });
+  // Check if the user has access based on either role or accessible pages
+  const hasRoleAccess = allowedRoles.includes(userRole);
+  const hasPageAccess = accessiblePages.includes(basePath);
+  
+  if (!hasRoleAccess && !hasPageAccess) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -67,7 +72,6 @@ const AppRoutes = () => {
     if (inventory && inventory.length > 0) {
       try {
         localStorage.setItem('inventoryData', JSON.stringify(inventory));
-        console.log("Saved inventory to localStorage:", inventory.length);
       } catch (error) {
         console.error("Error saving inventory to localStorage:", error);
       }
@@ -76,14 +80,11 @@ const AppRoutes = () => {
 
   // Function to handle inventory updates from InventoryPage
   const handleInventoryUpdate = (updatedInventory) => {
-    console.log("Inventory updated with", updatedInventory.length, "items");
     setInventory(updatedInventory);
   };
 
   // Function to update product status (used by SalesOrderPage)
   const updateInventoryStatus = async (productId, status) => {
-    console.log(`Updating product ${productId} status to ${status}`);
-    
     const updatedInventory = inventory.map(product => 
       product.id === productId ? {...product, saleStatus: status} : product
     );
@@ -102,10 +103,10 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      {/* Public Login Page */}
+      {/* Public Login Page - No layout wrapper here */}
       <Route path="/" element={<LoginPage />} />
 
-      {/* Protected Dashboard with proper roles */}
+      {/* Protected Routes */}
       <Route
         path="/dashboard"
         element={
@@ -124,7 +125,6 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Inventory - Only Admin and Inventory roles */}
       <Route
         path="/inventory"
         element={
@@ -135,7 +135,6 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Damaged Products Page - Only Admin and Inventory roles */}
       <Route
         path="/damaged-products"
         element={
@@ -146,50 +145,84 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Purchase Orders - Only Admin and Purchase Order roles */}
       <Route
         path="/purchase-orders"
         element={
           <ProtectedRoute
             element={<PurchaseOrderPage />}
-            allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]} // Removed INVENTORY role
+            allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]}
           />
         }
       />
+
       <Route
         path="/purchase-orders/create"
         element={
           <ProtectedRoute
             element={<CreatePurchaseOrder />}
-            allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]} // Removed INVENTORY role
+            allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]}
           />
         }
       />
+
       <Route
         path="/purchase-orders/view"
         element={
           <ProtectedRoute
             element={<ViewPurchaseOrder />}
-            allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]} // Removed INVENTORY role
+            allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]}
           />
         }
       />
 
-      {/* Sales - Only Admin and Sales roles */}
+      {/* Important: Don't wrap SalesOrderPage with DashboardLayout since it already has it internally */}
       <Route
         path="/sales"
         element={
           <ProtectedRoute
-            element={<SalesOrderPage 
-              inventoryData={inventory} 
-              updateInventoryStatus={updateInventoryStatus} 
-            />}
+            element={
+              <DashboardLayout>
+                <SalesOrderPage 
+                  inventoryData={inventory} 
+                  updateInventoryStatus={updateInventoryStatus} 
+                />
+              </DashboardLayout>
+            }
             allowedRoles={[ROLES.ADMIN, ROLES.SALES]}
           />
         }
       />
 
-      {/* Returns - Admin, Returns, and Warranty List roles */}
+      {/* Keep Income List wrapped with DashboardLayout */}
+      <Route
+        path="/income-list"
+        element={
+          <ProtectedRoute
+            element={
+              <DashboardLayout>
+                <IncomeList onBack={() => window.history.back()} storageKey="incomeData" />
+              </DashboardLayout>
+            }
+            allowedRoles={[ROLES.ADMIN, ROLES.SALES]}
+          />
+        }
+      />
+
+      {/* Keep Customer List wrapped with DashboardLayout */}
+      <Route
+        path="/customer-list"
+        element={
+          <ProtectedRoute
+            element={
+              <DashboardLayout>
+                <CustomerList onBack={() => window.history.back()} />
+              </DashboardLayout>
+            }
+            allowedRoles={[ROLES.ADMIN, ROLES.SALES]}
+          />
+        }
+      />
+
       <Route
         path="/return-warranty"
         element={
@@ -199,6 +232,7 @@ const AppRoutes = () => {
           />
         }
       />
+
       <Route
         path="/returnform"
         element={
@@ -208,6 +242,7 @@ const AppRoutes = () => {
           />
         }
       />
+
       <Route
         path="/return-details"
         element={
@@ -218,7 +253,6 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Reports - Admin only */}
       <Route
         path="/reports"
         element={
@@ -229,7 +263,6 @@ const AppRoutes = () => {
         }
       />
 
-      {/* User Management - Admin Only */}
       <Route
         path="/user-management"
         element={
@@ -239,6 +272,9 @@ const AppRoutes = () => {
           />
         }
       />
+
+      {/* Default route - redirect to dashboard */}
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 };

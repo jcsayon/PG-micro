@@ -115,3 +115,5 @@ class ReportModuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReportModule
         fields = '__all__'
+
+
