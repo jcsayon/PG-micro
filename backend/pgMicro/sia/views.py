@@ -95,3 +95,7 @@ class ReportModuleViewSet(viewsets.ModelViewSet):
 class DamagedInventoryListView(generics.ListAPIView):
     queryset = Inventory.objects.filter(stock_status="Damaged")
     serializer_class = InventorySerializer
+    
+class DamageProductViewSet(viewsets.ModelViewSet):
+    queryset = DamageProduct.objects.all()
+    serializer_class = DamageProductSerializer

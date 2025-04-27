@@ -7,7 +7,7 @@ from .views import (
     OrderPaymentViewSet, ReturnsViewSet, RefundViewSet, ReplacementViewSet,
     PurchaseOrderViewSet, PurchaseOrderDetailsViewSet, PurchaseOrderPaymentViewSet,
     PurchaseOrderTrackingViewSet, ExpensesViewSet, IncomeViewSet, ReportModuleViewSet,
-    DamagedInventoryListView  # ✅ this one is not router-registered
+    DamagedInventoryListView, DamageProductViewSet  # ✅ this one is not router-registered
 )
 
 router = DefaultRouter()
@@ -33,6 +33,7 @@ router.register(r'purchase-order-tracking', PurchaseOrderTrackingViewSet)
 router.register(r'expenses', ExpensesViewSet)
 router.register(r'income', IncomeViewSet)
 router.register(r'report-modules', ReportModuleViewSet)
+router.register(r'damage-products', DamageProductViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
