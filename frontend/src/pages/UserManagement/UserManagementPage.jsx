@@ -2,13 +2,11 @@ import React, { useState, useEffect } from "react";
 import Sidebar_Primary from "../../components/Sidebar_Primary";
 import { ROLES } from '../../utils/roleConfig';
 
-// Get status badge class
+// Get status badge class - Simplified to just Active and Inactive
 const getStatusBadgeClass = (status) => {
   switch(status) {
     case "Active": return "bg-green-100 text-green-800 border border-green-200";
     case "Inactive": return "bg-gray-100 text-gray-800 border border-gray-200";
-    case "Suspended": return "bg-red-100 text-red-800 border border-red-200";
-    case "Pending": return "bg-yellow-100 text-yellow-800 border border-yellow-200";
     default: return "bg-gray-100 text-gray-800 border border-gray-200";
   }
 };
@@ -54,6 +52,15 @@ const UserManagementPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  
+  // States for employee profiling
+  const [activeTab, setActiveTab] = useState("employees"); // 'employees' or 'accounts'
+  const [isAddingEmployee, setIsAddingEmployee] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isEditingEmployee, setIsEditingEmployee] = useState(false);
+  const [showDeleteEmployeeConfirm, setShowDeleteEmployeeConfirm] = useState(false);
 
   // Debug ROLES on component mount
   useEffect(() => {
@@ -63,6 +70,52 @@ const UserManagementPage = () => {
   // Current logged-in user (would typically come from auth context)
   // For demo purposes, we'll set it as Admin
   const currentUserRole = "Admin";
+
+  // Initialize employees from local storage
+  const [employees, setEmployees] = useState(() => {
+    const storedEmployees = localStorage.getItem('employees');
+    if (storedEmployees) {
+      return JSON.parse(storedEmployees);
+    }
+    // Default employees if none in local storage
+    return [
+      { 
+        id: 1, 
+        firstName: "Admin",
+        lastName: "User",
+        email: "admin@pgmicro.com",
+        phone: "555-123-4567",
+        position: "System Administrator",
+        joinDate: "2023-01-15",
+        hasAccount: true
+      },
+      { 
+        id: 2, 
+        firstName: "Inventory",
+        lastName: "Manager",
+        email: "inventory@pgmicro.com",
+        phone: "555-234-5678",
+        position: "Inventory Manager",
+        joinDate: "2023-02-20",
+        hasAccount: true
+      },
+      { 
+        id: 3, 
+        firstName: "Sales",
+        lastName: "Representative",
+        email: "sales@pgmicro.com",
+        phone: "555-345-6789",
+        position: "Sales Representative",
+        joinDate: "2023-03-10",
+        hasAccount: true
+      },
+    ];
+  });
+
+  // Save employees to local storage whenever employees change
+  useEffect(() => {
+    localStorage.setItem('employees', JSON.stringify(employees));
+  }, [employees]);
 
   // Initialize users from local storage
   const [users, setUsers] = useState(() => {
@@ -78,6 +131,7 @@ const UserManagementPage = () => {
         role: ROLES.ADMIN, 
         password: "admin123", 
         status: "Active",
+        employeeId: 1,
         accessiblePages: getAccessiblePagesByRole(ROLES.ADMIN)
       },
       { 
@@ -86,6 +140,7 @@ const UserManagementPage = () => {
         role: ROLES.INVENTORY, 
         password: "inventory123", 
         status: "Active",
+        employeeId: 2,
         accessiblePages: getAccessiblePagesByRole(ROLES.INVENTORY)
       },
       { 
@@ -94,6 +149,7 @@ const UserManagementPage = () => {
         role: ROLES.SALES, 
         password: "sales123", 
         status: "Active",
+        employeeId: 3,
         accessiblePages: getAccessiblePagesByRole(ROLES.SALES)
       },
     ];
@@ -110,44 +166,232 @@ const UserManagementPage = () => {
     setIsSidebarCollapsed(collapsed);
   }, []);
 
-  // Form state
-  const [form, setForm] = useState({
+  // Employee form state
+  const [employeeForm, setEmployeeForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    position: "",
+    joinDate: new Date().toISOString().split('T')[0],
+  });
+
+  // User form state with module access - Simplified status options
+  const [userForm, setUserForm] = useState({
     username: "",
     password: "",
     role: ROLES.SALES,
-    status: "Active"
+    status: "Active", // Default to Active
+    modules: {
+      admin: false,
+      sales: false,
+      inventory: false,
+      returnWarranty: false,
+      purchaseOrders: false,
+      reports: false
+    }
   });
 
-  // Handle form input changes
-  const handleChange = (e) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  // Function to update module checkboxes based on selected role
+  const updateModulesByRole = (role) => {
+    // Default all modules to false
+    const updatedModules = {
+      admin: false,
+      sales: false,
+      inventory: false,
+      returnWarranty: false,
+      purchaseOrders: false,
+      reports: false
+    };
+    
+    // Set appropriate modules based on role
+    switch(role) {
+      case ROLES.ADMIN:
+        updatedModules.admin = true;
+        updatedModules.sales = true;
+        updatedModules.inventory = true;
+        updatedModules.returnWarranty = true;
+        updatedModules.purchaseOrders = true;
+        updatedModules.reports = true;
+        break;
+      case ROLES.SALES:
+        updatedModules.sales = true;
+        break;
+      case ROLES.INVENTORY:
+        updatedModules.inventory = true;
+        break;
+      case ROLES.RETURNS:
+        updatedModules.returnWarranty = true;
+        break;
+      case ROLES.PURCHASE_ORDER:
+        updatedModules.purchaseOrders = true;
+        break;
+      case ROLES.WARRANTY_LIST:
+        updatedModules.returnWarranty = true;
+        break;
+      default:
+        // For unrecognized roles, keep all modules unchecked
+        break;
+    }
+    
+    return updatedModules;
   };
 
-  // Handle adding new user - UPDATED FUNCTION
-  const handleAddUser = () => {
-    if (!form.username || !form.password || !form.role) {
-      alert("Please fill all fields");
+  // Handle employee form input changes
+  // Handle employee form input changes
+const handleEmployeeChange = (e) => {
+  const { name, value } = e.target;
+  
+  if (name === 'phone') {
+    // Allow only numeric input and + symbol
+    const phoneRegex = /^[0-9+]*$/;
+    if (!phoneRegex.test(value)) {
+      setPhoneError("Phone number can only contain numbers and + symbol");
+      return;
+    } else {
+      setPhoneError("");
+    }
+  }
+  
+  setEmployeeForm(prev => ({ ...prev, [name]: value }));
+};
+
+  // Handle user form input changes
+const handleUserChange = (e) => {
+  const { name, value } = e.target;
+  
+  if (name === 'password' && !isEditing) {
+    // Validate password length
+    if (value.length !== 0 && value.length !== 8) {
+      setPasswordError("Password must be exactly 8 characters long");
+    } else {
+      setPasswordError("");
+    }
+  }
+  
+  if (name === 'role') {
+    // When role changes, update the modules automatically
+    const updatedModules = updateModulesByRole(value);
+    
+    setUserForm(prev => ({
+      ...prev,
+      [name]: value,
+      modules: updatedModules
+    }));
+  } else {
+    // For other fields, just update the value
+    setUserForm(prev => ({ ...prev, [name]: value }));
+  }
+};
+  
+  // Function to handle module checkbox changes
+  const handleModuleChange = (module) => {
+    setUserForm(prev => ({
+      ...prev,
+      modules: {
+        ...prev.modules,
+        [module]: !prev.modules[module]
+      }
+    }));
+  };
+
+  // Handle adding or updating employee
+  const handleAddEmployee = () => {
+    if (!employeeForm.firstName || !employeeForm.lastName || !employeeForm.email) {
+      alert("Please fill all required fields");
       return;
     }
     
-    const normalizedUsername = form.username.trim().toLowerCase();
+    const normalizedEmail = employeeForm.email.trim().toLowerCase();
     
-    // Check for duplicate usernames
-    if (users.some(user => 
-      user.username.toLowerCase() === normalizedUsername && 
-      (!isEditing || user.id !== selectedUser?.id)
+    // Check for duplicate emails
+    if (employees.some(emp => 
+      emp.email.toLowerCase() === normalizedEmail && 
+      (!isEditingEmployee || emp.id !== selectedEmployee?.id)
     )) {
-      alert("Username already exists");
+      alert("Email already exists");
       return;
     }
 
-    // Debug role and permissions before saving
-    console.log("Selected role:", form.role);
-    console.log("Role type:", typeof form.role);
-    console.log("Getting accessible pages for:", form.role);
-    const accessiblePages = getAccessiblePagesByRole(form.role);
-    console.log("Pages being assigned:", accessiblePages);
+    if (isEditingEmployee && selectedEmployee) {
+      // Update existing employee
+      const updatedEmployees = employees.map(emp => 
+        emp.id === selectedEmployee.id 
+          ? { 
+              ...emp, 
+              firstName: employeeForm.firstName.trim(),
+              lastName: employeeForm.lastName.trim(),
+              email: normalizedEmail,
+              phone: employeeForm.phone.trim(),
+              position: employeeForm.position.trim(),
+              joinDate: employeeForm.joinDate
+            } 
+          : emp
+      );
+      
+      setEmployees(updatedEmployees);
+      setIsEditingEmployee(false);
+      setSelectedEmployee(null);
+      setIsAddingEmployee(false);
+    } else {
+      // Add new employee
+      const newEmployee = {
+        id: Date.now(), // Use timestamp as unique ID
+        firstName: employeeForm.firstName.trim(),
+        lastName: employeeForm.lastName.trim(),
+        email: normalizedEmail,
+        phone: employeeForm.phone.trim(),
+        position: employeeForm.position.trim(),
+        joinDate: employeeForm.joinDate,
+        hasAccount: false
+      };
+      
+      setEmployees([...employees, newEmployee]);
+      
+      // Reset form
+      resetForms();
+    }
+  };
 
+  // Handle adding new user after employee creation
+  const handleAddUser = () => {
+  if (!userForm.username || (!isEditing && !userForm.password)) {
+    alert("Please fill all required fields");
+    return;
+  }
+  
+  const normalizedUsername = userForm.username.trim().toLowerCase();
+  
+  // Check for duplicate usernames
+  if (users.some(user => 
+    user.username.toLowerCase() === normalizedUsername && 
+    (!isEditing || user.id !== selectedUser?.id)
+  )) {
+    alert("Username already exists");
+    return;
+  }
+    
+    // Password validation for new accounts
+    if (!isEditing && userForm.password.length !== 8) {
+      setPasswordError("Password must be exactly 8 characters long");
+      return;
+    }
+  
+    // Build accessible pages from module selections
+    const accessiblePages = ['dashboard'];
+    if (userForm.modules.admin) accessiblePages.push('user-management');
+    if (userForm.modules.sales) accessiblePages.push('sales');
+    if (userForm.modules.inventory) accessiblePages.push('inventory');
+    if (userForm.modules.returnWarranty) accessiblePages.push('return-warranty');
+    if (userForm.modules.purchaseOrders) accessiblePages.push('purchase-orders');
+    if (userForm.modules.reports) accessiblePages.push('reports');
+    
+    // Determine primary role based on modules
+    let role = userForm.role;
+    if (userForm.modules.admin) {
+      role = ROLES.ADMIN;
+    }
+  
     if (isEditing && selectedUser) {
       // Update existing user
       const updatedUsers = users.map(user => 
@@ -155,9 +399,9 @@ const UserManagementPage = () => {
           ? { 
               ...user, 
               username: normalizedUsername,
-              password: form.password === "********" ? user.password : form.password.trim(),
-              role: form.role,
-              status: form.status,
+              password: userForm.password === "********" ? user.password : userForm.password.trim(),
+              role: role,
+              status: userForm.status,
               accessiblePages: accessiblePages
             } 
           : user
@@ -167,43 +411,135 @@ const UserManagementPage = () => {
       setIsEditing(false);
       setSelectedUser(null);
     } else {
-      // Add new user with trimmed password
+      // Add new user for the selected employee
       const newUser = {
-        id: Date.now(), // Use timestamp as unique ID
+        id: Date.now(),
         username: normalizedUsername,
-        password: form.password.trim(), // Explicitly trim the password
-        role: form.role,
-        status: form.status,
+        password: userForm.password.trim(),
+        role: role,
+        status: userForm.status,
+        employeeId: selectedEmployee.id,
         accessiblePages: accessiblePages
       };
       
-      // Debug log for new user
-      console.log("Adding new user:", {
-        ...newUser,
-        password: '[REDACTED]', // Don't log actual password
-        accessiblePages: newUser.accessiblePages
-      });
+      // Update employee hasAccount status
+      const updatedEmployees = employees.map(emp => 
+        emp.id === selectedEmployee.id 
+          ? { ...emp, hasAccount: true } 
+          : emp
+      );
       
+      setEmployees(updatedEmployees);
       setUsers([...users, newUser]);
     }
     
-    // Reset form and close modal
-    setForm({ username: "", password: "", role: ROLES.SALES, status: "Active" });
+    // Reset forms and states
+    resetForms();
+  };
+
+  // Reset all forms and modal states
+  const resetForms = () => {
+    setEmployeeForm({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      position: "",
+      joinDate: new Date().toISOString().split('T')[0],
+    });
+
+    setPhoneError("");
+      setPasswordError("");
+    
+    // Initialize with Sales role and its default modules
+    const initialRole = ROLES.SALES;
+    const initialModules = updateModulesByRole(initialRole);
+    
+    setUserForm({
+      username: "",
+      password: "",
+      role: initialRole,
+      status: "Active",
+      modules: initialModules
+    });
+    
+    setIsAddingEmployee(false);
     setIsAddingUser(false);
+    setIsEditingEmployee(false);
+    setIsEditing(false);
+    setSelectedEmployee(null);
+    setSelectedUser(null);
+    setShowPassword(false);
+  };
+
+  // Handle edit employee
+  const handleEditEmployeeClick = (employee) => {
+    setSelectedEmployee(employee);
+    setEmployeeForm({
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      email: employee.email,
+      phone: employee.phone || "",
+      position: employee.position || "",
+      joinDate: employee.joinDate
+    });
+    setIsEditingEmployee(true);
+    setIsAddingEmployee(true);
+  };
+
+  // Handle delete employee
+  const handleDeleteEmployeeClick = (employee) => {
+    setSelectedEmployee(employee);
+    setShowDeleteEmployeeConfirm(true);
+  };
+
+  // Confirm delete employee
+  const confirmDeleteEmployee = () => {
+    // Also delete associated user account if exists
+    if (selectedEmployee.hasAccount) {
+      const userToDelete = users.find(user => user.employeeId === selectedEmployee.id);
+      if (userToDelete) {
+        const updatedUsers = users.filter(user => user.id !== userToDelete.id);
+        setUsers(updatedUsers);
+      }
+    }
+    
+    const updatedEmployees = employees.filter(emp => emp.id !== selectedEmployee.id);
+    setEmployees(updatedEmployees);
+    setShowDeleteEmployeeConfirm(false);
+    setSelectedEmployee(null);
   };
 
   // Handle edit user
   const handleEditClick = (user) => {
+    console.log("handleEditClick called with user:", user);
+    
     setSelectedUser(user);
-    setForm({
+    
+    // Extract modules from user's accessible pages
+    const modules = {
+      admin: user.accessiblePages?.includes('user-management') || false,
+      sales: user.accessiblePages?.includes('sales') || false,
+      inventory: user.accessiblePages?.includes('inventory') || false,
+      returnWarranty: user.accessiblePages?.includes('return-warranty') || false,
+      purchaseOrders: user.accessiblePages?.includes('purchase-orders') || false,
+      reports: user.accessiblePages?.includes('reports') || false
+    };
+    
+    setUserForm({
       username: user.username,
       password: "********", // Don't show actual password
       role: user.role,
-      status: user.status
+      status: user.status,
+      modules: modules
     });
+    
+    // Make sure we're in the accounts tab
+    setActiveTab("accounts");
+    
+    // These are crucial for the modal to appear
     setIsEditing(true);
     setIsAddingUser(true);
-    setShowPassword(false);
   };
 
   // Handle delete user
@@ -215,10 +551,50 @@ const UserManagementPage = () => {
   // Confirm delete user
   const confirmDelete = () => {
     const updatedUsers = users.filter(user => user.id !== selectedUser.id);
+    
+    // Also update employee hasAccount status
+    const userToDelete = selectedUser;
+    const employeeToUpdate = employees.find(emp => emp.id === userToDelete.employeeId);
+    
+    if (employeeToUpdate) {
+      const updatedEmployees = employees.map(emp => 
+        emp.id === employeeToUpdate.id 
+          ? { ...emp, hasAccount: false } 
+          : emp
+      );
+      setEmployees(updatedEmployees);
+    }
+    
     setUsers(updatedUsers);
     setShowDeleteConfirm(false);
     setSelectedUser(null);
   };
+
+  // Handle create account for employee
+  const handleCreateAccountClick = (employee) => {
+    const initialRole = ROLES.SALES; // Default role
+    const initialModules = updateModulesByRole(initialRole);
+    
+    setSelectedEmployee(employee);
+    setUserForm({
+      username: employee.email,
+      password: "",
+      role: initialRole,
+      status: "Active",
+      modules: initialModules
+    });
+    
+    setIsAddingUser(true);
+    setActiveTab("accounts"); // Switch to accounts tab when creating an account
+  };
+
+  // Filter employees based on search term
+  const filteredEmployees = employees.filter(emp => 
+    emp.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    emp.lastName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    emp.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    emp.position?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Filter users based on search term
   const filteredUsers = users.filter(user => 
@@ -279,20 +655,17 @@ const UserManagementPage = () => {
                 </svg>
                 <input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-3 border border-slate-200 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
                 />
               </div>
-              {currentUserRole === "Admin" && (
+              {currentUserRole === "Admin" && activeTab === "employees" && (
                 <button
                   onClick={() => {
-                    setIsEditing(false);
-                    setSelectedUser(null);
-                    setForm({ username: "", password: "", role: ROLES.SALES, status: "Active" });
-                    setIsAddingUser(true);
-                    setShowPassword(false);
+                    resetForms();
+                    setIsAddingEmployee(true);
                   }}
                   className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-xl hover:bg-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
@@ -302,14 +675,156 @@ const UserManagementPage = () => {
                     <line x1="20" y1="8" x2="20" y2="14"></line>
                     <line x1="23" y1="11" x2="17" y2="11"></line>
                   </svg>
-                  <span>Add User</span>
+                  <span>Add Employee</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* Add/Edit User Modal */}
-          {isAddingUser && (
+          {/* Tabs */}
+          <div className="mb-6 border-b border-slate-200">
+            <div className="flex space-x-6">
+              <button
+                onClick={() => setActiveTab("employees")}
+                className={`py-3 font-medium text-sm transition-colors relative ${
+                  activeTab === "employees" 
+                    ? "text-indigo-600 border-b-2 border-indigo-600" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Employee Profiles
+              </button>
+              <button
+                onClick={() => setActiveTab("accounts")}
+                className={`py-3 font-medium text-sm transition-colors relative ${
+                  activeTab === "accounts" 
+                    ? "text-indigo-600 border-b-2 border-indigo-600" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                User Accounts
+              </button>
+            </div>
+          </div>
+          
+          {/* Employee Profile Creation/Edit Modal */}
+          {isAddingEmployee && (
+            <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50 px-4">
+              <div className="bg-white/95 rounded-2xl shadow-xl w-full max-w-2xl p-6 md:p-8 transform transition-all duration-300 scale-100 backdrop-filter backdrop-blur-md">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-slate-800 flex items-center gap-3">
+                    <div className="bg-indigo-100 p-2 rounded-lg">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </div>
+                    {isEditingEmployee ? "Edit Employee Profile" : "New Employee Profile"}
+                  </h2>
+                  <button 
+                    onClick={resetForms}
+                    className="text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-full hover:bg-slate-100"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-700">First Name *</label>
+                    <input
+                      name="firstName"
+                      value={employeeForm.firstName}
+                      onChange={handleEmployeeChange}
+                      placeholder="Enter first name"
+                      className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-700">Last Name *</label>
+                    <input
+                      name="lastName"
+                      value={employeeForm.lastName}
+                      onChange={handleEmployeeChange}
+                      placeholder="Enter last name"
+                      className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-700">Email *</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={employeeForm.email}
+                      onChange={handleEmployeeChange}
+                      placeholder="Enter email address"
+                      className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                      <label className="text-sm font-medium text-slate-700">Phone Number</label>
+                      <input
+                        name="phone"
+                        value={employeeForm.phone}
+                        onChange={handleEmployeeChange}
+                        placeholder="Enter phone number (e.g., +639XXXXXXXXX)"
+                        className={`border ${phoneError ? "border-red-500" : "border-slate-200"} p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm`}
+                      />
+                      {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
+                    </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-700">Position</label>
+                    <input
+                      name="position"
+                      value={employeeForm.position}
+                      onChange={handleEmployeeChange}
+                      placeholder="Enter job position"
+                      className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-slate-700">Join Date</label>
+                    <input
+                      type="date"
+                      name="joinDate"
+                      value={employeeForm.joinDate}
+                      onChange={handleEmployeeChange}
+                      className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                    />
+                  </div>
+                </div>
+                
+                <div className="mt-8 flex justify-end gap-3">
+                  <button
+                    onClick={resetForms}
+                    className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddEmployee}
+                    className="bg-indigo-600 text-white font-medium px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                  >
+                    {isEditingEmployee ? "Update Profile" : "Save Profile"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* User Account Creation Modal - Only show in User Accounts tab */}
+          {isAddingUser && activeTab === "accounts" && (
             <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50 px-4">
               <div className="bg-white/95 rounded-2xl shadow-xl w-full max-w-2xl p-6 md:p-8 transform transition-all duration-300 scale-100 backdrop-filter backdrop-blur-md">
                 <div className="flex items-center justify-between mb-6">
@@ -324,7 +839,7 @@ const UserManagementPage = () => {
                     {isEditing ? "Edit User Account" : "New User Account"}
                   </h2>
                   <button 
-                    onClick={() => setIsAddingUser(false)}
+                    onClick={resetForms}
                     className="text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-full hover:bg-slate-100"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -334,14 +849,23 @@ const UserManagementPage = () => {
                   </button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {!isEditing && selectedEmployee && (
+                  <div className="mb-6 p-4 bg-indigo-50 rounded-xl">
+                    <h3 className="font-medium text-indigo-700 mb-2">Creating account for:</h3>
+                    <p className="text-slate-700">
+                      <span className="font-medium">{selectedEmployee.firstName} {selectedEmployee.lastName}</span> • {selectedEmployee.position || "No position"}
+                    </p>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-slate-700">Username / Email</label>
                     <input
                       name="username"
-                      value={form.username}
-                      onChange={handleChange}
-                      placeholder="enter email address"
+                      value={userForm.username}
+                      onChange={handleUserChange}
+                      placeholder="Enter email address"
                       className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                     />
                   </div>
@@ -352,10 +876,10 @@ const UserManagementPage = () => {
                       <input
                         name="password"
                         type={showPassword ? "text" : "password"}
-                        value={form.password}
-                        onChange={handleChange}
-                        placeholder={isEditing ? "leave blank to keep current" : "create password"}
-                        className="border border-slate-200 p-3 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm w-full"
+                        value={userForm.password}
+                        onChange={handleUserChange}
+                        placeholder={isEditing ? "Leave blank to keep current" : "Create 8-character password"}
+                        className={`border ${passwordError ? "border-red-500" : "border-slate-200"} p-3 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm w-full`}
                       />
                       <button
                         type="button"
@@ -370,51 +894,117 @@ const UserManagementPage = () => {
                           </svg>
                         ) : (
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                             <circle cx="12" cy="12" r="3"></circle>
                           </svg>
                         )}
                       </button>
                     </div>
+                    {passwordError && <p className="text-red-500 text-xs mt-1">{passwordError}</p>}
                   </div>
                   
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-slate-700">Status</label>
                     <select
                       name="status"
-                      value={form.status}
-                      onChange={handleChange}
+                      value={userForm.status}
+                      onChange={handleUserChange}
                       className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
                     >
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive</option>
-                      <option value="Suspended">Suspended</option>
-                      <option value="Pending">Pending</option>
                     </select>
                   </div>
                   
                   <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium text-slate-700">Role Assignment</label>
+                    <select
+                      name="role"
+                      value={userForm.role}
+                      onChange={handleUserChange}
+                      className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
+                    >
+                      <option value={ROLES.INVENTORY}>Inventory</option>
+                      <option value={ROLES.SALES}>Sales</option>
+                      <option value={ROLES.PURCHASE_ORDER}>Purchase Order</option>
+                      <option value={ROLES.WARRANTY_LIST}>Warranty List</option>
+                      <option value={ROLES.RETURNS}>Returns</option>
+                      {currentUserRole === "Admin" && <option value={ROLES.ADMIN}>Admin</option>}
+                    </select>
+                  </div>
                   
-                  <select
-                    name="role"
-                    value={form.role}
-                    onChange={handleChange}
-                    className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm"
-                  >
-                    <option value={ROLES.INVENTORY}>Inventory</option>
-                    <option value={ROLES.SALES}>Sales</option>
-                    <option value={ROLES.PURCHASE_ORDER}>Purchase Order</option>
-                    <option value={ROLES.WARRANTY_LIST}>Warranty List</option>
-                    <option value={ROLES.RETURNS}>Returns</option>
-                    {currentUserRole === "Admin" && <option value={ROLES.ADMIN}>Admin</option>}
-                  </select>
+                  {/* Module Access Section */}
+                  <div className="md:col-span-2 mt-4">
+                    <h3 className="text-lg font-medium text-slate-800 mb-3">Module Access</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {currentUserRole === "Admin" && (
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={userForm.modules.admin}
+                            onChange={() => handleModuleChange('admin')}
+                            className="rounded text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span>Admin</span>
+                        </label>
+                      )}
+                      
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={userForm.modules.sales}
+                          onChange={() => handleModuleChange('sales')}
+                          className="rounded text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span>Sales</span>
+                      </label>
+                      
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={userForm.modules.inventory}
+                          onChange={() => handleModuleChange('inventory')}
+                          className="rounded text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span>Inventory</span>
+                      </label>
+                      
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={userForm.modules.returnWarranty}
+                          onChange={() => handleModuleChange('returnWarranty')}
+                          className="rounded text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span>Return/Warranty</span>
+                      </label>
+                      
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={userForm.modules.purchaseOrders}
+                          onChange={() => handleModuleChange('purchaseOrders')}
+                          className="rounded text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span>Purchase Order</span>
+                      </label>
+                      
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={userForm.modules.reports}
+                          onChange={() => handleModuleChange('reports')}
+                          className="rounded text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span>Reports</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
                 
                 <div className="mt-8 flex justify-end gap-3">
                   <button
-                    onClick={() => setIsAddingUser(false)}
+                    onClick={resetForms}
                     className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors font-medium"
                   >
                     Cancel
@@ -430,7 +1020,44 @@ const UserManagementPage = () => {
             </div>
           )}
 
-          {/* Delete Confirmation Modal */}
+          {/* Delete Employee Confirmation Modal */}
+          {showDeleteEmployeeConfirm && selectedEmployee && currentUserRole === "Admin" && (
+            <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50 px-4">
+              <div className="bg-white/95 rounded-2xl shadow-xl w-full max-w-md p-6 md:p-8 transform transition-all duration-300 scale-100 backdrop-filter backdrop-blur-md">
+                <div className="text-center mb-6">
+                  <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-red-100 mb-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-medium text-slate-900">Delete Employee</h3>
+                  <p className="text-slate-500 mt-3">
+                    Are you sure you want to delete {selectedEmployee.firstName} {selectedEmployee.lastName}? {selectedEmployee.hasAccount && "This will also delete their user account."} This action cannot be undone.
+                  </p>
+                </div>
+                
+                <div className="flex justify-center gap-4 mt-6">
+                  <button
+                    onClick={() => setShowDeleteEmployeeConfirm(false)}
+                    className="px-5 py-2.5 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeleteEmployee}
+                    className="bg-red-600 text-white font-medium px-5 py-2.5 rounded-xl hover:bg-red-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                  >
+                    Delete Employee
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete User Confirmation Modal */}
           {showDeleteConfirm && selectedUser && currentUserRole === "Admin" && (
             <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50 px-4">
               <div className="bg-white/95 rounded-2xl shadow-xl w-full max-w-md p-6 md:p-8 transform transition-all duration-300 scale-100 backdrop-filter backdrop-blur-md">
@@ -443,9 +1070,9 @@ const UserManagementPage = () => {
                       <line x1="14" y1="11" x2="14" y2="17"></line>
                     </svg>
                   </div>
-                  <h3 className="text-xl font-medium text-slate-900">Delete User</h3>
+                  <h3 className="text-xl font-medium text-slate-900">Delete User Account</h3>
                   <p className="text-slate-500 mt-3">
-                    Are you sure you want to delete the user "{selectedUser.username}"? This action cannot be undone.
+                    Are you sure you want to delete the user account "{selectedUser.username}"? This action cannot be undone.
                   </p>
                 </div>
                 
@@ -467,111 +1094,258 @@ const UserManagementPage = () => {
             </div>
           )}
 
-          {/* User Table */}
-          <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200">
-            <div className="p-6 border-b border-slate-100">
-              <h2 className="text-xl font-semibold text-slate-800">User Accounts</h2>
-              <p className="text-slate-500 text-sm mt-1">Manage user access and permissions</p>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-slate-50 text-left">
-                    <th className="py-4 px-6 text-sm font-medium text-slate-600">USERNAME</th>
-                    <th className="py-4 px-6 text-sm font-medium text-slate-600">ROLE</th>
-                    <th className="py-4 px-6 text-sm font-medium text-slate-600">STATUS</th>
-                    <th className="py-4 px-6 text-sm font-medium text-slate-600">PERMISSIONS</th>
-                    <th className="py-4 px-6 text-sm font-medium text-slate-600 text-right">ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="hover:bg-slate-50 transition-colors duration-150"
-                      >
-                        <td className="py-4 px-6">
-                          <div className="font-medium text-slate-800">{user.username}</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(user.role)}`}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(user.status)}`}>
-                            {user.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="text-xs text-slate-600">
-                            {user.accessiblePages ? (
-                              <span>{user.accessiblePages.join(', ')}</span>
-                            ) : (
-                              <span className="text-red-500">No permissions</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <div className="flex items-center justify-end gap-3">
-                            {currentUserRole === "Admin" && (
-                              <>
-                                <button 
-                                  onClick={() => handleEditClick(user)}
-                                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-indigo-600 transition-colors"
-                                  aria-label="Edit user"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                  </svg>
-                                </button>
-                                <button 
-                                  onClick={() => handleDeleteClick(user)}
-                                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors"
-                                  aria-label="Delete user"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                                  </svg>
-                                </button>
-                              </>
-                            )}
-                            {currentUserRole !== "Admin" && (
-                              <span className="text-sm text-slate-400 italic">No actions available</span>
-                            )}
+          {/* Content Based on Active Tab */}
+          {activeTab === "employees" ? (
+            /* Employees Table */
+            <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200">
+              <div className="p-6 border-b border-slate-100">
+                <h2 className="text-xl font-semibold text-slate-800">Employee Profiles</h2>
+                <p className="text-slate-500 text-sm mt-1">Manage employee information and create user accounts</p>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-50 text-left">
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600">NAME</th>
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600">EMAIL</th>
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600">POSITION</th>
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600">HIRE DATE</th>
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600">PHONE NUMBER</th>
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600 text-right">ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredEmployees.length > 0 ? (
+                      filteredEmployees.map((employee) => (
+                        <tr
+                          key={employee.id}
+                          className="hover:bg-slate-50 transition-colors duration-150"
+                        >
+                          <td className="py-4 px-6">
+                            <div className="font-medium text-slate-800">{employee.firstName} {employee.lastName}</div>
+                          </td>
+                          <td className="py-4 px-6 text-slate-600">
+                            {employee.email}
+                          </td>
+                          <td className="py-4 px-6 text-slate-600">
+                            {employee.position || <span className="text-slate-400 text-sm">—</span>}
+                          </td>
+                          <td className="py-4 px-6 text-slate-600">
+                            {new Date(employee.joinDate).toLocaleDateString()}
+                          </td>
+                          <td className="py-4 px-6 text-slate-600">
+                            {employee.phone || <span className="text-slate-400 text-sm">—</span>}
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {currentUserRole === "Admin" && (
+                                <>
+                                  <button 
+                                    onClick={() => handleEditEmployeeClick(employee)}
+                                    className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-indigo-600 transition-colors"
+                                    aria-label="Edit employee"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                  </button>
+                                  
+                                  <button 
+                                    onClick={() => handleDeleteEmployeeClick(employee)}
+                                    className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors"
+                                    aria-label="Delete employee"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="3 6 5 6 21 6"></polyline>
+                                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                                    </svg>
+                                  </button>
+                                </>
+                              )}
+                              {currentUserRole !== "Admin" && (
+                                <span className="text-sm text-slate-400 italic">No actions available</span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="6" className="py-10 text-center text-slate-500">
+                          <div className="flex flex-col items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-slate-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="11" cy="11" r="8"></circle>
+                              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                              <line x1="11" y1="8" x2="11" y2="14"></line>
+                              <line x1="8" y1="11" x2="14" y2="11"></line>
+                            </svg>
+                            {searchTerm ? "No employees matching your search" : "No employees found"}
                           </div>
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="py-10 text-center text-slate-500">
-                        <div className="flex flex-col items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-slate-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            <line x1="11" y1="8" x2="11" y2="14"></line>
-                            <line x1="8" y1="11" x2="14" y2="11"></line>
-                          </svg>
-                          {searchTerm ? "No users matching your search" : "No users found"}
-                        </div>
-                      </td>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div className="p-4 bg-slate-50 border-t border-slate-100 text-sm text-slate-500 font-medium">
+                Showing {filteredEmployees.length} of {employees.length} employees
+              </div>
+            </div>
+          ) : (
+            /* Users Table */
+            <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-800">User Accounts</h2>
+                  <p className="text-slate-500 text-sm mt-1">Manage user access and permissions</p>
+                </div>
+                
+                {/* Add this button to the User Accounts tab header */}
+                {currentUserRole === "Admin" && (
+                  <button
+                    onClick={() => {
+                      // Find employees without accounts
+                      const eligibleEmployees = employees.filter(emp => !emp.hasAccount);
+                      if (eligibleEmployees.length === 0) {
+                        alert("All employees already have accounts. Create a new employee first.");
+                        return;
+                      }
+                      
+                      setSelectedEmployee(eligibleEmployees[0]);
+                      setUserForm(prev => ({ 
+                        ...prev, 
+                        username: eligibleEmployees[0].email,
+                        role: ROLES.SALES,
+                        modules: updateModulesByRole(ROLES.SALES)
+                      }));
+                      setIsAddingUser(true);
+                      setIsEditing(false);
+                    }}
+                    className="bg-indigo-600 text-white font-medium px-4 py-2 rounded-xl hover:bg-indigo-700 transition-all duration-200"
+                  >
+                    New User Account
+                  </button>
+                )}
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-50 text-left">
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600">USERNAME</th>
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600">EMPLOYEE</th>
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600">ROLE</th>
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600">STATUS</th>
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600">PERMISSIONS</th>
+                      <th className="py-4 px-6 text-sm font-medium text-slate-600 text-right">ACTIONS</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.map((user) => {
+                        const relatedEmployee = employees.find(emp => emp.id === user.employeeId);
+                        return (
+                          <tr
+                            key={user.id}
+                            className="hover:bg-slate-50 transition-colors duration-150"
+                          >
+                            <td className="py-4 px-6">
+                            <div className="font-medium text-slate-800">{user.username}</div>
+                            </td>
+                            <td className="py-4 px-6">
+                              {relatedEmployee ? (
+                                <div className="text-slate-600">{relatedEmployee.firstName} {relatedEmployee.lastName}</div>
+                              ) : (
+                                <span className="text-red-500 text-sm italic">No employee linked</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(user.role)}`}>
+                                {user.role}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(user.status)}`}>
+                                {user.status}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6">
+                              <div className="text-xs text-slate-600">
+                                {user.accessiblePages ? (
+                                  <span>{user.accessiblePages.join(', ')}</span>
+                                ) : (
+                                  <span className="text-red-500">No permissions</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6 text-right">
+                              <div className="flex items-center justify-end gap-3">
+                                {currentUserRole === "Admin" && (
+                                  <>
+                                    <button 
+                                      onClick={() => {
+                                        console.log('Edit button clicked for user:', user);
+                                        handleEditClick(user);
+                                      }}
+                                      className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-indigo-600 transition-colors"
+                                      aria-label="Edit user"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                      </svg>
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteClick(user)}
+                                      className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-red-600 transition-colors"
+                                      aria-label="Delete user"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                                      </svg>
+                                    </button>
+                                  </>
+                                )}
+                                {currentUserRole !== "Admin" && (
+                                  <span className="text-sm text-slate-400 italic">No actions available</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="6" className="py-10 text-center text-slate-500">
+                          <div className="flex flex-col items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-slate-300 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="11" cy="11" r="8"></circle>
+                              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                              <line x1="11" y1="8" x2="11" y2="14"></line>
+                              <line x1="8" y1="11" x2="14" y2="11"></line>
+                            </svg>
+                            {searchTerm ? "No users matching your search" : "No users found"}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              
+              <div className="p-4 bg-slate-50 border-t border-slate-100 text-sm text-slate-500 font-medium">
+                Showing {filteredUsers.length} of {users.length} users
+              </div>
             </div>
-            
-            <div className="p-4 bg-slate-50 border-t border-slate-100 text-sm text-slate-500 font-medium">
-              Showing {filteredUsers.length} of {users.length} users
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
