@@ -16,7 +16,10 @@ class Customer(models.Model):
 
 
 class ProductCategory(models.Model):
-    name = models.TextField()
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
 
 
 class Supplier(models.Model):
@@ -27,9 +30,13 @@ class Supplier(models.Model):
 
 
 class DamageProduct(models.Model):
-    date_reported = models.DateTimeField(auto_now_add=True)
+    damage_type = models.CharField(max_length=255)
     quantity_damaged = models.IntegerField()
-    damage_type = models.TextField()
+    date_reported = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.damage_type} - {self.quantity_damaged}"
+
 
 
 class Account(models.Model):
@@ -40,17 +47,23 @@ class Account(models.Model):
     account_status = models.TextField()
 
 
+# ------------------------
+# PRODUCT MODEL
+# ------------------------
 class Product(models.Model):
-    category = models.ForeignKey(ProductCategory, on_delete=models.CASCADE)
-    name = models.TextField()
+    name = models.CharField(max_length=255)
     description = models.TextField()
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
-    reorder_point = models.IntegerField()
-    warranty_duration = models.TextField()
-    model = models.TextField()
-    brand = models.TextField()
-    status = models.TextField()
+    reorder_point = models.IntegerField(default=5)
+    warranty_duration = models.CharField(max_length=100)
+    model = models.CharField(max_length=255)
+    brand = models.CharField(max_length=100)
+    status = models.CharField(max_length=50, default="Active")
+    category = models.ForeignKey(ProductCategory, on_delete=models.CASCADE, related_name='products')
 
+
+    def __str__(self):
+        return self.name
 
 class ProductWarranty(models.Model):
     start_date = models.DateTimeField()
@@ -59,17 +72,23 @@ class ProductWarranty(models.Model):
 
 
 class Inventory(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)  # ✅ add this line
-    damage_product = models.ForeignKey(DamageProduct, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='inventories')
     date_received = models.DateTimeField(auto_now_add=True)
     quantity_received = models.IntegerField()
     quantity_available = models.IntegerField()
-    stock_status = models.TextField()
-    location = models.TextField()
-    serial_number = models.TextField(unique=True)
-    old_item = models.BooleanField()
+    stock_status = models.CharField(max_length=50, default="In Stock")
+    location = models.CharField(max_length=255)
+    serial_number = models.CharField(max_length=255, unique=True)
+    old_item = models.BooleanField(default=False)
     selling_price = models.DecimalField(max_digits=10, decimal_places=2)
+    damage_product = models.ForeignKey(DamageProduct, on_delete=models.SET_NULL, null=True, blank=True, related_name='damaged_inventory')
 
+    def __str__(self):
+        return f"{self.product.name} - {self.serial_number}"
+    
+        
+    def is_damaged(self):
+        return self.damage_product is not None
 
 
 class Orders(models.Model):
