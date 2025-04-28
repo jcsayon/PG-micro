@@ -35,7 +35,24 @@ const CustomerList = () => {
     setIsLoading(false);
   };
   
-  
+  // Load customers from localStorage
+const loadCustomersFromLocalStorage = () => {
+    const savedCustomers = localStorage.getItem('customersData');
+    
+    if (savedCustomers) {
+      try {
+        const parsedCustomers = JSON.parse(savedCustomers);
+        console.log(`Loaded ${parsedCustomers.length} customers from localStorage`);
+        setCustomers(parsedCustomers);
+      } catch (error) {
+        console.error("Error parsing customer data:", error);
+        setCustomers([]);  // fallback if error
+      }
+    } else {
+      console.warn("No customer data found in localStorage");
+      setCustomers([]); // fallback if no data
+    }
+  };
   
   // Save customers to localStorage
   const saveCustomersToLocalStorage = (customers) => {

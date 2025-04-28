@@ -41,10 +41,27 @@ class ProductWarrantySerializer(serializers.ModelSerializer):
         model = ProductWarranty
         fields = '__all__'
 
+from rest_framework import serializers
+from .models import Inventory
+
 class InventorySerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', default="Placeholder Product")
+    product_category = serializers.CharField(source='product.category.name', default="Default Category")
+    brand = serializers.CharField(source='product.brand', default="N/A")
+    model = serializers.CharField(source='product.model', default="N/A")
+    sale_status = serializers.CharField(source='product.sale_status', default="Not Sold")
+    
     class Meta:
         model = Inventory
-        fields = '__all__'
+        fields = ['id', 'serial_number', 'location', 'selling_price', 
+          'quantity_received', 'quantity_available', 'stock_status', 
+          'old_item', 'date_received', 'product', 'damage_product',
+          # your additional computed fields
+          'product_name', 'product_category', 'brand', 'model', 'sale_status'
+]
+
+
+
 
 class OrdersSerializer(serializers.ModelSerializer):
     class Meta:
