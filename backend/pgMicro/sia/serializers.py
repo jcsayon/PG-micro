@@ -11,16 +11,23 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = '__all__'
 
+# ------------------------
+# PRODUCT CATEGORY SERIALIZER
+# ------------------------
 class ProductCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductCategory
         fields = '__all__'
+
 
 class SupplierSerializer(serializers.ModelSerializer):
     class Meta:
         model = Supplier
         fields = '__all__'
 
+# ------------------------
+# DAMAGE PRODUCT SERIALIZER
+# ------------------------
 class DamageProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = DamageProduct
@@ -31,10 +38,20 @@ class AccountSerializer(serializers.ModelSerializer):
         model = Account
         fields = '__all__'
 
+# ------------------------
+# PRODUCT SERIALIZER
+# ------------------------
 class ProductSerializer(serializers.ModelSerializer):
+    category = ProductCategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=ProductCategory.objects.all(), source='category', write_only=True
+    )
+
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = ['id', 'name', 'description', 'purchase_price', 'reorder_point', 
+                  'warranty_duration', 'model', 'brand', 'status', 'category', 'category_id']
+
 
 class ProductWarrantySerializer(serializers.ModelSerializer):
     class Meta:
@@ -49,17 +66,16 @@ class InventorySerializer(serializers.ModelSerializer):
     product_category = serializers.CharField(source='product.category.name', default="Default Category")
     brand = serializers.CharField(source='product.brand', default="N/A")
     model = serializers.CharField(source='product.model', default="N/A")
-    sale_status = serializers.CharField(source='product.sale_status', default="Not Sold")
-    
+    sale_status = serializers.CharField(source='product.status', default="Not Sold")
+
     class Meta:
         model = Inventory
-        fields = ['id', 'serial_number', 'location', 'selling_price', 
-          'quantity_received', 'quantity_available', 'stock_status', 
-          'old_item', 'date_received', 'product', 'damage_product',
-          # your additional computed fields
-          'product_name', 'product_category', 'brand', 'model', 'sale_status'
-]
-
+        fields = [
+            'id', 'serial_number', 'location', 'selling_price', 
+            'quantity_received', 'quantity_available', 'stock_status', 
+            'old_item', 'date_received', 'product', 'damage_product',
+            'product_name', 'product_category', 'brand', 'model', 'sale_status'
+        ]
 
 
 

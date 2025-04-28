@@ -1,4 +1,4 @@
-from rest_framework import viewsets, generics
+from rest_framework import viewsets, generics, permissions
 from .models import *
 from .serializers import *
 
@@ -11,9 +11,13 @@ class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
+# ------------------------
+# PRODUCT CATEGORY VIEWSET
+# ------------------------
 class ProductCategoryViewSet(viewsets.ModelViewSet):
     queryset = ProductCategory.objects.all()
     serializer_class = ProductCategorySerializer
+    permission_classes = [permissions.AllowAny]
 
 class SupplierViewSet(viewsets.ModelViewSet):
     queryset = Supplier.objects.all()
@@ -23,17 +27,26 @@ class AccountViewSet(viewsets.ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
 
+# ------------------------
+# PRODUCT VIEWSET
+# ------------------------
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [permissions.AllowAny]
+
 
 class ProductWarrantyViewSet(viewsets.ModelViewSet):
     queryset = ProductWarranty.objects.all()
     serializer_class = ProductWarrantySerializer
 
-class InventoryViewSet(viewsets.ModelViewSet):  # ✅ corrected to real ViewSet
+# ------------------------
+# INVENTORY VIEWSET
+# ------------------------
+class InventoryViewSet(viewsets.ModelViewSet):
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
+    permission_classes = [permissions.AllowAny]
 
 class OrdersViewSet(viewsets.ModelViewSet):
     queryset = Orders.objects.all()
