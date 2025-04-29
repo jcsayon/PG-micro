@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ROLES } from "../utils/roleConfig";
+import { Mail, Key, Eye, EyeOff } from "lucide-react";
 
 const defaultUsers = [
   {
@@ -198,7 +199,7 @@ const LoginPage = () => {
               Email
             </label>
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-purple-500">
-              📧
+              <Mail size={18} />
             </span>
             <input
               id="email"
@@ -218,7 +219,7 @@ const LoginPage = () => {
               Password
             </label>
             <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-purple-500">
-              🔑
+              <Key size={18} />
             </span>
             <input
               id="password"
@@ -237,7 +238,7 @@ const LoginPage = () => {
               onClick={() => setShowPassword((prev) => !prev)}
               className="absolute inset-y-0 right-0 flex items-center px-3 text-purple-500 hover:text-purple-700"
             >
-              {showPassword ? "🙈" : "👁️"}
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
 
