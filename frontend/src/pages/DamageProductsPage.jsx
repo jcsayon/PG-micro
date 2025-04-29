@@ -1,87 +1,108 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Sidebar_Primary from "../components/Sidebar_Primary";
+import { useState, useEffect } from "react";
 
-const DamagedProductsPage = () => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [damagedProducts, setDamagedProducts] = useState([]);
-  const navigate = useNavigate();
+const DamageProductPage = () => {
+  const [inventoryList, setInventoryList] = useState([]);
+  const [selectedInventoryId, setSelectedInventoryId] = useState("");
+  const [damageType, setDamageType] = useState("");
+  const [quantityDamaged, setQuantityDamaged] = useState(1);
 
+  // Fetch available inventory to choose from
   useEffect(() => {
-    generateDummyData();
-    localStorage.setItem("sidebarCollapsed", isSidebarCollapsed);
-  }, [isSidebarCollapsed]);
+    const fetchInventory = async () => {
+      const response = await fetch("http://localhost:8000/api/inventory/");
+      const data = await response.json();
+      setInventoryList(data);
+    };
 
-  /** 🔹 Dummy Data for Placeholder */
-  const generateDummyData = () => {
-    const damagedData = Array.from({ length: 20 }, (_, i) => ({
-      id: i + 100,
-      category: ["Laptop", "Mouse", "Router", "Switch", "RAM"][i % 5],
-      serialNumber: `SN-DMG${20000 + i}`,
-      reason: ["Defective", "Damaged in transit", "Expired warranty"][i % 3],
-      location: `Warehouse ${String.fromCharCode(65 + (i % 5))}`,
-      reportedDate: new Date(2024, i % 12, (i % 28) + 1).toLocaleDateString(),
-    }));
-    setDamagedProducts(damagedData);
+    fetchInventory();
+  }, []);
+
+  const handleSubmitDamage = async (e) => {
+    e.preventDefault();
+    const payload = {
+      inventory_item: selectedInventoryId,
+      damage_type: damageType,
+      quantity_damaged: quantityDamaged,
+    };
+
+    try {
+      const response = await fetch("http://localhost:8000/api/damage-products/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        alert("Damage Reported Successfully!");
+        // Optionally clear fields
+        setSelectedInventoryId("");
+        setDamageType("");
+        setQuantityDamaged(1);
+      } else {
+        alert("Failed to report damage");
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
-    <div className="flex h-screen">
-      <Sidebar_Primary
-        isCollapsed={isSidebarCollapsed}
-        toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Report Damaged Product</h1>
 
-      <div
-        className={`flex-1 p-6 transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
-        }`}
-      >
-        <h1 className="text-3xl font-bold text-red-700 mb-6">
-          Damaged Products
-        </h1>
+      <form onSubmit={handleSubmitDamage} className="space-y-4">
+        <div>
+          <label className="block mb-1 font-medium">Select Inventory Item</label>
+          <select
+            value={selectedInventoryId}
+            onChange={(e) => setSelectedInventoryId(e.target.value)}
+            className="border p-2 w-full"
+            required
+          >
+            <option value="">Select an Item</option>
+            {inventoryList.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.product_name} - {item.serial_number}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block mb-1 font-medium">Damage Type</label>
+          <input
+            type="text"
+            value={damageType}
+            onChange={(e) => setDamageType(e.target.value)}
+            className="border p-2 w-full"
+            placeholder="Ex: Cracked LCD"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1 font-medium">Quantity Damaged</label>
+          <input
+            type="number"
+            min="1"
+            value={quantityDamaged}
+            onChange={(e) => setQuantityDamaged(e.target.value)}
+            className="border p-2 w-full"
+            required
+          />
+        </div>
 
         <button
-          onClick={() => navigate(-1)}
-          className="bg-gray-500 text-white px-4 py-2 rounded mb-4 hover:bg-gray-700"
+          type="submit"
+          className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700"
         >
-          Back to Inventory
+          Report Damage
         </button>
-
-        <div className="bg-white shadow-lg rounded-lg p-4 border border-gray-300">
-          <h2 className="text-xl font-semibold text-blue-700 mb-4">
-            List of Damaged Products
-          </h2>
-          <div className="overflow-y-auto max-h-[70vh]">
-            <table className="min-w-full border border-gray-200 rounded">
-              <thead className="sticky top-0 bg-red-200 text-left text-sm font-medium text-gray-800">
-                <tr>
-                  <th className="p-3 border">ID</th>
-                  <th className="p-3 border">Category</th>
-                  <th className="p-3 border">Serial Number</th>
-                  <th className="p-3 border">Reason</th>
-                  <th className="p-3 border">Location</th>
-                  <th className="p-3 border">Reported Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {damagedProducts.map((item) => (
-                  <tr key={item.id} className="text-sm text-gray-700 border-t">
-                    <td className="p-3 border">{item.id}</td>
-                    <td className="p-3 border">{item.category}</td>
-                    <td className="p-3 border">{item.serialNumber}</td>
-                    <td className="p-3 border">{item.reason}</td>
-                    <td className="p-3 border">{item.location}</td>
-                    <td className="p-3 border">{item.reportedDate}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      </form>
     </div>
   );
 };
 
-export default DamagedProductsPage;
+export default DamageProductPage;
