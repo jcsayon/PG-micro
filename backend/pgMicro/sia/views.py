@@ -109,6 +109,12 @@ class DamagedInventoryListView(generics.ListAPIView):
     queryset = Inventory.objects.filter(stock_status="Damaged")
     serializer_class = InventorySerializer
     
+from rest_framework import viewsets, permissions
+from .models import DamageProduct
+from .serializers import DamageProductSerializer
+
 class DamageProductViewSet(viewsets.ModelViewSet):
     queryset = DamageProduct.objects.all()
     serializer_class = DamageProductSerializer
+    permission_classes = [permissions.AllowAny]  # (or IsAuthenticated later)
+

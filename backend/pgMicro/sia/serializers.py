@@ -29,9 +29,14 @@ class SupplierSerializer(serializers.ModelSerializer):
 # DAMAGE PRODUCT SERIALIZER
 # ------------------------
 class DamageProductSerializer(serializers.ModelSerializer):
+    inventory_item = serializers.PrimaryKeyRelatedField(
+        queryset=Inventory.objects.all()
+    )
+
     class Meta:
         model = DamageProduct
-        fields = '__all__'
+        fields = ['id', 'inventory_item', 'damage_type', 'quantity_damaged', 'date_reported']
+
 
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:

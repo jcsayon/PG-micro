@@ -30,12 +30,21 @@ class Supplier(models.Model):
 
 
 class DamageProduct(models.Model):
+    inventory_item = models.ForeignKey('Inventory', on_delete=models.CASCADE, related_name='damages')
     damage_type = models.CharField(max_length=255)
     quantity_damaged = models.IntegerField()
     date_reported = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.damage_type} - {self.quantity_damaged}"
+        return f"{self.inventory_item.product.name} - {self.damage_type}"
+
+    def save(self, *args, **kwargs):
+        if not self.pk:  # Only when first created
+            self.inventory_item.quantity_available -= self.quantity_damaged
+            if self.inventory_item.quantity_available < 0:
+                self.inventory_item.quantity_available = 0
+            self.inventory_item.save()
+        super().save(*args, **kwargs)
 
 
 
