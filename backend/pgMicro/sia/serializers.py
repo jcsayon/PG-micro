@@ -29,13 +29,21 @@ class SupplierSerializer(serializers.ModelSerializer):
 # DAMAGE PRODUCT SERIALIZER
 # ------------------------
 class DamageProductSerializer(serializers.ModelSerializer):
-    inventory_item = serializers.PrimaryKeyRelatedField(
-        queryset=Inventory.objects.all()
-    )
+    product_name = serializers.CharField(source='inventory_item.product.name', read_only=True)
+    serial_number = serializers.CharField(source='inventory_item.serial_number', read_only=True)
 
     class Meta:
         model = DamageProduct
-        fields = ['id', 'inventory_item', 'damage_type', 'quantity_damaged', 'date_reported']
+        fields = [
+            'id',
+            'inventory_item',
+            'damage_type',
+            'quantity_damaged',
+            'date_reported',
+            'product_name',
+            'serial_number',
+        ]
+
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -67,11 +75,12 @@ from rest_framework import serializers
 from .models import Inventory
 
 class InventorySerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='product.name', default="Placeholder Product")
-    product_category = serializers.CharField(source='product.category.name', default="Default Category")
-    brand = serializers.CharField(source='product.brand', default="N/A")
-    model = serializers.CharField(source='product.model', default="N/A")
-    sale_status = serializers.CharField(source='product.status', default="Not Sold")
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_category = serializers.CharField(source='product.category.name', read_only=True)
+    brand = serializers.CharField(source='product.brand', read_only=True)
+    model = serializers.CharField(source='product.model', read_only=True)
+    sale_status = serializers.CharField(source='product.status', read_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
 
     class Meta:
         model = Inventory
