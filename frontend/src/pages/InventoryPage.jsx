@@ -298,34 +298,26 @@ const InventoryPage = ({ onInventoryUpdate }) => {
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {damagedProducts.map((damage) => (
-            <tr key={damage.id} className="text-sm hover:bg-red-50 transition-colors duration-150">
-              <td className="px-4 py-3 text-gray-700">{damage.inventory_item}</td>
-              <td className="px-4 py-3 text-gray-700">{damage.damage_type}</td>
-              <td className="px-4 py-3 text-gray-700">{damage.quantity_damaged}</td>
-              <td className="px-4 py-3 text-gray-700">
-                {new Date(damage.date_reported).toLocaleDateString()}
-              </td>
-              <td className="px-4 py-3 text-center">
-                <button
-                  onClick={() => openInventoryModal(damage)}
-                  className="px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700 text-sm"
-                >
-                  <Eye className="h-4 w-4 mr-1.5" />
-                  View Details
-                </button>
-              </td>
-            </tr>
-          ))}
-          {damagedProducts.length === 0 && (
-            <tr>
-              <td colSpan="5" className="px-4 py-8 text-center text-gray-500 bg-gray-50">
-                <AlertOctagon className="mx-auto h-12 w-12 text-red-400" />
-                <p className="mt-2 text-sm font-medium">No damaged products found.</p>
-              </td>
-            </tr>
-          )}
-        </tbody>
+  {damagedProducts.map((item) => (
+    <tr key={item.id} className="text-sm hover:bg-red-50 transition-colors duration-150">
+      <td className="px-4 py-3 text-gray-700">{item.product_name || 'N/A'}</td>
+      <td className="px-4 py-3 text-gray-700">{item.serial_number || 'N/A'}</td>
+      <td className="px-4 py-3 text-gray-700">{item.damage_type}</td>
+      <td className="px-4 py-3 text-gray-700">{item.quantity_damaged}</td>
+      <td className="px-4 py-3 text-gray-700">
+        {new Date(item.date_reported).toLocaleDateString()}
+      </td>
+    </tr>
+  ))}
+  {damagedProducts.length === 0 && (
+    <tr>
+      <td colSpan="5" className="px-4 py-8 text-center text-gray-500 bg-gray-50">
+        <AlertOctagon className="mx-auto h-12 w-12 text-red-400" />
+        <p className="mt-2 text-sm font-medium">No damaged products found.</p>
+      </td>
+    </tr>
+  )}
+</tbody>
       </table>
     </div>
   </div>
