@@ -1,36 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import {Home,User,Settings,Package,Users,DollarSign,ClipboardList,RotateCcw,BarChart3,Wallet,UserCircle} from "lucide-react";
 
-const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggleCollapse }) => {
+const Sidebar_Primary = () => {
   const location = useLocation();
   const currentPath = location.pathname;
   const userRole = sessionStorage.getItem("userRole");
 
-  const [internalCollapsed, setInternalCollapsed] = useState(
-    localStorage.getItem("sidebarCollapsed") === "true"
-  );
-  const isCollapsed = propCollapsed !== undefined ? propCollapsed : internalCollapsed;
-
-  useEffect(() => {
-    if (propCollapsed === undefined) {
-      localStorage.setItem("sidebarCollapsed", internalCollapsed);
-    }
-  }, [internalCollapsed, propCollapsed]);
-
-  const toggleSidebar = () => {
-    if (propToggleCollapse) {
-      propToggleCollapse();
-    } else {
-      setInternalCollapsed(!internalCollapsed);
-    }
-  };
-
-  // All menu items
+  // All menu items with Lucide icons
   const allMenuItems = [
     {
       name: "Home",
       path: "/dashboard",
-      icon: "🏠",
+      icon: Home,
       color: {
         default: "text-purple-100",
         hover: "hover:bg-purple-600",
@@ -40,7 +22,7 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     {
       name: "Account Info",
       path: "/account-info",
-      icon: "👤",
+      icon: User,
       color: {
         default: "text-purple-100",
         hover: "hover:bg-purple-600",
@@ -50,7 +32,7 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     {
       name: "Settings",
       path: "/settings",
-      icon: "⚙️",
+      icon: Settings,
       color: {
         default: "text-purple-100",
         hover: "hover:bg-purple-600",
@@ -60,7 +42,7 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     {
       name: "Inventory",
       path: "/inventory",
-      icon: "📦",
+      icon: Package,
       color: {
         default: "text-purple-100",
         hover: "hover:bg-purple-600",
@@ -70,7 +52,7 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     {
       name: "User Management",
       path: "/user-management",
-      icon: "🧑‍💼",
+      icon: Users,
       adminOnly: true,
       color: {
         default: "text-purple-100",
@@ -81,7 +63,7 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     {
       name: "Sales",
       path: "/sales",
-      icon: "💵",
+      icon: DollarSign,
       color: {
         default: "text-purple-100",
         hover: "hover:bg-purple-600",
@@ -91,7 +73,7 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     {
       name: "Purchase Orders",
       path: "/purchase-orders",
-      icon: "📋",
+      icon: ClipboardList,
       color: {
         default: "text-purple-100",
         hover: "hover:bg-purple-600",
@@ -101,7 +83,7 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     {
       name: "Returns",
       path: "/return-warranty",
-      icon: "🔄",
+      icon: RotateCcw,
       color: {
         default: "text-purple-100",
         hover: "hover:bg-purple-600",
@@ -111,7 +93,7 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     {
       name: "Reports",
       path: "/reports",
-      icon: "📊",
+      icon: BarChart3,
       color: {
         default: "text-purple-100",
         hover: "hover:bg-purple-600",
@@ -121,9 +103,9 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     {
       name: "Income List",
       path: "/income-list",
-      icon: "💰",
+      icon: Wallet,
       isSubItem: true,
-      parentName: "Sales", // Change from "Reports" to "Sales"
+      parentName: "Sales",
       color: {
         default: "text-purple-100",
         hover: "hover:bg-purple-600",
@@ -133,9 +115,9 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
     {
       name: "Customer List",
       path: "/customer-list",
-      icon: "👥",
+      icon: UserCircle,
       isSubItem: true,
-      parentName: "Sales", // Change from "Reports" to "Sales"
+      parentName: "Sales",
       color: {
         default: "text-purple-100",
         hover: "hover:bg-purple-600",
@@ -180,9 +162,9 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
   }, { mainItems: [], subItems: {} });
 
   return (
-    <div className={`h-screen ${isCollapsed ? "w-16" : "w-64"} bg-purple-700 text-white fixed top-0 left-0 flex flex-col transition-all duration-300`}>
+    <div className="h-screen w-64 bg-purple-700 text-white fixed top-0 left-0 flex flex-col">
       <div className="p-4 text-center font-bold text-2xl bg-purple-800">
-        {!isCollapsed && "PG Micro World"}
+        PG Micro World
       </div>
 
       <nav className="flex-1 mt-6">
@@ -193,24 +175,28 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
             ? item.color.active
             : `${item.color.default} ${item.color.hover}`;
           
+          const Icon = item.icon;
+          
           return (
             <div key={index}>
               <NavLink
                 to={item.path}
                 className={`flex items-center gap-3 px-5 py-3 text-lg transition-all ${baseClass}`}
               >
-                <span>{item.icon}</span>
-                {!isCollapsed && item.name}
-                {!isCollapsed && hasSubItems && <span className="ml-auto">▼</span>}
+                <Icon className="w-5 h-5" />
+                {item.name}
+                {hasSubItems && <span className="ml-auto">▼</span>}
               </NavLink>
               
-              {hasSubItems && !isCollapsed && (
+              {hasSubItems && (
                 <div className="ml-5 border-l-2 border-purple-600 pl-2">
                   {organizedMenuItems.subItems[item.name].map((subItem, subIndex) => {
                     const isSubActive = currentPath === subItem.path;
                     const subBaseClass = isSubActive
                       ? subItem.color.active
                       : `${subItem.color.default} ${subItem.color.hover}`;
+                    
+                    const SubIcon = subItem.icon;
                       
                     return (
                       <NavLink
@@ -218,8 +204,8 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
                         to={subItem.path}
                         className={`flex items-center gap-3 px-5 py-2 text-md transition-all ${subBaseClass} pl-4`}
                       >
-                        <span>{subItem.icon}</span>
-                        {!isCollapsed && subItem.name}
+                        <SubIcon className="w-4 h-4" />
+                        {subItem.name}
                       </NavLink>
                     );
                   })}
@@ -230,23 +216,8 @@ const Sidebar_Primary = ({ isCollapsed: propCollapsed, toggleCollapse: propToggl
         })}
       </nav>
 
-      <button
-        className="absolute bottom-20 right-0 bg-purple-100 border-2 border-purple-300 border-r-purple-700 text-black w-8 h-8 flex items-center justify-center hover:bg-blue-500 rounded-l z-50"
-        onClick={toggleSidebar}
-      >
-        {isCollapsed ? (
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        )}
-      </button>
-
       <div className="p-4 text-center text-sm bg-purple-800">
-        {!isCollapsed && "© 2025 PG Micro World"}
+        © 2025 PG Micro World
       </div>
     </div>
   );

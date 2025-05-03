@@ -15,20 +15,19 @@ const DashboardLayout = ({ children }) => {
     localStorage.setItem("sidebarCollapsed", isPrimaryCollapsed);
   }, [isPrimaryCollapsed]);
 
-  // 🔹 Define page-specific background gradients
+  // 🔹 Define page-specific background gradients - UPDATED TO ALL WHITE
   const pageGradients = {
-    "/dashboard": "from-purple-500 to-purple-200",
-    "/account-info": "from-purple-500 to-purple-200",
-    "/settings": "from-purple-500 to-purple-200",
-
-    "/inventory": "bg-teal-400",
-    "/sales": "bg-red-400",
-    "/purchase-orders": "bg-yellow-400",
-    "/return-warranty": "bg-blue-400",
-    "/reports": "bg-green-400",
+    "/dashboard": "bg-white",
+    "/account-info": "bg-white",
+    "/settings": "bg-white",
+    "/inventory": "bg-white",
+    "/sales": "bg-white",
+    "/purchase-orders": "bg-white",
+    "/return-warranty": "bg-white",
+    "/reports": "bg-white",
   };
 
-  const defaultGradient = "from-gray-100 to-white";
+  const defaultGradient = "bg-white";
   const gradientClass = pageGradients[location.pathname] || defaultGradient;
 
   return (
