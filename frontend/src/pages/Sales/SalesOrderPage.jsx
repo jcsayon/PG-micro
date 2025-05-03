@@ -5,6 +5,7 @@ import "jspdf-autotable";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import IncomeList from "../../pages/Sales/IncomeList";
 import CustomerList from "../../pages/Sales/CustomerList";
+import { X, RefreshCw, Plus } from "lucide-react";
 
 // Define a constant for warranty storage
 const WARRANTY_STORAGE_KEY = 'warrantyData';
@@ -770,13 +771,13 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
   };
   
   //---------------------------------------------
-  // RENDER UI
-  //---------------------------------------------
-  
-  return (
-    <div className="p-4 bg-white min-h-screen">
-      {/* Header and controls section */}
-          <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
+// RENDER UI
+//---------------------------------------------
+
+return (
+  <div className="p-4 bg-white min-h-screen">
+    {/* Header and controls section */}
+    <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-purple-800">Issued Sale Orders</h1>
       </div>
@@ -812,300 +813,298 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
             className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center"
             disabled={isLoading}
           >
+            <RefreshCw className="h-4 w-4 mr-1" />
             {isLoading ? "Loading..." : "Refresh Data"}
           </button>
           
           <button 
             onClick={() => setShowCreateModal(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
           >
-            + Create SO
+            <Plus className="h-4 w-4 mr-1" /> Create SO
           </button>
         </div>
       </div>
       
-        
-        {/* Loading indicator */}
-        {isLoading && (
-          <div className="flex justify-center items-center py-4">
-            <p className="text-purple-700 text-lg">Loading data...</p>
-          </div>
-        )}
-        
-        {/* Sales Orders Table */}
-        {!isLoading && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white">
-              <thead>
-                <tr className="bg-gray-100 text-gray-800">
-                  <th className="p-3 text-left">Sale Order ID</th>
-                  <th className="p-3 text-left">Employee</th>
-                  <th className="p-3 text-left">Date Sold</th>
-                  <th className="p-3 text-left">Customer</th>
-                  <th className="p-3 text-left">Type</th>
-                  <th className="p-3 text-right">Total</th>
-                  <th className="p-3 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="p-4 text-center text-gray-500">No sales orders found</td>
-                  </tr>
-                ) : (
-                  filteredOrders.map((order, index) => (
-                    <tr key={order.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                      <td className="p-3 text-purple-700">{order.id}</td>
-                      <td className="p-3">{order.employee}</td>
-                      <td className="p-3">{order.dateSold}</td>
-                      <td className="p-3">{order.customer}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded-full text-white ${
-                          order.type === "Walk-In" ? "bg-green-500" : "bg-yellow-500"
-                        }`}>
-                          {order.type}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right">₱{formatPrice(order.total)}</td>
-                      <td className="p-3 text-center">
-                        <button
-                          onClick={() => viewOrderDetails(order)}
-                          className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
-                        >
-                          View details
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-4">
+          <p className="text-purple-700 text-lg">Loading data...</p>
+        </div>
+      )}
       
-      {/* Create Sales Order Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-          <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-6xl max-h-[90vh] flex flex-col">
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
-                <button 
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setCart([]);
-                    setSelectedCustomer("");
-                    setPaymentMethod("");
-                  }}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Sales Order ID:</label>
-                  <p className="font-semibold">{newOrderId}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Employee:</label>
-                  <p className="font-semibold">sales@pgmicro.com</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Date:</label>
-                  <p className="font-semibold">{new Date().toISOString().split('T')[0]}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Status:</label>
-                  <p className="font-semibold">{orderType}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Time:</label>
-                  <p className="font-semibold">
-                    {new Date().toLocaleTimeString('en-US', { 
-                      hour: '2-digit', 
-                      minute: '2-digit', 
-                      hour12: true 
-                    })}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Payment Method:</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="p-1 border rounded w-full"
-                    required
-                  >
-                    <option value="">Select Payment Method</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Credit Card">Credit Card</option>
-                    <option value="Debit Card">Debit Card</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Online Payment">Online Payment</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-600 mb-1">Select Customer:</label>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedCustomer}
-                    onChange={(e) => setSelectedCustomer(e.target.value)}
-                    className="p-2 border rounded w-full"
-                    required
-                  >
-                    <option value="">Select Customer</option>
-                    {customers.map(customer => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name} - {customer.email}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={navigateToCustomerList}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                    title="Manage Customers"
-                  >
-                    Manage
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-hidden flex flex-col md:flex-row p-4">
-              {/* Product Selection */}
-              <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
-                <div className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="p-2 border rounded w-full"
-                  >
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="border rounded p-2 h-[420px] flex flex-col">
-                  <h3 className="font-semibold mb-2">Available Products:</h3>
-                  <div className="flex-1 overflow-y-auto">
-                    {filteredProducts.length === 0 ? (
-                      <p className="text-gray-500 italic text-center p-4">No products available</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {filteredProducts.map(product => (
-                          product.saleStatus !== "Sold" && (
-                            <div 
-                              key={product.id} 
-                              className="p-3 border rounded bg-white flex justify-between items-center"
-                              style={{minHeight: "80px"}}
-                            >
-                              <div>
-                                <p className="font-semibold">{product.category || "Unknown Category"}</p>
-                                <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
-                                <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
-                                <p>{product.sellingPrice || "Price not available"}</p>
-                              </div>
-                              <button
-                                onClick={() => addToCart(product)}
-                                className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                              >
-                                Add to Cart
-                              </button>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Shopping Cart */}
-              <div className="md:w-1/2 pl-0 md:pl-2">
-                <div className="border rounded flex flex-col h-[420px]">
-                  <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
-                  <div className="flex-1 overflow-y-auto">
-                    {cart.length === 0 ? (
-                      <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
-                    ) : (
-                      <table className="min-w-full">
-                        <thead className="bg-gray-100 sticky top-0">
-                          <tr>
-                            <th className="p-2 text-left">Item ID</th>
-                            <th className="p-2 text-left">Brand</th>
-                            <th className="p-2 text-left">Model</th>
-                            <th className="p-2 text-right">Price</th>
-                            <th className="p-2 text-center">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {cart.map(item => (
-                            <tr key={item.id} className="border-b">
-                              <td className="p-2">{item.id}</td>
-                              <td className="p-2">{item.brand}</td>
-                              <td className="p-2">{item.model}</td>
-                              <td className="p-2 text-right">{item.sellingPrice}</td>
-                              <td className="p-2 text-center">
-                                <button
-                                  onClick={() => removeFromCart(item.id)}
-                                  className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
-                                >
-                                  Remove
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                  <div className="bg-gray-100 p-2 border-t">
-                    <div className="font-semibold text-right">
-                      Total: ₱{totalAmount.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
+      {/* Sales Orders Table */}
+      {!isLoading && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white">
+            <thead>
+              <tr className="bg-gray-100 text-gray-800">
+                <th className="p-3 text-left">Sale Order ID</th>
+                <th className="p-3 text-left">Employee</th>
+                <th className="p-3 text-left">Date Sold</th>
+                <th className="p-3 text-left">Customer</th>
+                <th className="p-3 text-left">Type</th>
+                <th className="p-3 text-right">Total</th>
+                <th className="p-3 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="p-4 text-center text-gray-500">No sales orders found</td>
+                </tr>
+              ) : (
+                filteredOrders.map((order, index) => (
+                  <tr key={order.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                    <td className="p-3 text-purple-700">{order.id}</td>
+                    <td className="p-3">{order.employee}</td>
+                    <td className="p-3">{order.dateSold}</td>
+                    <td className="p-3">{order.customer}</td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded-full text-white ${
+                        order.type === "Walk-In" ? "bg-green-500" : "bg-yellow-500"
+                      }`}>
+                        {order.type}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">₱{formatPrice(order.total)}</td>
+                    <td className="p-3 text-center">
+                      <button
+                        onClick={() => viewOrderDetails(order)}
+                        className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
+                      >
+                        View details
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+    
+    {/* Create Sales Order Modal */}
+    {showCreateModal && (
+      <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+        <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-6xl max-h-[90vh] flex flex-col">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
+              <button 
                 onClick={() => {
                   setShowCreateModal(false);
                   setCart([]);
                   setSelectedCustomer("");
                   setPaymentMethod("");
                 }}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
+                className="text-gray-500 hover:text-gray-700"
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateOrder}
-                disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}
-                className={`px-4 py-2 rounded text-white w-32 ${
-                  !selectedCustomer || cart.length === 0 || !paymentMethod
-                    ? "bg-green-300 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
-              >
-                Create Order
+                <X className="h-6 w-6" />
               </button>
             </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Sales Order ID:</label>
+                <p className="font-semibold">{newOrderId}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Employee:</label>
+                <p className="font-semibold">sales@pgmicro.com</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Date:</label>
+                <p className="font-semibold">{new Date().toISOString().split('T')[0]}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Status:</label>
+                <p className="font-semibold">{orderType}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Time:</label>
+                <p className="font-semibold">
+                  {new Date().toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: true 
+                  })}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Payment Method:</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="p-1 border rounded w-full"
+                  required
+                >
+                  <option value="">Select Payment Method</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="Debit Card">Debit Card</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Online Payment">Online Payment</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-600 mb-1">Select Customer:</label>
+              <div className="flex gap-2">
+                <select
+                  value={selectedCustomer}
+                  onChange={(e) => setSelectedCustomer(e.target.value)}
+                  className="p-2 border rounded w-full"
+                  required
+                >
+                  <option value="">Select Customer</option>
+                  {customers.map(customer => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name} - {customer.email}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={navigateToCustomerList}
+                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  title="Manage Customers"
+                >
+                  Manage
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-hidden flex flex-col md:flex-row p-4">
+            {/* Product Selection */}
+            <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="p-2 border rounded w-full"
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="border rounded p-2 h-[420px] flex flex-col">
+                <h3 className="font-semibold mb-2">Available Products:</h3>
+                <div className="flex-1 overflow-y-auto">
+                  {filteredProducts.length === 0 ? (
+                    <p className="text-gray-500 italic text-center p-4">No products available</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredProducts.map(product => (
+                        product.saleStatus !== "Sold" && (
+                          <div 
+                            key={product.id} 
+                            className="p-3 border rounded bg-white flex justify-between items-center"
+                            style={{minHeight: "80px"}}
+                          >
+                            <div>
+                              <p className="font-semibold">{product.category || "Unknown Category"}</p>
+                              <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
+                              <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
+                              <p>{product.sellingPrice || "Price not available"}</p>
+                            </div>
+                            <button
+                              onClick={() => addToCart(product)}
+                              className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                            >
+                              Add to Cart
+                            </button>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Shopping Cart */}
+            <div className="md:w-1/2 pl-0 md:pl-2">
+              <div className="border rounded flex flex-col h-[420px]">
+                <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
+                <div className="flex-1 overflow-y-auto">
+                  {cart.length === 0 ? (
+                    <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
+                  ) : (
+                    <table className="min-w-full">
+                      <thead className="bg-gray-100 sticky top-0">
+                        <tr>
+                          <th className="p-2 text-left">Item ID</th>
+                          <th className="p-2 text-left">Brand</th>
+                          <th className="p-2 text-left">Model</th>
+                          <th className="p-2 text-right">Price</th>
+                          <th className="p-2 text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cart.map(item => (
+                          <tr key={item.id} className="border-b">
+                            <td className="p-2">{item.id}</td>
+                            <td className="p-2">{item.brand}</td>
+                            <td className="p-2">{item.model}</td>
+                            <td className="p-2 text-right">{item.sellingPrice}</td>
+                            <td className="p-2 text-center">
+                              <button
+                                onClick={() => removeFromCart(item.id)}
+                                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                <div className="bg-gray-100 p-2 border-t">
+                  <div className="font-semibold text-right">
+                    Total: ₱{totalAmount.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button
+              onClick={() => {
+                setShowCreateModal(false);
+                setCart([]);
+                setSelectedCustomer("");
+                setPaymentMethod("");
+              }}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreateOrder}
+              disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}
+              className={`px-4 py-2 rounded text-white w-32 ${
+                !selectedCustomer || cart.length === 0 || !paymentMethod
+                  ? "bg-green-300 cursor-not-allowed"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
+            >
+              Create Order
+            </button>
           </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
 };
 
 export default SalesOrderPage;

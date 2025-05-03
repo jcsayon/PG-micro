@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import {Search,User,Edit,Trash2,ChevronDown,Loader} from "lucide-react";
 
 const CustomerList = () => {
   // State management
@@ -214,9 +215,7 @@ const CustomerList = () => {
         <div className="w-72">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
             <input
               type="text"
@@ -268,9 +267,7 @@ const CustomerList = () => {
                     <option value="Contract">Contract</option>
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
                   </div>
                 </div>
                 <div className="h-5"></div> {/* Spacer to match other fields */}
@@ -364,15 +361,13 @@ const CustomerList = () => {
             <div className="overflow-y-auto flex-grow">
               {isLoading ? (
                 <div className="flex justify-center items-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
+                  <Loader className="animate-spin rounded-full h-8 w-8 text-purple-700" />
                   <p className="ml-3 text-base font-medium text-gray-600">Loading...</p>
                 </div>
               ) : filteredCustomers.length === 0 ? (
                 <div className="p-8 flex flex-col items-center justify-center text-center h-full">
                   <div className="bg-gray-100 rounded-full p-3 mb-4">
-                    <svg className="w-12 h-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
+                    <User className="w-12 h-12 text-gray-400" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-1">No clients found</h3>
                   <p className="text-gray-500 max-w-md">
@@ -423,18 +418,14 @@ const CustomerList = () => {
                             className="text-blue-600 hover:text-blue-900"
                             aria-label="Edit client"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
+                            <Edit className="h-5 w-5" />
                           </button>
                           <button 
                             onClick={() => handleDeleteCustomer(customer.id)}
                             className="text-red-600 hover:text-red-900"
                             aria-label="Delete client"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                            <Trash2 className="h-5 w-5" />
                           </button>
                         </div>
                       </div>
@@ -453,6 +444,11 @@ const CustomerList = () => {
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Footer */}
+      <div className="mt-8 py-4 border-t border-gray-200 text-center text-sm text-gray-500">
+        <p>© 2025 PG Micro World. All rights reserved.</p>
       </div>
     </div>
   );
