@@ -5,6 +5,43 @@ import "jspdf-autotable";
 import DashboardLayout from "../../layouts/DashboardLayout"; // Update path as needed
 import {Search,FileText,X,DollarSign,ChevronDown,Loader,BarChart4,TrendingUp,Users} from "lucide-react";
 
+// API endpoints and utility functions (commented out until backend is ready)
+/*
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const ENDPOINTS = {
+  INCOME: `${API_BASE_URL}/income/`,
+};
+
+// API utility functions
+const fetchIncomeData = async () => {
+  try {
+    const response = await fetch(ENDPOINTS.INCOME);
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching income data:", error);
+    return null;
+  }
+};
+
+const updateIncomeAPI = async (incomeId, updatedIncome) => {
+  try {
+    const response = await fetch(`${ENDPOINTS.INCOME}${incomeId}/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedIncome),
+    });
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error(`Error updating income ${incomeId}:`, error);
+    return null;
+  }
+};
+*/
+
 const IncomeList = ({ storageKey }) => {
   // State management
   const [incomeRecords, setIncomeRecords] = useState([]);
@@ -26,18 +63,25 @@ const IncomeList = ({ storageKey }) => {
     
     /* 
     // When API is ready, uncomment this section
-    fetch(`${API_BASE_URL}/income/`)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        return response.json();
-      })
+    fetchIncomeData()
       .then(data => {
-        setIncomeRecords(data);
-        setIsLoading(false);
+        if (data) {
+          console.log(`Loaded ${data.length} income records from API`);
+          setIncomeRecords(data);
+          // Save to localStorage as a backup
+          localStorage.setItem(storageKey, JSON.stringify(data));
+        } else {
+          // Fall back to localStorage if API fails
+          console.warn("API call failed, loading from localStorage");
+          loadIncomeFromLocalStorage();
+        }
       })
       .catch(error => {
         console.error("Error loading income data from API:", error);
+        // Fall back to localStorage
         loadIncomeFromLocalStorage();
+      })
+      .finally(() => {
         setIsLoading(false);
       });
     */
@@ -117,7 +161,39 @@ const IncomeList = ({ storageKey }) => {
   // Handle saving edited income
   const handleSaveIncome = () => {
     if (editedIncome) {
-      // Update the income record
+      /* 
+      // When API is ready, uncomment this section
+      setIsLoading(true);
+      
+      updateIncomeAPI(editedIncome.id, editedIncome)
+        .then(updatedIncome => {
+          if (updatedIncome) {
+            console.log(`Successfully updated income ${updatedIncome.id} via API`);
+            // Refresh the income list with latest data
+            loadIncomeData();
+            setShowIncomeDetailsModal(false);
+          } else {
+            console.warn("API update failed, falling back to local update");
+            // Update the income record locally
+            const updatedIncomes = incomeRecords.map(income => 
+              income.id === editedIncome.id ? editedIncome : income
+            );
+            
+            setIncomeRecords(updatedIncomes);
+            saveIncomesToLocalStorage(updatedIncomes);
+            setShowIncomeDetailsModal(false);
+          }
+        })
+        .catch(error => {
+          console.error("Error updating income:", error);
+          alert("Failed to update income record. Please try again.");
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+      */
+      
+      // For now, update locally
       const updatedIncomes = incomeRecords.map(income => 
         income.id === editedIncome.id ? editedIncome : income
       );
@@ -125,30 +201,6 @@ const IncomeList = ({ storageKey }) => {
       setIncomeRecords(updatedIncomes);
       saveIncomesToLocalStorage(updatedIncomes);
       setShowIncomeDetailsModal(false);
-      
-      /* 
-      // When API is ready, uncomment this section
-      fetch(`${API_BASE_URL}/income/${editedIncome.id}/`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editedIncome),
-      })
-        .then(response => {
-          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-          return response.json();
-        })
-        .then(data => {
-          // Refresh income list
-          loadIncomeData();
-          setShowIncomeDetailsModal(false);
-        })
-        .catch(error => {
-          console.error("Error updating income:", error);
-          alert("Failed to update income record. Please try again.");
-        });
-      */
     }
   };
 
@@ -335,16 +387,6 @@ const IncomeList = ({ storageKey }) => {
               className="pl-10 p-2 border rounded-lg w-full shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
-          
-          <div className="flex">
-            <button
-              onClick={() => generateIncomeReport()}
-              className="ml-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors duration-300 flex items-center"
-            >
-              <FileText className="h-5 w-5 mr-1" />
-              Generate Report
-            </button>
-          </div>
         </div>
       </div>
       
@@ -397,13 +439,12 @@ const IncomeList = ({ storageKey }) => {
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Income</th>
                   <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredIncomes.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="px-6 py-12 text-center">
+                    <td colSpan="8" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center">
                         <FileText className="h-16 w-16 text-purple-200 mb-4" />
                         <p className="text-purple-700 text-lg font-medium mb-1">No income records found</p>
@@ -432,14 +473,6 @@ const IncomeList = ({ storageKey }) => {
                         }`}>
                           {income.status}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                        <button 
-                          onClick={() => handleViewDetails(income)}
-                          className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition-colors duration-300"
-                        >
-                          View Details
-                        </button>
                       </td>
                     </tr>
                   ))
