@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Sidebar_Primary from "../components/Sidebar_Primary";
+// Import still kept but component not used
 import Header from "../components/Header";
 
 const DashboardLayout = ({ children }) => {
@@ -45,8 +46,8 @@ const DashboardLayout = ({ children }) => {
         }`}
       >
         <div className="flex-1 flex flex-col transition-all duration-300">
-          {/* Header */}
-          <Header />
+          {/* Header commented out */}
+          {/* <Header /> */}
 
           {/* Page Content with dynamic background */}
           <main

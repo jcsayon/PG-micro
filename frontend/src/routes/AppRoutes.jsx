@@ -20,8 +20,8 @@ import CustomerList from "../pages/Sales/CustomerList";
 
 // Returns
 import ReturnWarrantyPage from "../pages/Returns/ReturnWarrantyPage";
-import ReturnsFormPage from "../pages/Returns/ReturnsFormPage";
-import ReturnDetailsPage from "../pages/Returns/ReturnDetailsPage";
+import WarrantiesPage from "../pages/Returns/WarrantiesPage";
+import CustomerListPage from "../pages/Returns/CustomerListPage";
 
 // Reports Module
 import ReportModule from "../pages/ReportModule/ReportModule";
@@ -228,27 +228,29 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute
             element={<ReturnWarrantyPage />}
+            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS]}
+          />
+        }
+      />
+
+      {/* New Route for Warranties Page */}
+      <Route
+        path="/warranties"
+        element={
+          <ProtectedRoute
+            element={<WarrantiesPage />}
             allowedRoles={[ROLES.ADMIN, ROLES.RETURNS, ROLES.WARRANTY_LIST]}
           />
         }
       />
 
+      {/* New Route for Customer List Page */}
       <Route
-        path="/returnform"
+        path="/return-customers"
         element={
           <ProtectedRoute
-            element={<ReturnsFormPage />}
-            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS, ROLES.WARRANTY_LIST]}
-          />
-        }
-      />
-
-      <Route
-        path="/return-details"
-        element={
-          <ProtectedRoute
-            element={<ReturnDetailsPage />}
-            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS, ROLES.WARRANTY_LIST]}
+            element={<CustomerListPage />}
+            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS]}
           />
         }
       />
