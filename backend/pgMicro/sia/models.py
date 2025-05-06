@@ -4,7 +4,7 @@ from django.db import models
 class Employee(models.Model):
     name = models.TextField()
     role = models.TextField()
-    employee_status = models.TextField()
+    employee_status = models.TextField(default="Active")  # Add a default value
 
 
 class Customer(models.Model):
@@ -49,11 +49,11 @@ class DamageProduct(models.Model):
 
 
 class Account(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    username = models.TextField(unique=True)
-    password = models.TextField()
-    email = models.TextField(unique=True)
-    account_status = models.TextField()
+    employee = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='account')
+    username = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)  # Hash this in production!
+    role = models.CharField(max_length=50)
+    status = models.CharField(max_length=10, choices=[("Active", "Active"), ("Inactive", "Inactive")])
 
 
 # ------------------------

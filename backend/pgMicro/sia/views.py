@@ -1,6 +1,7 @@
 from rest_framework import viewsets, generics, permissions
 from .models import *
 from .serializers import *
+from .serializers import CustomerSerializer
 
 # 👇 VIEWSETS FOR ROUTER-REGISTERED ENDPOINTS
 class EmployeeViewSet(viewsets.ModelViewSet):

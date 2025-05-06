@@ -7,6 +7,8 @@ import LoginPage from "../pages/LoginPage";
 import Dashboard from "../pages/Dashboard";
 import InventoryPage from "../pages/InventoryPage";
 import DamagedProductsPage from "../pages/DamageProductsPage";
+import AccountInfoPage from "../pages/AccountInfoPage";
+
 
 // Purchase Orders
 import PurchaseOrderPage from "../pages/PurchaseOrders/PurchaseOrderPage";
@@ -105,6 +107,8 @@ const AppRoutes = () => {
     <Routes>
       {/* Public Login Page - No layout wrapper here */}
       <Route path="/" element={<LoginPage />} />
+      <Route path="/account-info" element={<AccountInfoPage />} />
+
 
       {/* Protected Routes */}
       <Route
