@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+import DashboardLayout from "../../layouts/DashboardLayout"; // Update path as needed
+import {Search,FileText,X,DollarSign,ChevronDown,Loader,BarChart4,TrendingUp,Users} from "lucide-react";
 
-const IncomeList = ({ onBack, storageKey }) => {
+const IncomeList = ({ storageKey }) => {
   // State management
   const [incomeRecords, setIncomeRecords] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -13,7 +14,7 @@ const IncomeList = ({ onBack, storageKey }) => {
   const [selectedIncome, setSelectedIncome] = useState(null);
   const [editedIncome, setEditedIncome] = useState(null);
   const [period, setPeriod] = useState("all");
-  
+
   // Load income data
   useEffect(() => {
     loadIncomeData();
@@ -22,7 +23,9 @@ const IncomeList = ({ onBack, storageKey }) => {
   // Function to load income data
   const loadIncomeData = () => {
     setIsLoading(true);
-  
+    
+    /* 
+    // When API is ready, uncomment this section
     fetch(`${API_BASE_URL}/income/`)
       .then(response => {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -34,11 +37,16 @@ const IncomeList = ({ onBack, storageKey }) => {
       })
       .catch(error => {
         console.error("Error loading income data from API:", error);
-        setIncomeRecords([]);
+        loadIncomeFromLocalStorage();
         setIsLoading(false);
       });
+    */
+    
+    // For now, load from localStorage
+    loadIncomeFromLocalStorage();
+    setIsLoading(false);
   };
-  
+
   // Load income from localStorage
   const loadIncomeFromLocalStorage = () => {
     const savedIncome = localStorage.getItem(storageKey);
@@ -57,12 +65,12 @@ const IncomeList = ({ onBack, storageKey }) => {
       setIncomeRecords([]);
     }
   };
-  
+
   // Save income records to localStorage
   const saveIncomesToLocalStorage = (incomes) => {
     localStorage.setItem(storageKey, JSON.stringify(incomes));
   };
-  
+
   // Format price for display
   const formatPrice = (price) => {
     if (!price && price !== 0) return "₱0.00";
@@ -75,7 +83,7 @@ const IncomeList = ({ onBack, storageKey }) => {
       maximumFractionDigits: 2
     })}`;
   };
-  
+
   // Format date for display
   const formatDate = (isoDate) => {
     if (!isoDate) return "";
@@ -87,7 +95,7 @@ const IncomeList = ({ onBack, storageKey }) => {
       day: '2-digit'
     });
   };
-  
+
   // Format time for display
   const formatTime = (isoDate) => {
     if (!isoDate) return "";
@@ -98,14 +106,14 @@ const IncomeList = ({ onBack, storageKey }) => {
       minute: '2-digit'
     });
   };
-  
+
   // Handle viewing income details
   const handleViewDetails = (income) => {
     setSelectedIncome(income);
     setEditedIncome({...income});
     setShowIncomeDetailsModal(true);
   };
-  
+
   // Handle saving edited income
   const handleSaveIncome = () => {
     if (editedIncome) {
@@ -118,7 +126,7 @@ const IncomeList = ({ onBack, storageKey }) => {
       saveIncomesToLocalStorage(updatedIncomes);
       setShowIncomeDetailsModal(false);
       
-      
+      /* 
       // When API is ready, uncomment this section
       fetch(`${API_BASE_URL}/income/${editedIncome.id}/`, {
         method: 'PUT',
@@ -140,10 +148,10 @@ const IncomeList = ({ onBack, storageKey }) => {
           console.error("Error updating income:", error);
           alert("Failed to update income record. Please try again.");
         });
-      
+      */
     }
   };
-  
+
   // Handle income field change
   const handleIncomeChange = (field, value) => {
     setEditedIncome({
@@ -151,7 +159,7 @@ const IncomeList = ({ onBack, storageKey }) => {
       [field]: value
     });
   };
-  
+
   // Generate income report
   const generateIncomeReport = async () => {
     try {
@@ -317,9 +325,7 @@ const IncomeList = ({ onBack, storageKey }) => {
         <div className="flex flex-wrap items-center gap-3 mb-2">
           <div className="flex-grow relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
             <input
               type="text"
@@ -335,14 +341,13 @@ const IncomeList = ({ onBack, storageKey }) => {
               onClick={() => generateIncomeReport()}
               className="ml-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors duration-300 flex items-center"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clipRule="evenodd" />
-              </svg>
+              <FileText className="h-5 w-5 mr-1" />
               Generate Report
             </button>
           </div>
         </div>
       </div>
+      
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white shadow-sm rounded-lg p-4 border-l-4 border-purple-500 hover:shadow-md transition-shadow">
@@ -372,13 +377,11 @@ const IncomeList = ({ onBack, storageKey }) => {
       {/* Loading indicator */}
       {isLoading && (
         <div className="flex justify-center items-center py-12">
-          <svg className="animate-spin -ml-1 mr-3 h-8 w-8 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
+          <Loader className="animate-spin -ml-1 mr-3 h-8 w-8 text-purple-500" />
           <p className="text-lg font-medium text-purple-600">Loading data...</p>
         </div>
       )}
+      
       {/* Income Records Table */}
       {!isLoading && (
         <div className="bg-white shadow-sm rounded-lg overflow-hidden">
@@ -402,9 +405,7 @@ const IncomeList = ({ onBack, storageKey }) => {
                   <tr>
                     <td colSpan="9" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center">
-                        <svg className="h-16 w-16 text-purple-200 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                        <FileText className="h-16 w-16 text-purple-200 mb-4" />
                         <p className="text-purple-700 text-lg font-medium mb-1">No income records found</p>
                         <p className="text-gray-500 text-sm">Income records will appear here after creating sales orders</p>
                       </div>
@@ -458,9 +459,7 @@ const IncomeList = ({ onBack, storageKey }) => {
                 onClick={() => setShowIncomeDetailsModal(false)}
                 className="text-gray-400 hover:text-gray-500 focus:outline-none transition-colors"
               >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="h-6 w-6" />
               </button>
             </div>
             
@@ -522,7 +521,7 @@ const IncomeList = ({ onBack, storageKey }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Income Amount</label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">₱</span>
+                      <DollarSign className="h-5 w-5 text-gray-500" />
                     </div>
                     <input
                       type="number"
@@ -539,7 +538,7 @@ const IncomeList = ({ onBack, storageKey }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Net Income</label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">₱</span>
+                      <DollarSign className="h-5 w-5 text-gray-500" />
                     </div>
                     <input
                       type="number"
@@ -586,9 +585,7 @@ const IncomeList = ({ onBack, storageKey }) => {
                       <option value="Partial">Partial</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
                     </div>
                   </div>
                 </div>

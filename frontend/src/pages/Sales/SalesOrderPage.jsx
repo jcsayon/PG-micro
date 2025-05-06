@@ -4,161 +4,28 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import IncomeList from "../../pages/Sales/IncomeList";
+import CustomerList from "../../pages/Sales/CustomerList";
+import { X, RefreshCw, Plus } from "lucide-react";
 
-
-// === API BASE ===
+// Define a constant for warranty storage
 const WARRANTY_STORAGE_KEY = 'warrantyData';
+
+// Define constants
 const INCOME_STORAGE_KEY = 'incomeData';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
-const ENDPOINTS = {
-  INVENTORY: `${API_BASE_URL}/inventory/`,
-  SALES_ORDERS: `${API_BASE_URL}/orders/`,
-  CUSTOMERS: `${API_BASE_URL}/customers/`,
-  CATEGORIES: `${API_BASE_URL}/product-categories/`,
-};
 
-// Inventory API functions
-const fetchInventory = async () => {
-  try {
-    const response = await fetch(ENDPOINTS.INVENTORY);
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching inventory:", error);
-    return null;
-  }
-};
-
-const updateInventoryItemStatus = async (itemId, newStatus) => {
-  try {
-    const response = await fetch(`${ENDPOINTS.INVENTORY}${itemId}/`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ saleStatus: newStatus }),
-    });
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error(`Error updating inventory item ${itemId}:`, error);
-    return null;
-  }
-};
-
-// Sales Order API functions
-const fetchSalesOrders = async () => {
-  try {
-    const response = await fetch(ENDPOINTS.SALES_ORDERS);
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching sales orders:", error);
-    return null;
-  }
-};
-
-const createSalesOrder = async (orderData) => {
-  try {
-    const response = await fetch(ENDPOINTS.SALES_ORDERS, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orderData),
-    });
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating sales order:", error);
-    return null;
-  }
-};
-
-// Customer API functions
-const fetchCustomers = async () => {
-  try {
-    const response = await fetch(ENDPOINTS.CUSTOMERS);
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching customers:", error);
-    return null;
-  }
-};
-
-const createCustomer = async (customerData) => {
-  try {
-    const response = await fetch(ENDPOINTS.CUSTOMERS, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(customerData),
-    });
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error("Error creating customer:", error);
-    return null;
-  }
-};
-
-const updateCustomer = async (customerId, customerData) => {
-  try {
-    const response = await fetch(`${ENDPOINTS.CUSTOMERS}${customerId}/`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(customerData),
-    });
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error(`Error updating customer ${customerId}:`, error);
-    return null;
-  }
-};
-
-const deleteCustomer = async (customerId) => {
-  try {
-    const response = await fetch(`${ENDPOINTS.CUSTOMERS}${customerId}/`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-    return true;
-  } catch (error) {
-    console.error(`Error deleting customer ${customerId}:`, error);
-    return false;
-  }
-};
-
-
-
-const getCategoryName = (categoryId) => {
-  const category = categoriesData.find((cat) => cat.id === categoryId);
-  return category ? category.name : "Unknown Category";
-};
-
-
-
-const SalesOrderPage = () => {
+const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
   const navigate = useNavigate();
-  const [categoriesData, setCategoriesData] = useState([]);
-  const [categoryMap, setCategoryMap] = useState({});
+  
   //---------------------------------------------
   // STATE MANAGEMENT
   //---------------------------------------------
   
   // Sales order management states
-const [salesOrders, setSalesOrders] = useState([]);
-const [searchTerm, setSearchTerm] = useState("");
-const [filterType, setFilterType] = useState("All");
-const [showCreateModal, setShowCreateModal] = useState(false);
-const [showCustomerModal, setShowCustomerModal] = useState(false);
-const [isLoading, setIsLoading] = useState(false);
-const [showIncomeList, setShowIncomeList] = useState(false); // Add this line
+  const [salesOrders, setSalesOrders] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("All");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Order creation states
   const [newOrderId, setNewOrderId] = useState("");
@@ -171,15 +38,6 @@ const [showIncomeList, setShowIncomeList] = useState(false); // Add this line
   const [availableProducts, setAvailableProducts] = useState([]);
   
   // Customer management states
-  const [newCustomer, setNewCustomer] = useState({
-    name: '',
-    email: '',
-    address: '',
-    phone: '',
-    type: 'Walk-In'
-  });
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingCustomerId, setEditingCustomerId] = useState(null);
   const [customers, setCustomers] = useState([
     { id: 1, name: "Juan Dela Cruz", email: "juan@example.com", phone: "0912-345-6789", address: "123 Main St, Davao City", type: "Walk-In" },
     { id: 2, name: "Maria Santos", email: "maria@example.com", phone: "0901-234-5678", address: "456 IT Park, Cebu City", type: "Contract" }
@@ -190,14 +48,10 @@ const [showIncomeList, setShowIncomeList] = useState(false); // Add this line
   //---------------------------------------------
   
   // Function to save orders to localStorage
-
-
   const saveOrdersToLocalStorage = (orders) => {
     localStorage.setItem('salesOrdersData', JSON.stringify(orders));
   };
-  const saveCustomersToLocalStorage = (customers) => {
-    localStorage.setItem('customersData', JSON.stringify(customers));
-  };
+
   useEffect(() => {
     const savedCustomers = localStorage.getItem('customersData');
     if (savedCustomers) {
@@ -213,16 +67,16 @@ const [showIncomeList, setShowIncomeList] = useState(false); // Add this line
       localStorage.setItem('customersData', JSON.stringify(customers));
     }
   }, []);
-  // Add this after the other useEffect hooks
-// Add this useEffect hook to automatically set order type based on selected customer
-useEffect(() => {
-  if (selectedCustomer) {
-    const customer = customers.find(c => c.id === parseInt(selectedCustomer));
-    if (customer) {
-      setOrderType(customer.type);
+
+  // Add this useEffect hook to automatically set order type based on selected customer
+  useEffect(() => {
+    if (selectedCustomer) {
+      const customer = customers.find(c => c.id === parseInt(selectedCustomer));
+      if (customer) {
+        setOrderType(customer.type);
+      }
     }
-  }
-}, [selectedCustomer, customers]);
+  }, [selectedCustomer, customers]);
 
   // Load inventory data
   useEffect(() => {
@@ -245,7 +99,7 @@ useEffect(() => {
     setIsLoading(true);
     console.log("Loading inventory data...");
     
-    
+    /* 
     // When API is ready, uncomment this section
     fetchInventory().then(inventoryData => {
       if (inventoryData) {
@@ -264,11 +118,11 @@ useEffect(() => {
       loadInventoryFromLocalStorage();
       setIsLoading(false);
     });
-  
+    */
     
     // For now, load from localStorage
-    //loadInventoryFromLocalStorage();
-   // setIsLoading(false);
+    loadInventoryFromLocalStorage();
+    setIsLoading(false);
   };
   
   // Load inventory from localStorage (fallback)
@@ -296,145 +150,141 @@ useEffect(() => {
     }
   };
 
-  // Update inventory item status
-  const updateInventoryStatus = async (productId, newStatus) => {
+  // Update inventory item status - either use the prop or fallback to local implementation
+  const handleUpdateInventoryStatus = async (productId, newStatus) => {
     console.log(`Updating product status: ID=${productId}, Status=${newStatus}`);
     
-    
-    // When API is ready, uncomment this section
-    try {
-      const updatedItem = await updateInventoryItemStatus(productId, newStatus);
-      if (updatedItem) {
-        // Refresh inventory data after update
+    if (typeof updateInventoryStatus === 'function') {
+      // Use the provided function from props
+      return updateInventoryStatus(productId, newStatus);
+    } else {
+      // Fallback to local implementation
+      try {
+        const savedInventory = localStorage.getItem('inventoryData');
+        if (!savedInventory) {
+          console.error("No inventory data in localStorage");
+          return false;
+        }
+        
+        const inventory = JSON.parse(savedInventory);
+        
+        // Find the item by ID
+        const itemIndex = inventory.findIndex(item => item.id === productId);
+        
+        if (itemIndex === -1) {
+          console.error(`Product with ID ${productId} not found in inventory`);
+          return false;
+        }
+        
+        // Update the item's status
+        inventory[itemIndex].saleStatus = newStatus;
+        console.log(`Updated item:`, inventory[itemIndex]);
+        
+        // Save back to localStorage
+        localStorage.setItem('inventoryData', JSON.stringify(inventory));
+        
+        // Update local state by reloading
         loadInventoryData();
+        
         return true;
+      } catch (error) {
+        console.error("Error updating inventory status:", error);
+        return false;
       }
-      return false;
-    } catch (error) {
-      console.error(`Error updating product ${productId} status:`, error);
-      return false;
     }
-    
-    
-    // For now, update in localStorage
-    // try {
-    //   const savedInventory = localStorage.getItem('inventoryData');
-    //   if (!savedInventory) {
-    //     console.error("No inventory data in localStorage");
-    //     return false;
-    //   }
-      
-    //   const inventory = JSON.parse(savedInventory);
-      
-    //   // Find the item by ID
-    //   const itemIndex = inventory.findIndex(item => item.id === productId);
-      
-    //   if (itemIndex === -1) {
-    //     console.error(`Product with ID ${productId} not found in inventory`);
-    //     return false;
-    //   }
-      
-    //   // Update the item's status
-    //   inventory[itemIndex].saleStatus = newStatus;
-    //   console.log(`Updated item:`, inventory[itemIndex]);
-      
-    //   // Save back to localStorage
-    //   localStorage.setItem('inventoryData', JSON.stringify(inventory));
-      
-    //   // Update local state by reloading
-    //   loadInventoryData();
-      
-    //   return true;
-    // } catch (error) {
-    //   console.error("Error updating inventory status:", error);
-    //   return false;
-    // }
   };
 
   // Load sales orders data
   useEffect(() => {
-    loadOrdersFromDatabase();
+    loadSalesOrdersData();
   }, []);
   
-  // Function to load sales orders from database
-  const loadOrdersFromDatabase = async () => {
-    try {
-      const response = await fetch('http://127.0.0.1:8000/api/orders/'); // Replace with your API endpoint
-      if (!response.ok) {
-        throw new Error('Failed to fetch sales orders');
-      }
-      const orders = await response.json();
-      setSalesOrders(orders);
-      if (orders.length > 0) {
-        const lastOrderId = orders[orders.length - 1].id;
-        const newOrderId = generateNextOrderId(lastOrderId); // Generate the next order ID based on the last one
-        setNewOrderId(newOrderId);
-      } else {
-        setNewOrderId('#SO1001'); // Default order ID if no orders exist
-      }
-    } catch (error) {
-      console.error('Error fetching sales orders:', error);
-    }
-  };
-
-  // Helper function to generate the next order ID
-  const generateNextOrderId = (lastOrderId) => {
-    // If lastOrderId is a number, use it directly
-    const numericPart = typeof lastOrderId === "string"
-      ? parseInt(lastOrderId.replace('#SO', ''), 10)
-      : parseInt(lastOrderId);
-  
-    const nextNumericPart = numericPart + 1;
-    return `#SO${nextNumericPart.toString().padStart(4, '0')}`;
-  };
-  
-
-  // Load customer data
-  useEffect(() => {
-    loadCustomerData();
-  }, []);
-const fetchCategories = async () => {
-    try {
-      const response = await fetch(ENDPOINTS.CATEGORIES);
-      if (!response.ok) throw new Error("Failed to fetch categories");
-      const data = await response.json();
-      setCategoriesData(data); // ✅ Store fetched category data
-      const map = {};
-      data.forEach((cat) => {
-        map[cat.id] = cat.name;
-      });
-      setCategoryMap(map); // ✅ Set map from ID to name
-    } catch (err) {
-      console.error("Category fetch error:", err);
-    }
-  };
-  // Fetch categories when the component mounts
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-  
-  const getCategoryName = (categoryId) => {
-    const category = categoriesData.find((cat) => cat.id === categoryId);
-    return category ? category.name : "Unknown Category";
-  };
-  // Function to load customer data
-  const loadCustomerData = () => {
+  // Function to load sales orders data
+  const loadSalesOrdersData = () => {
+    setIsLoading(true);
     
+    /* 
     // When API is ready, uncomment this section
-    fetchCustomers().then(customersData => {
-      if (customersData) {
-        setCustomers(customersData);
+    fetchSalesOrders().then(ordersData => {
+      if (ordersData) {
+        setSalesOrders(ordersData);
+        
+        // Set next order ID based on highest existing ID
+        if (ordersData.length > 0) {
+          const orderNumbers = ordersData.map(order => 
+            parseInt(order.id.replace('#SO', ''))
+          );
+          const maxOrderNumber = Math.max(...orderNumbers);
+          setNewOrderId(`#SO${maxOrderNumber + 1}`);
+        } else {
+          setNewOrderId('#SO1001');
+        }
       } else {
-        // Keep using local customer data if API fails
-        console.warn("Failed to load customers from API, using local data");
+        // Fallback to localStorage if API fails
+        loadSalesOrdersFromLocalStorage();
       }
+      setIsLoading(false);
     }).catch(error => {
-      console.error("Error loading customers from API:", error);
+      console.error("Error loading sales orders from API:", error);
+      loadSalesOrdersFromLocalStorage();
+      setIsLoading(false);
     });
+    */
     
+    // For now, load from localStorage
+    loadSalesOrdersFromLocalStorage();
+    setIsLoading(false);
+  };
+  
+  // Load sales orders from localStorage (fallback)
+  const loadSalesOrdersFromLocalStorage = () => {
+    // Try to load from localStorage first
+    const savedOrders = localStorage.getItem('salesOrdersData');
     
-    // For now, continue using the local customer data
-    // It's already initialized in the state
+    if (savedOrders) {
+      try {
+        const parsedOrders = JSON.parse(savedOrders);
+        setSalesOrders(parsedOrders);
+        
+        // Set next order ID based on highest existing ID
+        if (parsedOrders.length > 0) {
+          const orderNumbers = parsedOrders.map(order => 
+            parseInt(order.id.replace('#SO', ''))
+          );
+          const maxOrderNumber = Math.max(...orderNumbers);
+          setNewOrderId(`#SO${maxOrderNumber + 1}`);
+        } else {
+          setNewOrderId('#SO1001');
+        }
+      } catch (error) {
+        console.error("Error loading orders:", error);
+        loadInitialOrders(); // Fall back to mock data
+      }
+    } else {
+      // No saved orders found, load initial mock data
+      loadInitialOrders();
+    }
+  };
+
+  // Load initial mock sales orders
+  const loadInitialOrders = () => {
+    const initialOrders = [
+      { id: "#SO1001", employee: "sales@pgmicro.com", dateSold: "2023-01-01", customer: "Juan Dela Cruz", type: "Walk-In", total: 10000.00 },
+      { id: "#SO1002", employee: "sales@pgmicro.com", dateSold: "2023-01-02", customer: "Maria Santos", type: "Contract", total: 11000.00 },
+      { id: "#SO1003", employee: "sales@pgmicro.com", dateSold: "2023-01-03", customer: "Juan Dela Cruz", type: "Walk-In", total: 12000.00 },
+      { id: "#SO1004", employee: "sales@pgmicro.com", dateSold: "2023-01-04", customer: "Maria Santos", type: "Contract", total: 13000.00 },
+      { id: "#SO1005", employee: "sales@pgmicro.com", dateSold: "2023-01-05", customer: "Juan Dela Cruz", type: "Walk-In", total: 14000.00 },
+      { id: "#SO1006", employee: "sales@pgmicro.com", dateSold: "2023-01-06", customer: "Maria Santos", type: "Contract", total: 15000.00 },
+      { id: "#SO1007", employee: "sales@pgmicro.com", dateSold: "2023-01-07", customer: "Juan Dela Cruz", type: "Walk-In", total: 16000.00 },
+      { id: "#SO1008", employee: "sales@pgmicro.com", dateSold: "2023-01-08", customer: "Maria Santos", type: "Contract", total: 17000.00 },
+      { id: "#SO1009", employee: "sales@pgmicro.com", dateSold: "2023-01-09", customer: "Juan Dela Cruz", type: "Walk-In", total: 18000.00 },
+      { id: "#SO1010", employee: "sales@pgmicro.com", dateSold: "2023-01-10", customer: "Maria Santos", type: "Contract", total: 19000.00 }
+    ];
+    
+    setSalesOrders(initialOrders);
+    // Save initial orders to localStorage
+    saveOrdersToLocalStorage(initialOrders);
+    setNewOrderId('#SO1011');
   };
 
   //---------------------------------------------
@@ -558,7 +408,6 @@ const fetchCategories = async () => {
         doc.text(`Contact: ${customer?.phone || 'N/A'}`, 120, 85);
         
        // Items table with improved styling
-        // Items table with improved styling
         doc.setFillColor(240, 236, 255);
         doc.rect(15, 100, 180, 10, 'F');
         doc.setDrawColor(200, 200, 200);
@@ -572,28 +421,28 @@ const fetchCategories = async () => {
         doc.text("Price", 180, 107, { align: "right" });
         doc.line(15, 110, 195, 110);
 
-// Items list with subtle alternating backgrounds
-          let yPos = 120;
-          if (order.items && order.items.length > 0) {
-            order.items.forEach((item, index) => {
-              if (index % 2 === 0) {
-                doc.setFillColor(248, 248, 252);
-                doc.rect(15, yPos - 6, 180, 14, 'F');
-              }
-              
-              doc.setFont("helvetica", "normal");
-              doc.text(item.id.toString(), 20, yPos);
-              doc.text(item.category || "Unknown", 60, yPos);
-              doc.text(`${item.brand || ""} ${item.model || ""}`, 100, yPos);
-              doc.text(item.serialNumber || "N/A", 140, yPos); // Changed from 150 to 140
-              doc.text(`₱${formatPrice(item.sellingPrice)}`, 180, yPos, { align: "right" });
-                            
-              doc.setDrawColor(240, 240, 240);
-              doc.line(15, yPos + 4, 195, yPos + 4);
-              
-              yPos += 15;
-            });
-          }
+        // Items list with subtle alternating backgrounds
+        let yPos = 120;
+        if (order.items && order.items.length > 0) {
+          order.items.forEach((item, index) => {
+            if (index % 2 === 0) {
+              doc.setFillColor(248, 248, 252);
+              doc.rect(15, yPos - 6, 180, 14, 'F');
+            }
+            
+            doc.setFont("helvetica", "normal");
+            doc.text(item.id.toString(), 20, yPos);
+            doc.text(item.category || "Unknown", 60, yPos);
+            doc.text(`${item.brand || ""} ${item.model || ""}`, 100, yPos);
+            doc.text(item.serialNumber || "N/A", 140, yPos); // Changed from 150 to 140
+            doc.text(`₱${formatPrice(item.sellingPrice)}`, 180, yPos, { align: "right" });
+                          
+            doc.setDrawColor(240, 240, 240);
+            doc.line(15, yPos + 4, 195, yPos + 4);
+            
+            yPos += 15;
+          });
+        }
         
         // Total section with stronger styling
         yPos += 5;
@@ -633,149 +482,6 @@ const fetchCategories = async () => {
   };
 
   //---------------------------------------------
-  // CUSTOMER MANAGEMENT FUNCTIONS
-  //---------------------------------------------
-  
-  // Add or update customer
-  const handleAddCustomer = () => {
-    if (!newCustomer.name || !newCustomer.email) {
-      alert("Customer name and email are required");
-      return;
-    }
-    
-    if (isEditing) {
-      /* 
-      // When API is ready, uncomment this section
-      updateCustomer(editingCustomerId, newCustomer).then(updatedCustomer => {
-        if (updatedCustomer) {
-          // Refresh customer list
-          loadCustomerData();
-          
-          setIsEditing(false);
-          setEditingCustomerId(null);
-          alert("Customer updated successfully!");
-        } else {
-          alert("Failed to update customer. Please try again.");
-        }
-      }).catch(error => {
-        console.error("Error updating customer:", error);
-        alert(`Failed to update customer: ${error.message}`);
-      });
-      */
-      
-      // For now, update in local state
-      const updatedCustomers = customers.map(customer => 
-        customer.id === editingCustomerId ? { ...newCustomer, id: editingCustomerId } : customer
-      );
-      setCustomers(updatedCustomers);
-      // Save to localStorage for persistence
-      localStorage.setItem('customersData', JSON.stringify(updatedCustomers));
-      setIsEditing(false);
-      setEditingCustomerId(null);
-      alert("Customer updated successfully!");
-    } else {
-      /* 
-      // When API is ready, uncomment this section
-      createCustomer(newCustomer).then(createdCustomer => {
-        if (createdCustomer) {
-          // Refresh customer list
-          loadCustomerData();
-          
-          alert("Customer added successfully!");
-        } else {
-          alert("Failed to add customer. Please try again.");
-        }
-      }).catch(error => {
-        console.error("Error creating customer:", error);
-        alert(`Failed to add customer: ${error.message}`);
-      });
-      */
-      
-      // For now, add to local state
-      const newCustomerId = customers.length > 0 
-        ? Math.max(...customers.map(c => c.id)) + 1 
-        : 1;
-        
-      const updatedCustomers = [...customers, {
-        ...newCustomer,
-        id: newCustomerId
-      }];
-      setCustomers(updatedCustomers);
-      // Save to localStorage for persistence
-      localStorage.setItem('customersData', JSON.stringify(updatedCustomers));
-      alert("Customer added successfully!");
-    }
-    
-    // Reset form
-    setNewCustomer({
-      name: '',
-      email: '',
-      address: '',
-      phone: '',
-      type: 'Walk-In'
-    });
-  };
-
-  // Edit customer
-  const handleEditCustomer = (customerId) => {
-    const customerToEdit = customers.find(c => c.id === customerId);
-    if (customerToEdit) {
-      setNewCustomer({...customerToEdit});
-      setIsEditing(true);
-      setEditingCustomerId(customerId);
-    }
-  };
-
-  // Delete customer
-  const handleDeleteCustomer = (customerId) => {
-    if (window.confirm("Are you sure you want to delete this customer?")) {
-      /* 
-      // When API is ready, uncomment this section
-      deleteCustomer(customerId).then(success => {
-        if (success) {
-          // Refresh customer list
-          loadCustomerData();
-          
-          if (isEditing && editingCustomerId === customerId) {
-            resetCustomerForm();
-          }
-          
-          alert("Customer deleted successfully!");
-        } else {
-          alert("Failed to delete customer. Please try again.");
-        }
-      }).catch(error => {
-        console.error("Error deleting customer:", error);
-        alert(`Failed to delete customer: ${error.message}`);
-      });
-      */
-      
-      // For now, delete from local state
-      const updatedCustomers = customers.filter(c => c.id !== customerId);
-      setCustomers(updatedCustomers);
-      // Save to localStorage for persistence
-      localStorage.setItem('customersData', JSON.stringify(updatedCustomers));
-      
-      if (isEditing && editingCustomerId === customerId) {
-        resetCustomerForm();
-      }
-    }
-  };
-  
-  // Reset customer form
-  const resetCustomerForm = () => {
-    setNewCustomer({
-      name: '',
-      email: '',
-      address: '',
-      phone: '',
-      type: 'Walk-In'
-    });
-    setIsEditing(false);
-    setEditingCustomerId(null);
-  };
-
-  //---------------------------------------------
   // CART MANAGEMENT FUNCTIONS
   //---------------------------------------------
   
@@ -794,8 +500,8 @@ const fetchCategories = async () => {
     setCart([...cart, product]);
   };
 
-   // Remove product from cart
-   const removeFromCart = (productId) => {
+  // Remove product from cart
+  const removeFromCart = (productId) => {
     setCart(cart.filter(item => item.id !== productId));
   };
 
@@ -803,7 +509,7 @@ const fetchCategories = async () => {
   // ORDER MANAGEMENT FUNCTIONS
   //---------------------------------------------
 
-  // NEW FUNCTION: Create warranty entries for purchased products
+  // Create warranty entries for purchased products
   const createWarrantyEntries = (order) => {
     try {
       // Get existing warranty data from localStorage or initialize empty array
@@ -849,47 +555,47 @@ const fetchCategories = async () => {
   };
 
   // Create income record for the order
-const createIncomeRecord = (order) => {
-  try {
-    // Get existing income records from localStorage or initialize empty array
-    const existingIncomes = JSON.parse(localStorage.getItem(INCOME_STORAGE_KEY) || '[]');
-    
-    // Calculate next income ID
-    const nextId = existingIncomes.length > 0 
-      ? Math.max(...existingIncomes.map(income => income.id)) + 1 
-      : 1;
-    
-    // For now, simple calculation where netIncome is 70% of total
-    // In a real implementation, you'd calculate this based on actual costs
-    const netIncome = order.total * 0.7;
-    
-    // Create the income record
-    const newIncome = {
-      id: nextId,
-      incomeAmount: order.total,
-      netIncome: netIncome,
-      status: "Received", // Default status for completed orders
-      paymentMethod: order.paymentMethod,
-      dateReceived: new Date().toISOString(),
-      orderId: order.id,
-      customerName: order.customer,
-      notes: ""
-    };
-    
-    // Add the new income record to the array
-    const updatedIncomes = [...existingIncomes, newIncome];
-    
-    // Save updated incomes to localStorage
-    localStorage.setItem(INCOME_STORAGE_KEY, JSON.stringify(updatedIncomes));
-    
-    console.log(`Created income record #${nextId} for order ${order.id}`);
-    
-    return newIncome;
-  } catch (error) {
-    console.error("Error creating income record:", error);
-    return null;
-  }
-};
+  const createIncomeRecord = (order) => {
+    try {
+      // Get existing income records from localStorage or initialize empty array
+      const existingIncomes = JSON.parse(localStorage.getItem(INCOME_STORAGE_KEY) || '[]');
+      
+      // Calculate next income ID
+      const nextId = existingIncomes.length > 0 
+        ? Math.max(...existingIncomes.map(income => income.id)) + 1 
+        : 1;
+      
+      // For now, simple calculation where netIncome is 70% of total
+      // In a real implementation, you'd calculate this based on actual costs
+      const netIncome = order.total * 0.7;
+      
+      // Create the income record
+      const newIncome = {
+        id: nextId,
+        incomeAmount: order.total,
+        netIncome: netIncome,
+        status: "Received", // Default status for completed orders
+        paymentMethod: order.paymentMethod,
+        dateReceived: new Date().toISOString(),
+        orderId: order.id,
+        customerName: order.customer,
+        notes: ""
+      };
+      
+      // Add the new income record to the array
+      const updatedIncomes = [...existingIncomes, newIncome];
+      
+      // Save updated incomes to localStorage
+      localStorage.setItem(INCOME_STORAGE_KEY, JSON.stringify(updatedIncomes));
+      
+      console.log(`Created income record #${nextId} for order ${order.id}`);
+      
+      return newIncome;
+    } catch (error) {
+      console.error("Error creating income record:", error);
+      return null;
+    }
+  };
   
   // Create new sales order
   const handleCreateOrder = async () => {
@@ -921,10 +627,10 @@ const createIncomeRecord = (order) => {
         id: newOrderId,
         employee: "sales@pgmicro.com",
         dateSold: new Date().toISOString().split('T')[0],
-        customer: customer.id,
+        customer: customer.name,
         type: orderType,
         total: totalAmount,
-        items: cart.map((item) => item.id),
+        items: cart,
         paymentMethod: paymentMethod
       };
       
@@ -940,20 +646,13 @@ const createIncomeRecord = (order) => {
       
       // For now, mark items as sold in localStorage inventory
       for (const item of cart) {
-        const updated = await updateInventoryStatus(item.id, "Sold");
+        const updated = await handleUpdateInventoryStatus(item.id, "Sold");
         console.log(`Updated item ${item.id} status:`, updated ? "Success" : "Failed");
       }
       
-      const createdOrder = await createSalesOrder(newOrder);
-      if (!createdOrder) {
-        alert("Failed to create order on server.");
-        return;
-        } 
-      
-      // Add the order returned by the backend to the list
-      const updatedOrders = [...salesOrders, createdOrder];
+      // Add the new order to the sales orders list
+      const updatedOrders = [...salesOrders, newOrder];
       setSalesOrders(updatedOrders);
-      
       
       // Save to localStorage so orders persist after refresh
       saveOrdersToLocalStorage(updatedOrders);
@@ -964,7 +663,7 @@ const createIncomeRecord = (order) => {
       // Create income record for the order
       const incomeRecord = createIncomeRecord(newOrder);
   
-      
+      /* 
       // When API is ready, uncomment this section - This is correctly placed here
       try {
         const response = await fetch(`${API_BASE_URL}/income/`, {
@@ -991,7 +690,7 @@ const createIncomeRecord = (order) => {
         console.error("Error creating income record in API:", error);
         // Continue with the order process even if API fails
       }
-      
+      */
   
       // FIRST: Reset the form and close the modal
       setCart([]);
@@ -1013,10 +712,8 @@ const createIncomeRecord = (order) => {
         alert("Pop-up blocked. Please allow pop-ups to view the invoice.");
       }
       
-      // FINALLY: Ask if they want to view the income list (only once)
-      if (incomeRecord && window.confirm("Order created successfully! Would you like to view the income list?")) {
-        setShowIncomeList(true);
-      }
+      // FINALLY: Show success message
+      alert("Order created successfully!");
       
     } catch (error) {
       console.error("Error creating order:", error);
@@ -1059,18 +756,28 @@ const createIncomeRecord = (order) => {
   const handleRefreshData = () => {
     setIsLoading(true);
     loadInventoryData();
-    loadOrdersFromDatabase();
-    loadCustomerData();
+    loadSalesOrdersData();
     setTimeout(() => setIsLoading(false), 500); // Add a small delay for UX
   };
-//---------------------------------------------
-  // RENDER UI
-  //---------------------------------------------
   
-  return (
-    <div className="p-4 bg-white min-h-screen">
-      {/* Header and controls section */}
-          <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
+  // Navigate to Income List page
+  const navigateToIncomeList = () => {
+    navigate("/income-list");
+  };
+  
+  // Navigate to Customer List page
+  const navigateToCustomerList = () => {
+    navigate("/customer-list");
+  };
+  
+  //---------------------------------------------
+// RENDER UI
+//---------------------------------------------
+
+return (
+  <div className="p-4 bg-white min-h-screen">
+    {/* Header and controls section */}
+    <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-purple-800">Issued Sale Orders</h1>
       </div>
@@ -1106,300 +813,298 @@ const createIncomeRecord = (order) => {
             className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center"
             disabled={isLoading}
           >
+            <RefreshCw className="h-4 w-4 mr-1" />
             {isLoading ? "Loading..." : "Refresh Data"}
           </button>
           
           <button 
             onClick={() => setShowCreateModal(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
           >
-            + Create SO
+            <Plus className="h-4 w-4 mr-1" /> Create SO
           </button>
         </div>
       </div>
       
-        
-        {/* Loading indicator */}
-        {isLoading && (
-          <div className="flex justify-center items-center py-4">
-            <p className="text-purple-700 text-lg">Loading data...</p>
-          </div>
-        )}
-        
-        {/* Sales Orders Table */}
-        {!isLoading && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white">
-              <thead>
-                <tr className="bg-gray-100 text-gray-800">
-                  <th className="p-3 text-left">Sale Order ID</th>
-                  <th className="p-3 text-left">Employee</th>
-                  <th className="p-3 text-left">Date Sold</th>
-                  <th className="p-3 text-left">Customer</th>
-                  <th className="p-3 text-left">Type</th>
-                  <th className="p-3 text-right">Total</th>
-                  <th className="p-3 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="p-4 text-center text-gray-500">No sales orders found</td>
-                  </tr>
-                ) : (
-                  filteredOrders.map((order, index) => (
-                    <tr key={order.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                      <td className="p-3 text-purple-700">{order.id}</td>
-                      <td className="p-3">{order.employee}</td>
-                      <td className="p-3">{order.dateSold}</td>
-                      <td className="p-3">{order.customer}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded-full text-white ${
-                          order.type === "Walk-In" ? "bg-green-500" : "bg-yellow-500"
-                        }`}>
-                          {order.type}
-                        </span>
-                      </td>
-                      <td className="p-3 text-right">₱{formatPrice(order.total)}</td>
-                      <td className="p-3 text-center">
-                        <button
-                          onClick={() => viewOrderDetails(order)}
-                          className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
-                        >
-                          View details
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-4">
+          <p className="text-purple-700 text-lg">Loading data...</p>
+        </div>
+      )}
       
-      {/* Create Sales Order Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-          <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-6xl max-h-[90vh] flex flex-col">
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
-                <button 
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setCart([]);
-                    setSelectedCustomer("");
-                    setPaymentMethod("");
-                  }}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Sales Order ID:</label>
-                  <p className="font-semibold">{newOrderId}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Employee:</label>
-                  <p className="font-semibold">sales@pgmicro.com</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Date:</label>
-                  <p className="font-semibold">{new Date().toISOString().split('T')[0]}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Status:</label>
-                  <p className="font-semibold">{orderType}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Time:</label>
-                  <p className="font-semibold">
-                    {new Date().toLocaleTimeString('en-US', { 
-                      hour: '2-digit', 
-                      minute: '2-digit', 
-                      hour12: true 
-                    })}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600">Payment Method:</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="p-1 border rounded w-full"
-                    required
-                  >
-                    <option value="">Select Payment Method</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Credit Card">Credit Card</option>
-                    <option value="Debit Card">Debit Card</option>
-                    <option value="Bank Transfer">Bank Transfer</option>
-                    <option value="Online Payment">Online Payment</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-600 mb-1">Select Customer:</label>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedCustomer}
-                    onChange={(e) => setSelectedCustomer(e.target.value)}
-                    className="p-2 border rounded w-full"
-                    required
-                  >
-                    <option value="">Select Customer</option>
-                    {customers.map(customer => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name} - {customer.email}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={navigateToCustomerList}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                    title="Manage Customers"
-                  >
-                    Manage
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-hidden flex flex-col md:flex-row p-4">
-              {/* Product Selection */}
-              <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
-                <div className="mb-2">
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
-                  <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="p-2 border rounded w-full"
-                  >
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="border rounded p-2 h-[420px] flex flex-col">
-                  <h3 className="font-semibold mb-2">Available Products:</h3>
-                  <div className="flex-1 overflow-y-auto">
-                    {filteredProducts.length === 0 ? (
-                      <p className="text-gray-500 italic text-center p-4">No products available</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {filteredProducts.map(product => (
-                          product.saleStatus !== "Sold" && (
-                            <div 
-                              key={product.id} 
-                              className="p-3 border rounded bg-white flex justify-between items-center"
-                              style={{minHeight: "80px"}}
-                            >
-                              <div>
-                                <p className="font-semibold">{product.category || "Unknown Category"}</p>
-                                <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
-                                <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
-                                <p>{product.sellingPrice || "Price not available"}</p>
-                              </div>
-                              <button
-                                onClick={() => addToCart(product)}
-                                className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                              >
-                                Add to Cart
-                              </button>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Shopping Cart */}
-              <div className="md:w-1/2 pl-0 md:pl-2">
-                <div className="border rounded flex flex-col h-[420px]">
-                  <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
-                  <div className="flex-1 overflow-y-auto">
-                    {cart.length === 0 ? (
-                      <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
-                    ) : (
-                      <table className="min-w-full">
-                        <thead className="bg-gray-100 sticky top-0">
-                          <tr>
-                            <th className="p-2 text-left">Item ID</th>
-                            <th className="p-2 text-left">Brand</th>
-                            <th className="p-2 text-left">Model</th>
-                            <th className="p-2 text-right">Price</th>
-                            <th className="p-2 text-center">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {cart.map(item => (
-                            <tr key={item.id} className="border-b">
-                              <td className="p-2">{item.id}</td>
-                              <td className="p-2">{item.brand}</td>
-                              <td className="p-2">{item.model}</td>
-                              <td className="p-2 text-right">{item.sellingPrice}</td>
-                              <td className="p-2 text-center">
-                                <button
-                                  onClick={() => removeFromCart(item.id)}
-                                  className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
-                                >
-                                  Remove
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                  <div className="bg-gray-100 p-2 border-t">
-                    <div className="font-semibold text-right">
-                      Total: ₱{totalAmount.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
+      {/* Sales Orders Table */}
+      {!isLoading && (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white">
+            <thead>
+              <tr className="bg-gray-100 text-gray-800">
+                <th className="p-3 text-left">Sale Order ID</th>
+                <th className="p-3 text-left">Employee</th>
+                <th className="p-3 text-left">Date Sold</th>
+                <th className="p-3 text-left">Customer</th>
+                <th className="p-3 text-left">Type</th>
+                <th className="p-3 text-right">Total</th>
+                <th className="p-3 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="p-4 text-center text-gray-500">No sales orders found</td>
+                </tr>
+              ) : (
+                filteredOrders.map((order, index) => (
+                  <tr key={order.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                    <td className="p-3 text-purple-700">{order.id}</td>
+                    <td className="p-3">{order.employee}</td>
+                    <td className="p-3">{order.dateSold}</td>
+                    <td className="p-3">{order.customer}</td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded-full text-white ${
+                        order.type === "Walk-In" ? "bg-green-500" : "bg-yellow-500"
+                      }`}>
+                        {order.type}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">₱{formatPrice(order.total)}</td>
+                    <td className="p-3 text-center">
+                      <button
+                        onClick={() => viewOrderDetails(order)}
+                        className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
+                      >
+                        View details
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+    
+    {/* Create Sales Order Modal */}
+    {showCreateModal && (
+      <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+        <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-6xl max-h-[90vh] flex flex-col">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
+              <button 
                 onClick={() => {
                   setShowCreateModal(false);
                   setCart([]);
                   setSelectedCustomer("");
                   setPaymentMethod("");
                 }}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
+                className="text-gray-500 hover:text-gray-700"
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateOrder}
-                disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}
-                className={`px-4 py-2 rounded text-white w-32 ${
-                  !selectedCustomer || cart.length === 0 || !paymentMethod
-                    ? "bg-green-300 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
-              >
-                Create Order
+                <X className="h-6 w-6" />
               </button>
             </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Sales Order ID:</label>
+                <p className="font-semibold">{newOrderId}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Employee:</label>
+                <p className="font-semibold">sales@pgmicro.com</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Date:</label>
+                <p className="font-semibold">{new Date().toISOString().split('T')[0]}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Status:</label>
+                <p className="font-semibold">{orderType}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Time:</label>
+                <p className="font-semibold">
+                  {new Date().toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: true 
+                  })}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600">Payment Method:</label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="p-1 border rounded w-full"
+                  required
+                >
+                  <option value="">Select Payment Method</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="Debit Card">Debit Card</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Online Payment">Online Payment</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-600 mb-1">Select Customer:</label>
+              <div className="flex gap-2">
+                <select
+                  value={selectedCustomer}
+                  onChange={(e) => setSelectedCustomer(e.target.value)}
+                  className="p-2 border rounded w-full"
+                  required
+                >
+                  <option value="">Select Customer</option>
+                  {customers.map(customer => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name} - {customer.email}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={navigateToCustomerList}
+                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  title="Manage Customers"
+                >
+                  Manage
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-hidden flex flex-col md:flex-row p-4">
+            {/* Product Selection */}
+            <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="p-2 border rounded w-full"
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="border rounded p-2 h-[420px] flex flex-col">
+                <h3 className="font-semibold mb-2">Available Products:</h3>
+                <div className="flex-1 overflow-y-auto">
+                  {filteredProducts.length === 0 ? (
+                    <p className="text-gray-500 italic text-center p-4">No products available</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredProducts.map(product => (
+                        product.saleStatus !== "Sold" && (
+                          <div 
+                            key={product.id} 
+                            className="p-3 border rounded bg-white flex justify-between items-center"
+                            style={{minHeight: "80px"}}
+                          >
+                            <div>
+                              <p className="font-semibold">{product.category || "Unknown Category"}</p>
+                              <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
+                              <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
+                              <p>{product.sellingPrice || "Price not available"}</p>
+                            </div>
+                            <button
+                              onClick={() => addToCart(product)}
+                              className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                            >
+                              Add to Cart
+                            </button>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Shopping Cart */}
+            <div className="md:w-1/2 pl-0 md:pl-2">
+              <div className="border rounded flex flex-col h-[420px]">
+                <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
+                <div className="flex-1 overflow-y-auto">
+                  {cart.length === 0 ? (
+                    <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
+                  ) : (
+                    <table className="min-w-full">
+                      <thead className="bg-gray-100 sticky top-0">
+                        <tr>
+                          <th className="p-2 text-left">Item ID</th>
+                          <th className="p-2 text-left">Brand</th>
+                          <th className="p-2 text-left">Model</th>
+                          <th className="p-2 text-right">Price</th>
+                          <th className="p-2 text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cart.map(item => (
+                          <tr key={item.id} className="border-b">
+                            <td className="p-2">{item.id}</td>
+                            <td className="p-2">{item.brand}</td>
+                            <td className="p-2">{item.model}</td>
+                            <td className="p-2 text-right">{item.sellingPrice}</td>
+                            <td className="p-2 text-center">
+                              <button
+                                onClick={() => removeFromCart(item.id)}
+                                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
+                              >
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                <div className="bg-gray-100 p-2 border-t">
+                  <div className="font-semibold text-right">
+                    Total: ₱{totalAmount.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button
+              onClick={() => {
+                setShowCreateModal(false);
+                setCart([]);
+                setSelectedCustomer("");
+                setPaymentMethod("");
+              }}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreateOrder}
+              disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}
+              className={`px-4 py-2 rounded text-white w-32 ${
+                !selectedCustomer || cart.length === 0 || !paymentMethod
+                  ? "bg-green-300 cursor-not-allowed"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
+            >
+              Create Order
+            </button>
           </div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
 };
 
 export default SalesOrderPage;
