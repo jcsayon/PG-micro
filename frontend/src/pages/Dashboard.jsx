@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
+import { TrendingUp, ClipboardList, RefreshCw, BarChart3 } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -9,7 +10,7 @@ const Dashboard = () => {
     {
       title: "Sales",
       description: "Track and manage all sales activities in one place.",
-      icon: "📈",
+      icon: <TrendingUp size={36} />,
       link: "/sales",
       bg: "bg-gradient-to-r from-red-300 to-red-100",
       text: "text-red-700",
@@ -18,7 +19,7 @@ const Dashboard = () => {
     {
       title: "Purchase Order",
       description: "Manage all your purchase orders efficiently.",
-      icon: "📋",
+      icon: <ClipboardList size={36} />,
       link: "/purchase-orders",
       bg: "bg-gradient-to-r from-yellow-300 to-yellow-100",
       text: "text-yellow-700",
@@ -27,7 +28,7 @@ const Dashboard = () => {
     {
       title: "Return-Warranty",
       description: "Handle returns and warranties with ease.",
-      icon: "🔄",
+      icon: <RefreshCw size={36} />,
       link: "/return-warranty",
       bg: "bg-gradient-to-r from-blue-300 to-blue-100",
       text: "text-blue-700",
@@ -36,7 +37,7 @@ const Dashboard = () => {
     {
       title: "Reports",
       description: "View monthly financial reports of income & expenses.",
-      icon: "📊",
+      icon: <BarChart3 size={36} />,
       link: "/reports",
       bg: "bg-gradient-to-r from-green-300 to-green-100",
       text: "text-green-700",
@@ -56,7 +57,7 @@ const Dashboard = () => {
             >
               <div className="p-5 rounded-lg">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-5xl">{card.icon}</span>
+                  <span className={card.text}>{card.icon}</span>
                   <button className={`${card.button} font-semibold`}>
                     Open
                   </button>
