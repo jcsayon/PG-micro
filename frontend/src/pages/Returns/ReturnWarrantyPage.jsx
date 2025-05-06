@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import {Search,X,Trash2,ChevronLeft,ChevronRight,Plus} from "lucide-react";
 
 // HEADER STATUS DROPDOWN COLOR 
 function getBackgroundColor(value) {
@@ -332,9 +333,7 @@ const ReturnWarrantyPage = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                </svg>
+                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               </div>
             </div>
             <div className="flex gap-3">
@@ -354,7 +353,7 @@ const ReturnWarrantyPage = () => {
                 className="bg-indigo-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-700 transition duration-150 ease-in-out"
                 onClick={() => setShowCreateROModal(true)}
               >
-                + Create RO
+                <Plus className="h-4 w-4 inline mr-1" /> Create RO
               </button>
             </div>
           </div>
@@ -417,9 +416,7 @@ const ReturnWarrantyPage = () => {
                   onClick={() => setShowDetailsModal(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="h-6 w-6" />
                 </button>
               </div>
 
@@ -525,9 +522,7 @@ const ReturnWarrantyPage = () => {
                   onClick={() => setShowCustomerModal(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="h-6 w-6" />
                 </button>
               </div>
               
@@ -620,8 +615,8 @@ const ReturnWarrantyPage = () => {
                 </table>
               </div>
 
-              {/* Add Customer Form */}
-              <div className="mt-4 border-t pt-4">
+                 {/* Add Customer Form */}
+                 <div className="mt-4 border-t pt-4">
                 <h3 className="text-lg font-bold text-gray-900 mb-3">New Customer</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <input 
@@ -693,9 +688,7 @@ const ReturnWarrantyPage = () => {
                   onClick={() => setShowWarrantiesModal(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="h-6 w-6" />
                 </button>
               </div>
  
@@ -889,9 +882,7 @@ const ReturnWarrantyPage = () => {
                   onClick={() => setShowWarrantyDetailsModal(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="h-6 w-6" />
                 </button>
               </div>
 
@@ -984,9 +975,7 @@ const ReturnWarrantyPage = () => {
                   onClick={() => setShowCreateROModal(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="h-6 w-6" />
                 </button>
               </div>
   
@@ -1146,9 +1135,7 @@ const ReturnWarrantyPage = () => {
                                   className="text-red-600 hover:text-red-900"
                                   onClick={() => handleRemoveProduct(product.id)}
                                 >
-                                  <svg className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
+                                  <Trash2 className="h-5 w-5 inline" />
                                 </button>
                               </td>
                             </tr>
@@ -1182,5 +1169,4 @@ const ReturnWarrantyPage = () => {
   );
 };
 
-export default ReturnWarrantyPage;
-              
+export default ReturnWarrantyPage; 
