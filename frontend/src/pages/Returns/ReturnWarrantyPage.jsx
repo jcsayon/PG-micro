@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
-import { Search, X, Trash2, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Search, X, Trash2, ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react";
 
-// HEADER STATUS DROPDOWN COLOR 
+/**
+ * Helper function to get the background color for status badges
+ * This function returns the appropriate Tailwind CSS classes based on the status value
+ */
 function getBackgroundColor(value) {
   switch (value) {
     case "All": return "bg-blue-100 text-blue-800";
@@ -16,75 +19,42 @@ function getBackgroundColor(value) {
   }
 }
 
+// List of all product categories available in the system
 const allCategories = [
-  'Processor', 'Motherboards', 'Video Cards', 'Monitors', 'Laptops', 'Printers', 'Toners', 'Inks', 'Networking', 'DSLR Camera',
+  'Processor', 'Motherboards', 'Video Cards', 'Monitors', 'Laptops', 
+  'Printers', 'Toners', 'Inks', 'Networking', 'DSLR Camera',
   'CCTV Camera', 'Keyboard & Mouse', 'Webcam', 'Power Supply', 'Thin Client'
 ];
 
-// This would typically come from your API
-const dummyInventory = {
-  Laptops: [
-    { id: 1, name: 'ACER Aspire 5', price: 32000, serial: 'SN-ACER-001', image: 'https://via.placeholder.com/100' },
-    { id: 2, name: 'HP Pavilion 14', price: 28000, serial: 'SN-HP-002', image: 'https://via.placeholder.com/100' },
-    { id: 3, name: 'LENOVO IdeaPad 3', price: 30000, serial: 'SN-LENOVO-003', image: 'https://via.placeholder.com/100' },
-    { id: 4, name: 'ASUS VivoBook', price: 31000, serial: 'SN-ASUS-004', image: 'https://via.placeholder.com/100' },
-    { id: 5, name: 'DELL Inspiron', price: 29000, serial: 'SN-DELL-005', image: 'https://via.placeholder.com/100' },
-    { id: 6, name: 'DELL Inspiron 2', price: 29000, serial: 'SN-DELL-006', image: 'https://via.placeholder.com/100' },
-  ]
-};
-
+/**
+ * Main component for the Return Warranty page
+ */
 const ReturnWarrantyPage = () => {
+  // Navigation hook to programmatically navigate between pages
   const navigate = useNavigate();
+  
+  // ==========================================
+  // STATE MANAGEMENT
+  // ==========================================
+  
+  // Return orders list state
   const [returnOrders, setReturnOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [isLoading, setIsLoading] = useState(false);
   
-  // CUSTOMER MANAGEMENT
+  // Customer management state
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [customers, setCustomers] = useState([
-    {id: 1, name: "Juan Dela Cruz", address: "123 Main St, Davao City", email: "juan@example.com", contact: "0912-345-6789", type: "Walk-In", isEditing: false},
-    {id: 2, name: "Maria Santos", address: "456 IT Park, Cebu City", email: "maria@example.com", contact: "0901-234-5678", type: "Contract", isEditing: false},
-  ]);
-  const [newCustomer, setNewCustomer] = useState({name: "", address: "", email: "", contact: "", type: "Walk-In"});
-  
-  const handleAddCustomer = () => {
-    setCustomers([...customers, { id: customers.length + 1, ...newCustomer, isEditing: false }]);
-    setNewCustomer({ name: "", address: "", email: "", contact: "", type: "Walk-In" });
-  };
-  
-  const handleEditCustomer = (index) => {
-    const updated = [...customers]; 
-    updated[index].isEditing = !updated[index].isEditing; 
-    setCustomers(updated);
-  };
-  
-  const handleChangeCustomer = (index, field, value) => {
-    const updated = [...customers]; 
-    updated[index][field] = value; 
-    setCustomers(updated);
-  };
-  
-  const handleDeleteCustomer = (id) => {
-    setCustomers(customers.filter((c) => c.id !== id));
-  };
+  const [customers, setCustomers] = useState([]);
 
-  // STATUS OPTIONS
-  const statusOptions = [
-    { label: "Walk-In", value: "Walk-In", colorClass: "bg-green-100 text-green-800" },
-    { label: "Contract", value: "Contract", colorClass: "bg-yellow-200 text-yellow-800" },
-  ];
+  // Sales Orders list modal state
+  const [showSalesOrdersModal, setShowSalesOrdersModal] = useState(false);
+  const [salesOrders, setSalesOrders] = useState([]);
+  const [salesOrdersSearchTerm, setSalesOrdersSearchTerm] = useState("");
+  const [salesOrdersFilterType, setSalesOrdersFilterType] = useState("All");
+  const [selectedSalesOrder, setSelectedSalesOrder] = useState(null);
 
-  const replacementStatusOptions = [
-    { label: "Completed", value: "Completed", colorClass: "bg-green-100 text-green-800" },
-    { label: "Pending", value: "Pending", colorClass: "bg-amber-100 text-amber-800" },
-    { label: "Processing", value: "Processing", colorClass: "bg-blue-100 text-blue-800" }
-  ];
-
-  const handleStatusChange = (orderId, newStatus) => {
-    setReturnOrders((prev) => prev.map((order) => order.id === orderId ? { ...order, status: newStatus } : order));
-  };
-
-  // VIEW DETAILS MODAL
+  // View details modal state
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [replacementDetails, setReplacementDetails] = useState({
@@ -101,6 +71,174 @@ const ReturnWarrantyPage = () => {
   });
   const [selectedTab, setSelectedTab] = useState("replacement");
 
+  // Create Return Order modal state
+  const [showCreateROModal, setShowCreateROModal] = useState(false);
+  const [newReturnOrder, setNewReturnOrder] = useState({
+    customer: "",
+    date: new Date().toISOString().split('T')[0],
+    status: "Walk-In",
+    reason: "",
+    products: [],
+    salesOrderId: "", // Added field to store the related sales order ID
+    processType: "replacement"
+  });
+  const [newProduct, setNewProduct] = useState({
+    model: "",
+    category: "Laptops",
+    serial: "",
+    brand: "",
+    reason: ""
+  });
+
+  // ==========================================
+  // STATUS OPTIONS (For dropdown menus)
+  // ==========================================
+  
+  // Options for customer type
+  const statusOptions = [
+    { label: "Walk-In", value: "Walk-In", colorClass: "bg-green-100 text-green-800" },
+    { label: "Contract", value: "Contract", colorClass: "bg-yellow-200 text-yellow-800" },
+  ];
+
+  // Options for replacement status
+  const replacementStatusOptions = [
+    { label: "Completed", value: "Completed", colorClass: "bg-green-100 text-green-800" },
+    { label: "Pending", value: "Pending", colorClass: "bg-amber-100 text-amber-800" },
+    { label: "Processing", value: "Processing", colorClass: "bg-blue-100 text-blue-800" }
+  ];
+
+  // ==========================================
+  // DATA LOADING FUNCTIONS (useEffect hooks)
+  // ==========================================
+  
+  // Load customers from localStorage when component mounts
+  useEffect(() => {
+    loadCustomers();
+  }, []);
+
+  // Load sales orders from localStorage when component mounts
+  useEffect(() => {
+    loadSalesOrders();
+  }, []);
+
+  // Load dummy return orders if none exist
+  useEffect(() => {
+    // Wait for customers to be loaded before creating dummy return orders
+    if (returnOrders.length === 0 && customers.length > 0) {
+      loadDummyReturnOrders();
+    }
+  }, [customers]);
+
+  // ==========================================
+  // DATA LOADING HELPER FUNCTIONS
+  // ==========================================
+  
+  /**
+   * Load customers from localStorage
+   */
+  const loadCustomers = () => {
+    const savedCustomers = localStorage.getItem('customersData');
+    if (savedCustomers) {
+      try {
+        const parsedCustomers = JSON.parse(savedCustomers);
+        setCustomers(parsedCustomers);
+      } catch (error) {
+        console.error("Error parsing customers from localStorage:", error);
+        // Set default customers if parsing fails
+        setCustomers([
+          {id: 1, name: "Juan Dela Cruz", address: "123 Main St, Davao City", email: "juan@example.com", contact: "0912-345-6789", type: "Walk-In", isEditing: false},
+          {id: 2, name: "Maria Santos", address: "456 IT Park, Cebu City", email: "maria@example.com", contact: "0901-234-5678", type: "Contract", isEditing: false},
+        ]);
+      }
+    } else {
+      // If no customers in localStorage, set default customers
+      setCustomers([
+        {id: 1, name: "Juan Dela Cruz", address: "123 Main St, Davao City", email: "juan@example.com", contact: "0912-345-6789", type: "Walk-In", isEditing: false},
+        {id: 2, name: "Maria Santos", address: "456 IT Park, Cebu City", email: "maria@example.com", contact: "0901-234-5678", type: "Contract", isEditing: false},
+      ]);
+    }
+  };
+
+  /**
+   * Load sales orders from localStorage
+   */
+  const loadSalesOrders = () => {
+    setIsLoading(true);
+    
+    // Try to load from localStorage
+    const savedOrders = localStorage.getItem('salesOrdersData');
+    
+    if (savedOrders) {
+      try {
+        const parsedOrders = JSON.parse(savedOrders);
+        setSalesOrders(parsedOrders);
+      } catch (error) {
+        console.error("Error parsing sales orders:", error);
+        // Set some mock data if parsing fails
+        setSalesOrders([
+          { id: "#SO1001", employee: "sales@pgmicro.com", dateSold: "2023-01-01", customer: "Juan Dela Cruz", type: "Walk-In", total: 10000.00 },
+          { id: "#SO1002", employee: "sales@pgmicro.com", dateSold: "2023-01-02", customer: "Maria Santos", type: "Contract", total: 11000.00 }
+        ]);
+      }
+    } else {
+      // If no sales orders in localStorage, set some mock data
+      setSalesOrders([
+        { id: "#SO1001", employee: "sales@pgmicro.com", dateSold: "2023-01-01", customer: "Juan Dela Cruz", type: "Walk-In", total: 10000.00 },
+        { id: "#SO1002", employee: "sales@pgmicro.com", dateSold: "2023-01-02", customer: "Maria Santos", type: "Contract", total: 11000.00 }
+      ]);
+    }
+    
+    setIsLoading(false);
+  };
+
+  /**
+   * Load dummy return orders for demonstration
+   */
+  const loadDummyReturnOrders = () => {
+    setReturnOrders([...Array(6)].map((_, i) => ({
+      id: i + 1,
+      roNumber: `#RO${(i + 1).toString().padStart(3, '0')}`,
+      customer: customers.length > 0 ? customers[i % customers.length]?.name || "Unknown Customer" : "Unknown Customer",
+      date: `2023-01-${(i + 1).toString().padStart(2, '0')}`,
+      total: `₱${(10000 + i * 1000).toLocaleString()}.00`,
+      status: i % 2 === 0 ? "Walk-In" : "Contract",
+      employee: "admin@pgmicro.com",
+      reason: i % 3 === 0 ? "Power failure, won't boot" : i % 3 === 1 ? "Display flickering" : "Keyboard not responding",
+      salesOrderId: `#SO${1001 + i}`, // Link to sales order
+      
+      // Replacement information
+      replacementId: `#RP${(i + 1000).toString().padStart(3, '0')}`,
+      replacementDate: `2023-01-${(i + 15).toString().padStart(2, '0')}`,
+      replacementStatus: i % 3 === 0 ? "Completed" : i % 3 === 1 ? "Pending" : "Processing",
+      isNewItem: i % 2 === 0,
+      
+      // Refund information
+      refundId: `#RF${(i + 1000).toString().padStart(3, '0')}`,
+      refundDate: `2023-01-${(i + 10).toString().padStart(2, '0')}`,
+      refundAmount: 5000 + (i * 500),
+      refundMethod: i % 2 === 0 ? "Cash" : "Credit Card"
+    })));
+  };
+
+  // ==========================================
+  // EVENT HANDLERS
+  // ==========================================
+
+  /**
+   * Handle changing the status of a return order
+   * @param {string} orderId - The ID of the order to update
+   * @param {string} newStatus - The new status to set
+   */
+  const handleStatusChange = (orderId, newStatus) => {
+    setReturnOrders((prev) => prev.map((order) => 
+      order.id === orderId ? { ...order, status: newStatus } : order
+    ));
+  };
+
+  /**
+   * Handle viewing the details of a return order
+   * @param {Object} order - The order to view details for
+   */
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
     
@@ -123,6 +261,11 @@ const ReturnWarrantyPage = () => {
     setShowDetailsModal(true);
   };
 
+  /**
+   * Handle changes to replacement details fields
+   * @param {string} field - The field name to update
+   * @param {any} value - The new value for the field
+   */
   const handleReplacementChange = (field, value) => {
     setReplacementDetails(prev => ({
       ...prev,
@@ -130,6 +273,11 @@ const ReturnWarrantyPage = () => {
     }));
   };
 
+  /**
+   * Handle changes to refund details fields
+   * @param {string} field - The field name to update
+   * @param {any} value - The new value for the field
+   */
   const handleRefundChange = (field, value) => {
     setRefundDetails(prev => ({
       ...prev,
@@ -137,6 +285,9 @@ const ReturnWarrantyPage = () => {
     }));
   };
 
+  /**
+   * Save the changes made in the details modal
+   */
   const handleSaveDetails = () => {
     if (selectedOrder) {
       setReturnOrders(prev => prev.map(order => 
@@ -152,23 +303,11 @@ const ReturnWarrantyPage = () => {
     }
   };
 
-  // CREATE RETURN ORDER MODAL
-  const [showCreateROModal, setShowCreateROModal] = useState(false);
-  const [newReturnOrder, setNewReturnOrder] = useState({
-    customer: "",
-    date: new Date().toISOString().split('T')[0],
-    status: "Walk-In",
-    reason: "",
-    products: []
-  });
-  const [newProduct, setNewProduct] = useState({
-    model: "",
-    category: "Laptops",
-    serial: "",
-    brand: "",
-    reason: ""
-  });
-
+  /**
+   * Handle changes to the new return order form fields
+   * @param {string} field - The field name to update
+   * @param {any} value - The new value for the field
+   */
   const handleReturnOrderChange = (field, value) => {
     setNewReturnOrder({
       ...newReturnOrder,
@@ -176,12 +315,17 @@ const ReturnWarrantyPage = () => {
     });
   };
 
+  /**
+   * Add a product to the return order
+   */
   const handleAddProduct = () => {
+    // Only add if model and serial are provided
     if (newProduct.model && newProduct.serial) {
       setNewReturnOrder({
         ...newReturnOrder,
         products: [...newReturnOrder.products, { ...newProduct, id: Date.now() }]
       });
+      // Reset product form
       setNewProduct({
         model: "",
         category: "Laptops",
@@ -192,58 +336,134 @@ const ReturnWarrantyPage = () => {
     }
   };
 
+  /**
+   * Remove a product from the return order
+   * @param {number} id - The ID of the product to remove
+   */
   const handleRemoveProduct = (id) => {
     setNewReturnOrder({
       ...newReturnOrder,
       products: newReturnOrder.products.filter(product => product.id !== id)
     });
   };
-
-  const handleCreateReturnOrder = () => {
-    // In a real application, you would submit to your API here
-    // The API would create entries in the Return table and potentially
-    // in the Replacement or Refund tables based on the relationship
+  
+  /**
+   * Format price for display
+   * @param {number|string} price - The price to format
+   * @returns {string} - The formatted price string
+   */
+  const formatPrice = (price) => {
+    if (!price) return "0.00";
     
-    // For now, we'll just close the modal and reset the form
+    // Remove any existing formatting (currency symbols and commas)
+    const numericPrice = String(price).replace(/[₱±,]/g, '');
+    
+    return parseFloat(numericPrice).toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  /**
+   * Handle selecting a sales order for return
+   * @param {Object} salesOrder - The selected sales order
+   */
+  const handleSelectSalesOrder = (salesOrder) => {
+    setSelectedSalesOrder(salesOrder);
+    
+    // Find the customer details
+    const customer = customers.find(c => c.name === salesOrder.customer);
+    
+    // Update the return order with information from the sales order
+    setNewReturnOrder({
+      ...newReturnOrder,
+      customer: customer ? customer.id.toString() : "",
+      status: salesOrder.type,
+      salesOrderId: salesOrder.id,
+      // If the sales order has items, populate the products
+      products: salesOrder.items ? salesOrder.items.map(item => ({
+        id: Date.now() + Math.random(),
+        model: item.model || "",
+        category: item.category || "Laptops",
+        serial: item.serialNumber || "",
+        brand: item.brand || "",
+        reason: ""
+      })) : []
+    });
+    
+    setShowSalesOrdersModal(false);
+  };
+
+  /**
+   * Create a new return order
+   */
+  const handleCreateReturnOrder = () => {
+    // Generate a new return order ID
+    const newROId = `#RO${(returnOrders.length + 1).toString().padStart(3, '0')}`;
+    
+    // Find customer name from ID
+    const customer = customers.find(c => c.id.toString() === newReturnOrder.customer);
+    
+    // Create new return order
+    const newRO = {
+      id: returnOrders.length + 1,
+      roNumber: newROId,
+      customer: customer ? customer.name : "Unknown Customer",
+      date: newReturnOrder.date,
+      status: newReturnOrder.status,
+      employee: "admin@pgmicro.com",
+      reason: newReturnOrder.reason,
+      salesOrderId: newReturnOrder.salesOrderId,
+      
+      // Set replacement or refund details based on processType
+      ...(newReturnOrder.processType === "replacement" ? {
+        replacementId: `#RP${(returnOrders.length + 1000).toString().padStart(3, '0')}`,
+        replacementDate: new Date().toISOString().split('T')[0],
+        replacementStatus: newReturnOrder.replacementStatus || "Pending",
+        isNewItem: newReturnOrder.isNewItem || false
+      } : {
+        refundId: `#RF${(returnOrders.length + 1000).toString().padStart(3, '0')}`,
+        refundDate: new Date().toISOString().split('T')[0],
+        refundAmount: newReturnOrder.refundAmount || 0,
+        refundMethod: newReturnOrder.refundMethod || "Cash"
+      }),
+      
+      // Store products for reference
+      products: newReturnOrder.products
+    };
+    
+    // Add the new return order to the list
+    setReturnOrders([...returnOrders, newRO]);
+    
+    // Reset form and close modal
     setShowCreateROModal(false);
     setNewReturnOrder({
       customer: "",
       date: new Date().toISOString().split('T')[0],
       status: "Walk-In",
       reason: "",
-      products: []
+      products: [],
+      salesOrderId: "",
+      processType: "replacement"
     });
+    setSelectedSalesOrder(null);
   };
 
-  // LOAD DUMMY DATA
-  useEffect(() => {
-    // In a real application, you would fetch this data from your API
-    // The API would join the Return table with Replacement and Refund tables
-    
-    setReturnOrders([...Array(6)].map((_, i) => ({
-      id: i + 1,
-      roNumber: `#RO${(i + 1).toString().padStart(3, '0')}`,
-      customer: customers[i % customers.length].name,
-      date: `2023-01-${(i + 1).toString().padStart(2, '0')}`,
-      total: `₱${(10000 + i * 1000).toLocaleString()}.00`,
-      status: i % 2 === 0 ? "Walk-In" : "Contract",
-      employee: "admin@pgmicro.com",
-      reason: i % 3 === 0 ? "Power failure, won't boot" : i % 3 === 1 ? "Display flickering" : "Keyboard not responding",
-      
-      // Replacement information (from Replacement table)
-      replacementId: `#RP${(i + 1000).toString().padStart(3, '0')}`,
-      replacementDate: `2023-01-${(i + 15).toString().padStart(2, '0')}`,
-      replacementStatus: i % 3 === 0 ? "Completed" : i % 3 === 1 ? "Pending" : "Processing",
-      isNewItem: i % 2 === 0,
-      
-      // Refund information (from Refund table)
-      refundId: `#RF${(i + 1000).toString().padStart(3, '0')}`,
-      refundDate: `2023-01-${(i + 10).toString().padStart(2, '0')}`,
-      refundAmount: 5000 + (i * 500),
-      refundMethod: i % 2 === 0 ? "Cash" : "Credit Card"
-    })));
-  }, []);
+  /**
+   * Handle refreshing the data
+   */
+  const handleRefreshData = () => {
+    setIsLoading(true);
+    loadSalesOrders();
+    loadCustomers();
+    setTimeout(() => setIsLoading(false), 500); // Add a small delay for UX
+  };
 
+  // ==========================================
+  // DATA FILTERING
+  // ==========================================
+  
+  // Filter return orders based on search and status
   const filteredOrders = returnOrders.filter((order) => {
     const matchesSearch = order.roNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           order.customer.toLowerCase().includes(searchQuery.toLowerCase());
@@ -251,14 +471,29 @@ const ReturnWarrantyPage = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Filter sales orders for the modal
+  const filteredSalesOrders = salesOrders.filter(order => {
+    const matchesType = salesOrdersFilterType === "All" || order.type === salesOrdersFilterType;
+    const matchesSearch = salesOrdersSearchTerm === "" || 
+                         order.id.toLowerCase().includes(salesOrdersSearchTerm.toLowerCase()) ||
+                         order.customer.toLowerCase().includes(salesOrdersSearchTerm.toLowerCase()) ||
+                         order.dateSold.includes(salesOrdersSearchTerm);
+    return matchesType && matchesSearch;
+  });
+
+  // ==========================================
+  // COMPONENT RENDERING
+  // ==========================================
   return (
     <DashboardLayout>
       <div className="p-4 bg-white min-h-screen">
+        {/* Header section with filters and actions */}
         <div className="sticky top-0 z-20 bg-white pb-4 border-b mb-4">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Return Management</h1>
 
           <div className="flex gap-4 justify-between items-center">
             <div className="flex gap-3">
+              {/* Status filter dropdown */}
               <select
                 className={`px-4 py-2 border border-gray-300 rounded-md shadow-sm ${getBackgroundColor(statusFilter)}`}
                 value={statusFilter}
@@ -268,6 +503,8 @@ const ReturnWarrantyPage = () => {
                 <option value="Walk-In">Walk-In</option>
                 <option value="Contract">Contract</option>
               </select>
+              
+              {/* Search bar */}
               <div className="relative">
                 <input
                   type="text"
@@ -279,9 +516,22 @@ const ReturnWarrantyPage = () => {
                 <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               </div>
             </div>
+            
+            {/* Action buttons */}
             <div className="flex gap-3">
+              {/* Refresh data button */}
               <button
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-700 transition duration-150 ease-in-out"
+                className="bg-purple-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-purple-700 flex items-center"
+                onClick={handleRefreshData}
+                disabled={isLoading}
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                {isLoading ? "Loading..." : "Refresh Data"}
+              </button>
+              
+              {/* Create return order button */}
+              <button
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-700 transition duration-150 ease-in-out flex items-center"
                 onClick={() => setShowCreateROModal(true)}
               >
                 <Plus className="h-4 w-4 inline mr-1" /> Create RO
@@ -296,6 +546,7 @@ const ReturnWarrantyPage = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">Return ID</th>
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Sales Order</th>
                 <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Return Date</th>
                 <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
                 <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Reason</th>
@@ -303,28 +554,37 @@ const ReturnWarrantyPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
-              {filteredOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{order.roNumber}</td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{order.date}</td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm">
-                    <span className={`text-xs font-medium rounded-full px-3 py-1 inline-block ${getBackgroundColor(order.status)}`}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                    {order.reason}
-                  </td>
-                  <td className="px-3 py-4 text-sm">
-                    <button
-                      onClick={() => handleViewDetails(order)}
-                      className="text-indigo-600 hover:text-indigo-900 font-medium"
-                    >
-                      View details
-                    </button>
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-3 py-4 text-sm text-gray-500 text-center">
+                    No return orders found
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900">{order.roNumber}</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-indigo-600">{order.salesOrderId || "N/A"}</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{order.date}</td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm">
+                      <span className={`text-xs font-medium rounded-full px-3 py-1 inline-block ${getBackgroundColor(order.status)}`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      {order.reason}
+                    </td>
+                    <td className="px-3 py-4 text-sm">
+                      <button
+                        onClick={() => handleViewDetails(order)}
+                        className="text-indigo-600 hover:text-indigo-900 font-medium"
+                      >
+                        View details
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -360,6 +620,10 @@ const ReturnWarrantyPage = () => {
                     </span>
                   </div>
                   <div>
+                    <p className="text-sm font-semibold text-gray-700">Sales Order:</p>
+                    <p className="text-base text-indigo-600">{selectedOrder.salesOrderId || "N/A"}</p>
+                  </div>
+                  <div className="col-span-2">
                     <p className="text-sm font-semibold text-gray-700">Reason:</p>
                     <p className="text-base">{selectedOrder.reason}</p>
                   </div>
@@ -416,18 +680,18 @@ const ReturnWarrantyPage = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                       <select 
-                        className={`w-full border border-gray-300 p-2 rounded-md shadow-sm ${
-                          replacementDetails.replacementStatus === "Completed" ? "bg-green-100 text-green-800" : 
-                          replacementDetails.replacementStatus === "Pending" ? "bg-amber-100 text-amber-800" : 
-                          "bg-blue-100 text-blue-800"
-                        }`}
-                        value={replacementDetails.replacementStatus}
-                        onChange={(e) => handleReplacementChange("replacementStatus", e.target.value)}
-                      >
-                        {replacementStatusOptions.map(option => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
+    className={`w-full border border-gray-300 p-2 rounded-md shadow-sm ${
+        replacementDetails.replacementStatus === "Completed" ? "bg-green-100 text-green-800" : 
+        replacementDetails.replacementStatus === "Pending" ? "bg-amber-100 text-amber-800" : 
+        "bg-blue-100 text-blue-800"
+    }`}
+    value={replacementDetails.replacementStatus}
+    onChange={(e) => handleReplacementChange("replacementStatus", e.target.value)}
+>
+    {replacementStatusOptions.map(option => (
+        <option key={option.value} value={option.value}>{option.label}</option>
+    ))}
+</select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">New Item</label>
@@ -513,167 +777,97 @@ const ReturnWarrantyPage = () => {
           </div>
         )}
 
-        {/* VIEW CUSTOMER MODAL */}
-        {showCustomerModal && (
-          <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-20">
-            <div className="bg-white p-6 rounded-lg shadow-lg h-[600px] w-[1200px] flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">Customer List</h3>
+        {/* SALES ORDERS SELECTION MODAL */}
+        {showSalesOrdersModal && (
+          <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg p-6 w-[900px] max-h-[90vh] overflow-y-auto shadow-xl">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Select Sales Order</h2>
                 <button
-                  onClick={() => setShowCustomerModal(false)}
+                  onClick={() => setShowSalesOrdersModal(false)}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   <X className="h-6 w-6" />
                 </button>
               </div>
-              
-              <div className={`overflow-x-auto flex-grow ${customers.length >= 4 ? "max-h-96 overflow-y-auto" : ""}`}>
+
+              {/* Filter controls */}
+              <div className="flex gap-3 mb-4">
+                <select
+                  className={`px-4 py-2 border border-gray-300 rounded-md shadow-sm ${getBackgroundColor(salesOrdersFilterType)}`}
+                  value={salesOrdersFilterType}
+                  onChange={(e) => setSalesOrdersFilterType(e.target.value)}
+                >
+                  <option value="All">All Types</option>
+                  <option value="Walk-In">Walk-In</option>
+                  <option value="Contract">Contract</option>
+                </select>
+                <div className="relative flex-grow">
+                  <input
+                    type="text"
+                    placeholder="Search by SO ID, Customer, or Date"
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm w-full"
+                    value={salesOrdersSearchTerm}
+                    onChange={(e) => setSalesOrdersSearchTerm(e.target.value)}
+                  />
+                  <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Sales orders table */}
+              <div className="border rounded-md overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-50 sticky top-0">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-[130px]">Customer ID</th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Name</th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Address</th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Email</th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Contact Number</th>
-                      <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900" style={{ width: "150px" }}>Actions</th>
+                      <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">Order ID</th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Date</th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Customer</th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
+                      <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Total</th>
+                      <th scope="col" className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {customers.map((customer, index) => (
-                      <tr key={customer.id} className={`${customer.isEditing ? "bg-yellow-50" : ""}`}>
-                        <td className="px-3 py-4 text-sm text-gray-900">{customer.id}</td>
-                        <td className="px-3 py-4 text-sm">
-                          <input
-                            type="text"
-                            className="p-1 w-full border border-gray-300 rounded-md"
-                            value={customer.name}
-                            onChange={(e) => handleChangeCustomer(index, "name", e.target.value)}
-                            disabled={!customer.isEditing}
-                          />
-                        </td>
-                        <td className="px-3 py-4 text-sm">
-                          <select
-                            value={customer.type}
-                            onChange={(e) => handleChangeCustomer(index, "type", e.target.value)}
-                            disabled={!customer.isEditing}
-                            className={`border border-gray-300 rounded-md px-2 py-1 w-full ${getBackgroundColor(customer.type)}`}
-                          >
-                            {statusOptions.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="px-3 py-4 text-sm">
-                          <input
-                            type="text"
-                            className="p-1 w-full border border-gray-300 rounded-md"
-                            value={customer.address}
-                            onChange={(e) => handleChangeCustomer(index, "address", e.target.value)}
-                            disabled={!customer.isEditing}
-                          />
-                        </td>
-                        <td className="px-3 py-4 text-sm">
-                          <input
-                            type="email"
-                            className="p-1 w-full border border-gray-300 rounded-md"
-                            value={customer.email}
-                            onChange={(e) => handleChangeCustomer(index, "email", e.target.value)}
-                            disabled={!customer.isEditing}
-                          />
-                        </td>
-                        <td className="px-3 py-4 text-sm">
-                          <input
-                            type="text"
-                            className="p-1 w-full border border-gray-300 rounded-md"
-                            value={customer.contact}
-                            onChange={(e) => handleChangeCustomer(index, "contact", e.target.value)}
-                            disabled={!customer.isEditing}
-                          />
-                        </td>
-                        <td className="px-3 py-4 text-sm flex gap-2 justify-center">
-                          <button
-                            className={`px-3 py-1 rounded-md text-white ${
-                              customer.isEditing ? "bg-green-500 hover:bg-green-600" : "bg-indigo-500 hover:bg-indigo-600"
-                            }`}
-                            onClick={() => handleEditCustomer(index)}
-                          >
-                            {customer.isEditing ? "Save" : "Edit"}
-                          </button>
-                          <button
-                            className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded-md text-white"
-                            onClick={() => handleDeleteCustomer(customer.id)}
-                          >
-                            Delete
-                          </button>
+                    {filteredSalesOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="px-3 py-4 text-sm text-gray-500 text-center">
+                          No sales orders found
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredSalesOrders.map((order) => (
+                        <tr key={order.id} className="hover:bg-gray-50">
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-indigo-600">{order.id}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{order.dateSold}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900">{order.customer}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm">
+                            <span className={`text-xs font-medium rounded-full px-3 py-1 inline-block ${getBackgroundColor(order.type)}`}>
+                              {order.type}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-900 text-right">₱{formatPrice(order.total)}</td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-center">
+                            <button
+                              onClick={() => handleSelectSalesOrder(order)}
+                              className="bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700"
+                            >
+                              Select
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
 
-              {/* Add Customer Form */}
-              <div className="mt-4 border-t pt-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">New Customer</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <input 
-                    type="text" 
-                    placeholder="Customer Name" 
-                    value={newCustomer.name} 
-                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                    className="border p-2 rounded-md shadow-sm"
-                  />
-                  <select 
-                    value={newCustomer.type} 
-                    onChange={(e) => setNewCustomer({ ...newCustomer, type: e.target.value })}
-                    className={`border p-2 rounded-md shadow-sm ${getBackgroundColor(newCustomer.type)}`}
-                  >
-                    {statusOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <input 
-                    type="text" 
-                    placeholder="Customer Address" 
-                    value={newCustomer.address} 
-                    onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
-                    className="border p-2 rounded-md shadow-sm"
-                  />
-                  <input 
-                    type="email" 
-                    placeholder="Customer Email" 
-                    value={newCustomer.email} 
-                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                    className="border p-2 rounded-md shadow-sm"
-                  />
-                  <input 
-                    type="text" 
-                    placeholder="Contact Number" 
-                    value={newCustomer.contact} 
-                    onChange={(e) => setNewCustomer({ ...newCustomer, contact: e.target.value })}
-                    className="border p-2 rounded-md shadow-sm"
-                  />
-                  <div className="flex gap-3">
-                    <button 
-                      className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 flex-1"
-                      onClick={handleAddCustomer}
-                    >
-                      Add Customer
-                    </button>
-                    <button 
-                      className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 flex-1"
-                      onClick={() => setShowCustomerModal(false)}
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
+              <div className="flex justify-end mt-4">
+                <button
+                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 font-medium"
+                  onClick={() => setShowSalesOrdersModal(false)}
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
@@ -695,36 +889,54 @@ const ReturnWarrantyPage = () => {
   
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Return Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Return Order ID</label>
-                    <input 
-                      className="w-full border border-gray-300 p-2 rounded-md shadow-sm bg-gray-100" 
-                      placeholder="Auto-generated" 
-                      disabled 
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-                    <div className="flex">
-                      <select 
-                        className="w-full border border-gray-300 p-2 rounded-l-md shadow-sm"
-                        value={newReturnOrder.customer}
-                        onChange={(e) => handleReturnOrderChange("customer", e.target.value)}
-                      >
-                        <option value="">Select a customer</option>
-                        {customers.map(customer => (
-                          <option key={customer.id} value={customer.id}>{customer.name}</option>
-                        ))}
-                      </select>
-                      <button
-                        className="bg-gray-200 text-gray-700 px-3 py-2 rounded-r-md hover:bg-gray-300"
-                        onClick={() => setShowCustomerModal(true)}
-                      >
-                        <Plus className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </div>
+                
+                {/* Sales Order Selection - Option 1: Integrated Dropdown */}
+<div className="mb-4">
+  <label className="block text-sm font-medium text-gray-700 mb-1">Sales Order Reference</label>
+  <select 
+    className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+    value={newReturnOrder.salesOrderId || ""}
+    onChange={(e) => {
+      const selectedOrder = salesOrders.find(order => order.id === e.target.value);
+      if (selectedOrder) {
+        handleSelectSalesOrder(selectedOrder);
+      }
+    }}
+  >
+    <option value="">Select a Sales Order</option>
+    {salesOrders.map(order => (
+      <option key={order.id} value={order.id}>
+        {order.id} - {order.customer} - ₱{formatPrice(order.total)}
+      </option>
+    ))}
+  </select>
+  <p className="text-sm text-gray-500 mt-1">
+    Select a sales order to auto-fill product and customer information
+  </p>
+</div>
+
+<div className="grid grid-cols-2 gap-4">
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">Return Order ID</label>
+    <input 
+      className="w-full border border-gray-300 p-2 rounded-md shadow-sm bg-gray-100" 
+      placeholder="Auto-generated" 
+      disabled 
+    />
+  </div>
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+    <select 
+      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+      value={newReturnOrder.customer}
+      onChange={(e) => handleReturnOrderChange("customer", e.target.value)}
+    >
+      <option value="">Select a customer</option>
+      {customers.map(customer => (
+        <option key={customer.id} value={customer.id}>{customer.name}</option>
+      ))}
+    </select>
+  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Return Date</label>
                     <input 
@@ -763,6 +975,8 @@ const ReturnWarrantyPage = () => {
   
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Product Information</h3>
+                
+                {/* Product form */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
@@ -820,12 +1034,14 @@ const ReturnWarrantyPage = () => {
                     <button 
                       className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
                       onClick={handleAddProduct}
+                      disabled={!newProduct.model || !newProduct.serial}
                     >
                       Add Product
                     </button>
                   </div>
                 </div>
   
+                {/* Products table */}
                 <div className="border border-gray-200 rounded-md overflow-hidden mb-4">
                   <div className="max-h-[200px] overflow-y-auto">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -873,6 +1089,7 @@ const ReturnWarrantyPage = () => {
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Return Process</h3>
                 <div className="border border-gray-200 rounded-lg p-4">
+                  {/* Process type selection */}
                   <div className="mb-4">
                     <div className="flex items-center mb-2">
                       <input 
@@ -969,6 +1186,7 @@ const ReturnWarrantyPage = () => {
                 </div>
               </div>
   
+              {/* Action buttons */}
               <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
                 <button 
                   className="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 font-medium"
@@ -979,6 +1197,7 @@ const ReturnWarrantyPage = () => {
                 <button 
                   className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 font-medium"
                   onClick={handleCreateReturnOrder}
+                  disabled={!newReturnOrder.customer || newReturnOrder.products.length === 0}
                 >
                   Process Return
                 </button>
