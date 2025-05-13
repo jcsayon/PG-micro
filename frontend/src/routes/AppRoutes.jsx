@@ -10,18 +10,18 @@ import DamagedProductsPage from "../pages/DamageProductsPage";
 
 // Purchase Orders
 import PurchaseOrderPage from "../pages/PurchaseOrders/PurchaseOrderPage";
-import CreatePurchaseOrder from "../pages/PurchaseOrders/CreatePurchaseOrder";
-import ViewPurchaseOrder from "../pages/PurchaseOrders/ViewPurchaseOrder";
+import ProductList from "../pages/PurchaseOrders/ProductList";
+import SupplierPO from "../pages/PurchaseOrders/SupplierPO";
 
 // Sales
 import SalesOrderPage from "../pages/Sales/SalesOrderPage";
 import IncomeList from "../pages/Sales/IncomeList"; 
-import CustomerList from "../pages/Sales/CustomerList";
+import CustomerSales from "../pages/Sales/CustomerSales";
 
 // Returns
 import ReturnWarrantyPage from "../pages/Returns/ReturnWarrantyPage";
-import WarrantiesPage from "../pages/Returns/WarrantiesPage";
-import CustomerListPage from "../pages/Returns/CustomerListPage";
+import WarrantyList from "../pages/Returns/WarrantiesList";
+import CustomerReturns from "../pages/Returns/CustomerReturns";
 
 // Reports Module
 import ReportModule from "../pages/ReportModule/ReportModule";
@@ -125,8 +125,7 @@ const AppRoutes = () => {
         }
       />
 
-      <Route
-        path="/inventory"
+      <Route path="/inventory"
         element={
           <ProtectedRoute
             element={<InventoryPage onInventoryUpdate={handleInventoryUpdate} />}
@@ -156,20 +155,20 @@ const AppRoutes = () => {
       />
 
       <Route
-        path="/purchase-orders/create"
+        path="/product-list"
         element={
           <ProtectedRoute
-            element={<CreatePurchaseOrder />}
+            element={<ProductList />}
             allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]}
           />
         }
       />
 
       <Route
-        path="/purchase-orders/view"
+        path="/supplier-po"
         element={
           <ProtectedRoute
-            element={<ViewPurchaseOrder />}
+            element={<SupplierPO />}
             allowedRoles={[ROLES.ADMIN, ROLES.PURCHASE_ORDER]}
           />
         }
@@ -210,12 +209,12 @@ const AppRoutes = () => {
 
       {/* Keep Customer List wrapped with DashboardLayout */}
       <Route
-        path="/customer-list"
+        path="/customer-sales"
         element={
           <ProtectedRoute
             element={
               <DashboardLayout>
-                <CustomerList onBack={() => window.history.back()} />
+                <CustomerSales onBack={() => window.history.back()} />
               </DashboardLayout>
             }
             allowedRoles={[ROLES.ADMIN, ROLES.SALES]}
@@ -238,7 +237,7 @@ const AppRoutes = () => {
         path="/warranties"
         element={
           <ProtectedRoute
-            element={<WarrantiesPage />}
+            element={<WarrantyList />}
             allowedRoles={[ROLES.ADMIN, ROLES.RETURNS, ROLES.WARRANTY_LIST]}
           />
         }
@@ -246,10 +245,10 @@ const AppRoutes = () => {
 
       {/* New Route for Customer List Page */}
       <Route
-        path="/return-customers"
+        path="/customer-returns"
         element={
           <ProtectedRoute
-            element={<CustomerListPage />}
+            element={<CustomerReturns />}
             allowedRoles={[ROLES.ADMIN, ROLES.RETURNS]}
           />
         }

@@ -36,8 +36,8 @@ const helpers = {
       "Shipped": "bg-blue-100 text-blue-800",
       "Delivered": "bg-emerald-100 text-emerald-800",
       "In Progress": "bg-amber-100 text-amber-800",
-      "true": "bg-emerald-100 text-emerald-800",
-      "false": "bg-red-100 text-red-800"
+      "true": "bg-emerald-100 text-emerald-800", // For boolean damage status in modals
+      "false": "bg-red-100 text-red-800" // For boolean damage status in modals
     };
     return badges[status] || "bg-gray-100 text-gray-800";
   }
@@ -111,8 +111,9 @@ const InputField = ({ label, value, onChange, type = "text", prefix, disabled = 
   </div>
 );
 
+
 // -----------------------
-// ViewPurchaseOrderModal Component - Optimized
+// ViewPurchaseOrderModal Component
 // -----------------------
 function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
   const [poStatus, setPoStatus] = useState(order.status);
@@ -336,7 +337,7 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
 }
 
 // -----------------------
-// Main PurchaseOrderPage Component - Optimized
+// Main PurchaseOrderPage Component
 // -----------------------
 const PurchaseOrderPage = () => {
   const navigate = useNavigate();
@@ -345,8 +346,6 @@ const PurchaseOrderPage = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   
   // Modal states
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [showCreatePOModal, setShowCreatePOModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   
@@ -361,36 +360,27 @@ const PurchaseOrderPage = () => {
   const [poProductSearch, setPoProductSearch] = useState("");
   const [poSelectedProduct, setPoSelectedProduct] = useState(null);
   
-  // Product and supplier data
+  // Product and supplier data for "Create PO Modal" dropdowns
   const [products, setProducts] = useState([
     {
       id: 1, brand: "Acer", model: "Predator", description: "Gaming Laptop",
-      purchasePrice: 55000, reorderPoint: 10, warrantyDuration: "1 Year", damage: false, isEditing: false,
+      purchasePrice: 55000, reorderPoint: 10, warrantyDuration: "1 Year", damage: false,
     },
     {
       id: 2, brand: "Corsair", model: "K68", description: "Mechanical Keyboard",
-      purchasePrice: 3500, reorderPoint: 20, warrantyDuration: "6 Months", damage: false, isEditing: false,
+      purchasePrice: 3500, reorderPoint: 20, warrantyDuration: "6 Months", damage: false,
     },
   ]);
   
   const [suppliers, setSuppliers] = useState([
-    { id: 1, name: "Hardware World", address: "123 Main St, Davao City", email: "info@hardwareworld.com", contact: "0912-345-6789", isEditing: false },
-    { id: 2, name: "CD-R King", address: "456 IT Park, Cebu City", email: "support@cdrking.com", contact: "0901-234-5678", isEditing: false },
-    { id: 3, name: "MGM Marketing Inc.", address: "789 Market St, Manila", email: "contact@mgm.com", contact: "0934-567-8910", isEditing: false },
+    { id: 1, name: "Hardware World", address: "123 Main St, Davao City", email: "info@hardwareworld.com", contact: "0912-345-6789" },
+    { id: 2, name: "CD-R King", address: "456 IT Park, Cebu City", email: "support@cdrking.com", contact: "0901-234-5678" },
+    { id: 3, name: "MGM Marketing Inc.", address: "789 Market St, Manila", email: "contact@mgm.com", contact: "0934-567-8910" },
   ]);
   
-  const [newProduct, setNewProduct] = useState({
-    description: "", purchasePrice: 0, reorderPoint: 0, warrantyDuration: "",
-    model: "", brand: "", damage: false,
-  });
-  
-  const [newSupplier, setNewSupplier] = useState({
-    name: "", address: "", email: "", contact: "",
-  });
-
-  // Initialize sample data
+  // Initialize sample PO data
   useEffect(() => {
-    const suppliers = [
+    const initialSuppliersData = [ 
       { name: "Hardware World" },
       { name: "CD-R King" },
       { name: "MGM Marketing Inc." },
@@ -401,7 +391,7 @@ const PurchaseOrderPage = () => {
     setPurchaseOrders([...Array(5)].map((_, i) => ({
       id: i + 1,
       poNumber: `#PO${(i + 1).toString().padStart(2, '0')}`,
-      supplier: suppliers[i % suppliers.length].name,
+      supplier: initialSuppliersData[i % initialSuppliersData.length].name,
       date: `2023-01-${(i + 1).toString().padStart(2, '0')}`,
       total: `₱${(10000 + i * 1000).toLocaleString()}.00`,
       status: i % 4 === 0 ? "Order Placed" : i % 4 === 1 ? "Shipped" : i % 4 === 2 ? "Delivered" : "In Progress",
@@ -445,55 +435,6 @@ const PurchaseOrderPage = () => {
     setPurchaseOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
   };
 
-  const handleEditProduct = (index) => {
-    const updated = [...products];
-    updated[index].isEditing = !updated[index].isEditing;
-    setProducts(updated);
-  };
-  
-  const handleChangeProduct = (index, field, value) => {
-    setProducts(prev => {
-      const updated = [...prev];
-      updated[index][field] = value;
-      return updated;
-    });
-  };
-  
-  const handleDeleteProduct = (id) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
-  };
-
-  const handleAddProduct = () => {
-    setProducts(prev => [...prev, { id: prev.length + 1, ...newProduct, isEditing: false }]);
-    setNewProduct({
-      description: "", purchasePrice: 0, reorderPoint: 0, warrantyDuration: "",
-      model: "", brand: "", damage: false,
-    });
-  };
-
-  const handleEditSupplier = (index) => {
-    const updated = [...suppliers];
-    updated[index].isEditing = !updated[index].isEditing;
-    setSuppliers(updated);
-  };
-  
-  const handleChangeSupplier = (index, field, value) => {
-    setSuppliers(prev => {
-      const updated = [...prev];
-      updated[index][field] = value;
-      return updated;
-    });
-  };
-  
-  const handleDeleteSupplier = (id) => {
-    setSuppliers(prev => prev.filter(s => s.id !== id));
-  };
-
-  const handleAddSupplier = () => {
-    setSuppliers(prev => [...prev, { id: prev.length + 1, ...newSupplier, isEditing: false }]);
-    setNewSupplier({ name: "", address: "", email: "", contact: "" });
-  };
-
   const handlePoSupplierSearchChange = (e) => {
     setPoSupplierSearch(e.target.value);
     const found = suppliers.find(s => s.name.toLowerCase() === e.target.value.toLowerCase());
@@ -511,7 +452,7 @@ const PurchaseOrderPage = () => {
       const newItem = {
         ...poSelectedProduct,
         quantity: 1,
-        serials: [{ id: 1, damage: false, isEditing: false }],
+        serials: [{ id: 1, damage: false, isEditing: false }], 
       };
       setOrderItems(prev => [...prev, newItem]);
       setPoProductSearch("");
@@ -526,13 +467,11 @@ const PurchaseOrderPage = () => {
       const qty = parseInt(newQty) || 1;
       item.quantity = qty;
       
-      // Adjust serials based on quantity
-      while (item.serials.length < qty) {
-        item.serials.push({ id: item.serials.length + 1, damage: false, isEditing: false });
-      }
-      while (item.serials.length > qty) {
-        item.serials.pop();
-      }
+      item.serials = Array.from({ length: qty }, (_, i) => ({
+        id: i + 1, 
+        damage: false, 
+        isEditing: false 
+      }));
       
       return updated;
     });
@@ -555,7 +494,10 @@ const PurchaseOrderPage = () => {
       date: helpers.formatDateToYMD(currentTime),
       time: currentTime.toLocaleTimeString(),
       status: poStatus,
-      items: orderItems,
+      items: orderItems.map(item => ({ 
+        ...item,
+        serials: item.serials.map((serial, index) => ({ ...serial, id: index + 1})) 
+      })),
       total: `₱${orderTotal.toFixed(2)}`,
       employee: sessionStorage.getItem("userEmail") || "Unknown",
     };
@@ -563,7 +505,6 @@ const PurchaseOrderPage = () => {
     setPurchaseOrders(prev => [...prev, newPO]);
     setShowCreatePOModal(false);
     
-    // Reset form
     setPoSupplierSearch("");
     setPoSelectedSupplier(null);
     setPoProductSearch("");
@@ -582,24 +523,16 @@ const PurchaseOrderPage = () => {
               <h1 className="text-2xl font-bold text-gray-900">Purchase Orders</h1>
               
               <div className="flex flex-wrap gap-2">
-                {[
-                  { label: "Products", icon: "inventory", onClick: () => setShowProductModal(true), color: "indigo" },
-                  { label: "Suppliers", icon: "users", onClick: () => setShowSupplierModal(true), color: "indigo" },
-                  { label: "Create PO", icon: "plus", onClick: () => setShowCreatePOModal(true), color: "green" }
-                ].map((btn, i) => (
-                  <button
-                    key={i}
-                    className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-${btn.color}-600 hover:bg-${btn.color}-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${btn.color}-500`}
-                    onClick={btn.onClick}
+                {/* Navigation buttons removed as per user request */}
+                <button
+                    onClick={() => setShowCreatePOModal(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      {btn.icon === "plus" && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />}
-                      {btn.icon === "inventory" && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />}
-                      {btn.icon === "users" && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />}
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    {btn.label}
+                    Create PO
                   </button>
-                ))}
               </div>
             </div>
             
@@ -701,244 +634,6 @@ const PurchaseOrderPage = () => {
           </div>
         </div>
       </div>
-
-      {/* MODALS */}
-      {/* Products Modal */}
-      <Modal 
-        isOpen={showProductModal} 
-        onClose={() => setShowProductModal(false)} 
-        title="Products"
-      >
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {["ID", "Brand", "Model", "Description", "Purchase Price", "Reorder Point", "Warranty", "Damage", "Actions"].map((header, i) => (
-                  <th key={i} scope="col" className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${i === 8 ? "text-right" : ""}`}>
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {products.map((product, index) => (
-                <tr key={product.id} className={product.isEditing ? "bg-indigo-50" : "hover:bg-gray-50"}>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {product.id}
-                  </td>
-                  {["brand", "model", "description"].map((field) => (
-                    <td key={field} className="px-4 py-3 whitespace-nowrap text-sm">
-                      <input
-                        type="text"
-                        className={`w-full px-2 py-1 ${product.isEditing ? "border rounded" : "border-0 bg-transparent"}`}
-                        value={product[field]}
-                        disabled={!product.isEditing}
-                        onChange={(e) => handleChangeProduct(index, field, e.target.value)}
-                      />
-                    </td>
-                  ))}
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    <div className="flex items-center">
-                      <span className="mr-1">₱</span>
-                      <input
-                        type="number"
-                        className={`w-full px-2 py-1 ${product.isEditing ? "border rounded" : "border-0 bg-transparent"}`}
-                        value={product.purchasePrice}
-                        disabled={!product.isEditing}
-                        onChange={(e) => handleChangeProduct(index, "purchasePrice", e.target.value)}
-                      />
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    <input
-                      type="number"
-                      className={`w-full px-2 py-1 ${product.isEditing ? "border rounded" : "border-0 bg-transparent"}`}
-                      value={product.reorderPoint}
-                      disabled={!product.isEditing}
-                      onChange={(e) => handleChangeProduct(index, "reorderPoint", e.target.value)}
-                    />
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    <input
-                      type="text"
-                      className={`w-full px-2 py-1 ${product.isEditing ? "border rounded" : "border-0 bg-transparent"}`}
-                      value={product.warrantyDuration}
-                      disabled={!product.isEditing}
-                      onChange={(e) => handleChangeProduct(index, "warrantyDuration", e.target.value)}
-                    />
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    <select
-                      className={`text-sm rounded-full px-3 py-1 font-medium ${product.isEditing ? "border" : ""} ${helpers.statusBadge(product.damage ? "true" : "false")}`}
-                      value={product.damage ? "true" : "false"}
-                      disabled={!product.isEditing}
-                      onChange={(e) => handleChangeProduct(index, "damage", e.target.value === "true")}
-                    >
-                      <option value="true">Yes</option>
-                      <option value="false">No</option>
-                    </select>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        onClick={() => handleEditProduct(index)}
-                        className={`px-3 py-1 rounded-md text-sm font-medium ${
-                          product.isEditing
-                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                            : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
-                        }`}
-                      >
-                        {product.isEditing ? "Save" : "Edit"}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProduct(product.id)}
-                        className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-md text-sm font-medium"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Add New Product Form */}
-        <div className="mt-6 bg-gray-50 p-4 rounded-lg border">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Product</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[
-              { label: "Brand", field: "brand", type: "text" },
-              { label: "Model", field: "model", type: "text" },
-              { label: "Description", field: "description", type: "text" },
-              { label: "Purchase Price", field: "purchasePrice", type: "number", prefix: "₱" },
-              { label: "Reorder Point", field: "reorderPoint", type: "number" },
-              { label: "Warranty Duration", field: "warrantyDuration", type: "text" },
-            ].map((input, i) => (
-              <div key={i}>
-                <InputField
-                  label={input.label}
-                  type={input.type}
-                  value={newProduct[input.field]}
-                  prefix={input.prefix}
-                  onChange={(e) => setNewProduct({ ...newProduct, [input.field]: e.target.value })}
-                />
-              </div>
-            ))}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Damage</label>
-              <select
-                value={newProduct.damage ? "true" : "false"}
-                onChange={(e) => setNewProduct({ ...newProduct, damage: e.target.value === "true" })}
-                className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              >
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={handleAddProduct}
-                className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
-              >
-                Add Product
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Suppliers Modal */}
-      <Modal 
-        isOpen={showSupplierModal} 
-        onClose={() => setShowSupplierModal(false)} 
-        title="Suppliers"
-      >
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                {["ID", "Name", "Address", "Email", "Contact", "Actions"].map((header, i) => (
-                  <th key={i} scope="col" className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${i === 5 ? "text-right" : ""}`}>
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {suppliers.map((supplier, index) => (
-                <tr key={supplier.id} className={supplier.isEditing ? "bg-indigo-50" : "hover:bg-gray-50"}>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {supplier.id}
-                  </td>
-                  {["name", "address", "email", "contact"].map((field) => (
-                    <td key={field} className="px-4 py-3 whitespace-nowrap text-sm">
-                      <input
-                        type={field === "email" ? "email" : "text"}
-                        className={`w-full px-2 py-1 ${supplier.isEditing ? "border rounded" : "border-0 bg-transparent"}`}
-                        value={supplier[field]}
-                        disabled={!supplier.isEditing}
-                        onChange={(e) => handleChangeSupplier(index, field, e.target.value)}
-                      />
-                    </td>
-                  ))}
-                  <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        onClick={() => handleEditSupplier(index)}
-                        className={`px-3 py-1 rounded-md text-sm font-medium ${
-                          supplier.isEditing
-                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                            : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
-                        }`}
-                      >
-                        {supplier.isEditing ? "Save" : "Edit"}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSupplier(supplier.id)}
-                        className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-md text-sm font-medium"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Add New Supplier Form */}
-        <div className="mt-6 bg-gray-50 p-4 rounded-lg border">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Supplier</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[
-              { label: "Name", field: "name", type: "text" },
-              { label: "Address", field: "address", type: "text" },
-              { label: "Email", field: "email", type: "email" },
-              { label: "Contact", field: "contact", type: "text" }
-            ].map((input, i) => (
-              <div key={i}>
-                <InputField
-                  label={input.label}
-                  type={input.type}
-                  value={newSupplier[input.field]}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, [input.field]: e.target.value })}
-                />
-              </div>
-            ))}
-            <div className="flex items-end">
-              <button
-                onClick={handleAddSupplier}
-                className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
-              >
-                Add Supplier
-              </button>
-            </div>
-          </div>
-        </div>
-      </Modal>
 
       {/* Create PO Modal */}
       <Modal 
@@ -1087,7 +782,7 @@ const PurchaseOrderPage = () => {
                           onClick={() => {
                             setSerialsCollapsed(prev => ({
                               ...prev,
-                              [item.id]: !prev[item.id]
+                              [item.id]: !prev[item.id] 
                             }));
                           }}
                         >

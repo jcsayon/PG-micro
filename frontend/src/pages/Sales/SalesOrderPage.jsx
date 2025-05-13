@@ -4,7 +4,7 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import IncomeList from "../../pages/Sales/IncomeList";
-import CustomerList from "../../pages/Sales/CustomerList";
+import CustomerSales from "./CustomerSales";
 import { X, RefreshCw, Plus } from "lucide-react";
 
 // Define a constant for warranty storage
@@ -766,8 +766,8 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
   };
   
   // Navigate to Customer List page
-  const navigateToCustomerList = () => {
-    navigate("/customer-list");
+  const navigateToCustomerSales = () => {
+    navigate("/customer-sales");
   };
   
   //---------------------------------------------
@@ -967,7 +967,7 @@ return (
                   ))}
                 </select>
                 <button
-                  onClick={navigateToCustomerList}
+                  onClick={navigateToCustomerSales}
                   className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                   title="Manage Customers"
                 >

@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import {
-  Home,
-  User,
-  Settings,
-  Package,
-  Users,
-  DollarSign,
-  ClipboardList,
-  RotateCcw,
-  BarChart3,
-  Wallet,
-  UserCircle,
-  FileText,
-  LogOut
+import {Home, User, Settings, Package, Users, DollarSign, ClipboardList, RotateCcw, BarChart3, Wallet, UserCircle, FileText, LogOut, Box
 } from "lucide-react";
 
 const Sidebar_Primary = () => {
@@ -87,154 +74,32 @@ const Sidebar_Primary = () => {
 
   // All menu items with Lucide icons
   const allMenuItems = [
-    {
-      name: "Home",
-      path: "/dashboard",
-      icon: Home,
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Account Info",
-      path: "/account-info",
-      icon: User,
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Settings",
-      path: "/settings",
-      icon: Settings,
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Inventory",
-      path: "/inventory",
-      icon: Package,
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "User Management",
-      path: "/user-management",
-      icon: Users,
-      adminOnly: true,
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Sales",
-      path: "/sales",
-      icon: DollarSign,
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Purchase Orders",
-      path: "/purchase-orders",
-      icon: ClipboardList,
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Returns",
-      path: "/return-warranty",
-      icon: RotateCcw,
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Reports",
-      path: "/reports",
-      icon: BarChart3,
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Income List",
-      path: "/income-list",
-      icon: Wallet,
-      isSubItem: true,
-      parentName: "Sales",
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Customer List",
-      path: "/customer-list",
-      icon: UserCircle,
-      isSubItem: true,
-      parentName: "Sales",
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Warranty List",
-      path: "/warranties",
-      icon: FileText,
-      isSubItem: true,
-      parentName: "Returns",
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    },
-    {
-      name: "Return Customers",
-      path: "/return-customers",
-      icon: UserCircle,
-      isSubItem: true,
-      parentName: "Returns",
-      color: {
-        default: "text-purple-100",
-        hover: "hover:bg-purple-600",
-        active: "bg-purple-500 text-white",
-      },
-    }
+    { name: "Home", path: "/dashboard", icon: Home, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Account Info", path: "/account-info", icon: User, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Settings", path: "/settings", icon: Settings, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Inventory", path: "/inventory", icon: Package, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "User Management", path: "/user-management", icon: Users, adminOnly: true, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Sales", path: "/sales", icon: DollarSign, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Purchase Orders", path: "/purchase-orders", icon: ClipboardList, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+
+    { name: "Product List", path: "/product-list", icon: Box, isSubItem: true, parentName: "Purchase Orders", color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Supplier PO", path: "/supplier-po", icon: UserCircle, isSubItem: true, parentName: "Purchase Orders", color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+
+    { name: "Returns", path: "/return-warranty", icon: RotateCcw, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Reports", path: "/reports", icon: BarChart3, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Income List", path: "/income-list", icon: Wallet, isSubItem: true, parentName: "Sales", color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Customer Sales", path: "/customer-sales", icon: UserCircle, isSubItem: true, parentName: "Sales", color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Warranty List", path: "/warranties", icon: FileText, isSubItem: true, parentName: "Returns", color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    { name: "Customer Returns", path: "/customer-returns", icon: UserCircle, isSubItem: true, parentName: "Returns", color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } }
   ];
 
   // Allowed items by route group
   const groupAPaths = ["/dashboard", "/account-info", "/settings", "/user-management"];
-  const groupBPaths = ["/purchase-orders", "/sales", "/return-warranty", "/reports", "/income-list", "/customer-list", "/warranties", "/return-customers"];
+  const groupBPaths = ["/purchase-orders", "/sales", "/return-warranty", "/reports", "/income-list", "/customer-sales", "/warranties", "/customer-returns", "/product-list", "/supplier-po"];
   const groupCPaths = ["/inventory"];
 
   const groupAAllowed = ["Home", "Account Info", "Settings", "Inventory", "User Management"];
-  const groupBAllowed = ["Home", "Purchase Orders", "Sales", "Returns", "Inventory", "Reports", "Income List", "Customer List", "Warranty List", "Return Customers"];
+  const groupBAllowed = ["Home", "Purchase Orders", "Sales", "Returns", "Inventory", "Reports", "Income List", "Customer Sales", "Warranty List", "Customer Returns", "Product List", "Supplier PO"];
   const groupCAllowed = groupBAllowed;
 
   // Filter by group
@@ -265,7 +130,7 @@ const Sidebar_Primary = () => {
 
   return (
     <div className="h-screen w-64 bg-purple-700 text-white fixed top-0 left-0 flex flex-col">
-      <div className="p-4 text-center font-bold text-2xl bg-purple-800">
+      <div className="p-2 text-center font-bold text-2xl bg-purple-800">
         PG Micro World
       </div>
       
@@ -290,7 +155,7 @@ const Sidebar_Primary = () => {
         </div>
       </div>
 
-      <nav className="flex-1 mt-2">
+      <nav className="flex-1">
         {organizedMenuItems.mainItems.map((item, index) => {
           const isActive = currentPath === item.path;
           const hasSubItems = organizedMenuItems.subItems[item.name]?.length > 0;
@@ -304,7 +169,7 @@ const Sidebar_Primary = () => {
             <div key={index}>
               <NavLink
                 to={item.path}
-                className={`flex items-center gap-3 px-5 py-3 text-lg transition-all ${baseClass}`}
+                className={`flex items-center gap-3 px-5 py-1 text-lg transition-all ${baseClass}`}
               >
                 <Icon className="w-5 h-5" />
                 {item.name}
@@ -343,7 +208,7 @@ const Sidebar_Primary = () => {
       <div className="mt-auto">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-5 py-3 text-lg w-full text-left hover:bg-purple-600 transition-all text-purple-100"
+          className="flex items-center gap-3 px-5 py-1 text-lg w-full text-left hover:bg-purple-600 transition-all text-purple-100"
         >
           <LogOut className="w-5 h-5" />
           Logout
