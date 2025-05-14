@@ -876,331 +876,325 @@ const ReturnWarrantyPage = () => {
         {/* CREATE RO MODAL */}
         {showCreateROModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg p-6 w-[900px] max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="bg-white rounded-lg p-6 w-[900px] max-h-[90vh] shadow-xl flex flex-col">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Create Return Order</h2>
                 <button
                   onClick={() => setShowCreateROModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-white hover:text-black"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-6 w-6 bg-red-500 rounded" />
                 </button>
               </div>
-  
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Return Information</h3>
-                
-                {/* Sales Order Selection - Option 1: Integrated Dropdown */}
-<div className="mb-4">
-  <label className="block text-sm font-medium text-gray-700 mb-1">Sales Order Reference</label>
-  <select 
-    className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-    value={newReturnOrder.salesOrderId || ""}
-    onChange={(e) => {
-      const selectedOrder = salesOrders.find(order => order.id === e.target.value);
-      if (selectedOrder) {
-        handleSelectSalesOrder(selectedOrder);
-      }
-    }}
-  >
-    <option value="">Select a Sales Order</option>
-    {salesOrders.map(order => (
-      <option key={order.id} value={order.id}>
-        {order.id} - {order.customer} - ₱{formatPrice(order.total)}
-      </option>
-    ))}
-  </select>
-  <p className="text-sm text-gray-500 mt-1">
-    Select a sales order to auto-fill product and customer information
-  </p>
-</div>
-
-<div className="grid grid-cols-2 gap-4">
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">Return Order ID</label>
-    <input 
-      className="w-full border border-gray-300 p-2 rounded-md shadow-sm bg-gray-100" 
-      placeholder="Auto-generated" 
-      disabled 
-    />
-  </div>
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
-    <select 
-      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-      value={newReturnOrder.customer}
-      onChange={(e) => handleReturnOrderChange("customer", e.target.value)}
-    >
-      <option value="">Select a customer</option>
-      {customers.map(customer => (
-        <option key={customer.id} value={customer.id}>{customer.name}</option>
-      ))}
-    </select>
-  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Return Date</label>
-                    <input 
-                      type="date" 
-                      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                      value={newReturnOrder.date}
-                      onChange={(e) => handleReturnOrderChange("date", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <div className="overflow-auto flex-1">
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Return Information</h3>
+                  
+                  {/* Sales Order Selection - Option 1: Integrated Dropdown */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sales Order Reference</label>
                     <select 
-                      className={`w-full border border-gray-300 p-2 rounded-md shadow-sm ${getBackgroundColor(newReturnOrder.status)}`}
-                      value={newReturnOrder.status}
-                      onChange={(e) => handleReturnOrderChange("status", e.target.value)}
+                      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                      value={newReturnOrder.salesOrderId || ""}
+                      onChange={(e) => {
+                        const selectedOrder = salesOrders.find(order => order.id === e.target.value);
+                        if (selectedOrder) {
+                          handleSelectSalesOrder(selectedOrder);
+                        }
+                      }}
                     >
-                      {statusOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
+                      <option value="">Select a Sales Order</option>
+                      {salesOrders.map(order => (
+                        <option key={order.id} value={order.id}>
+                          {order.id} - {order.customer} - ₱{formatPrice(order.total)}
                         </option>
                       ))}
                     </select>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Select a sales order to auto-fill product and customer information
+                    </p>
                   </div>
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Return</label>
-                    <input 
-                      type="text" 
-                      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                      placeholder="Enter general reason for return"
-                      value={newReturnOrder.reason}
-                      onChange={(e) => handleReturnOrderChange("reason", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-  
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Product Information</h3>
-                
-                {/* Product form */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
-                    <input 
-                      type="text" 
-                      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                      placeholder="Enter model name"
-                      value={newProduct.model}
-                      onChange={(e) => setNewProduct({...newProduct, model: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <select 
-                      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                      value={newProduct.category}
-                      onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
-                    >
-                      {allCategories.map(category => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
-                    <input 
-                      type="text" 
-                      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                      placeholder="Enter serial number"
-                      value={newProduct.serial}
-                      onChange={(e) => setNewProduct({...newProduct, serial: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-                    <input 
-                      type="text" 
-                      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                      placeholder="Enter brand name"
-                      value={newProduct.brand}
-                      onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Issue Description</label>
-                    <textarea 
-                      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                      placeholder="Describe the specific issue with this product"
-                      rows={3}
-                      value={newProduct.reason}
-                      onChange={(e) => setNewProduct({...newProduct, reason: e.target.value})}
-                    ></textarea>
-                  </div>
-                  <div className="col-span-2">
-                    <button 
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-                      onClick={handleAddProduct}
-                      disabled={!newProduct.model || !newProduct.serial}
-                    >
-                      Add Product
-                    </button>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Return Order ID</label>
+                      <input 
+                        className="w-full border border-gray-300 p-2 rounded-md shadow-sm bg-gray-100" 
+                        placeholder="Auto-generated" 
+                        disabled 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+                      <select 
+                        className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                        value={newReturnOrder.customer}
+                        onChange={(e) => handleReturnOrderChange("customer", e.target.value)}
+                      >
+                        <option value="">Select a customer</option>
+                        {customers.map(customer => (
+                          <option key={customer.id} value={customer.id}>{customer.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Return Date</label>
+                      <input 
+                        type="date" 
+                        className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                        value={newReturnOrder.date}
+                        onChange={(e) => handleReturnOrderChange("date", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select 
+                        className={`w-full border border-gray-300 p-2 rounded-md shadow-sm ${getBackgroundColor(newReturnOrder.status)}`}
+                        value={newReturnOrder.status}
+                        onChange={(e) => handleReturnOrderChange("status", e.target.value)}
+                      >
+                        {statusOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Return</label>
+                      <input 
+                        type="text" 
+                        className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                        placeholder="Enter general reason for return"
+                        value={newReturnOrder.reason}
+                        onChange={(e) => handleReturnOrderChange("reason", e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
-  
-                {/* Products table */}
-                <div className="border border-gray-200 rounded-md overflow-hidden mb-4">
-                  <div className="max-h-[200px] overflow-y-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50 sticky top-0">
-                        <tr>
-                          <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Model</th>
-                          <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Brand</th>
-                          <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Category</th>
-                          <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Serial</th>
-                          <th className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 bg-white">
-                        {newReturnOrder.products.length === 0 ? (
+    
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Product Information</h3>
+                  
+                  {/* Product form */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                      <input 
+                        type="text" 
+                        className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                        placeholder="Enter model name"
+                        value={newProduct.model}
+                        onChange={(e) => setNewProduct({...newProduct, model: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                      <select 
+                        className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                        value={newProduct.category}
+                        onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                      >
+                        {allCategories.map(category => (
+                          <option key={category} value={category}>{category}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Serial Number</label>
+                      <input 
+                        type="text" 
+                        className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                        placeholder="Enter serial number"
+                        value={newProduct.serial}
+                        onChange={(e) => setNewProduct({...newProduct, serial: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                      <input 
+                        type="text" 
+                        className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                        placeholder="Enter brand name"
+                        value={newProduct.brand}
+                        onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Issue Description</label>
+                      <textarea 
+                        className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                        placeholder="Describe the specific issue with this product"
+                        rows={3}
+                        value={newProduct.reason}
+                        onChange={(e) => setNewProduct({...newProduct, reason: e.target.value})}
+                      ></textarea>
+                    </div>
+                    <div className="col-span-2">
+                      <button 
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                        onClick={handleAddProduct}
+                        disabled={!newProduct.model || !newProduct.serial}
+                      >
+                        Add Product
+                      </button>
+                    </div>
+                  </div>
+    
+                  {/* Products table */}
+                  <div className="border border-gray-200 rounded-md overflow-hidden mb-4">
+                    <div className="max-h-[200px] overflow-y-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50 sticky top-0">
                           <tr>
-                            <td colSpan="5" className="px-3 py-4 text-sm text-gray-500 text-center">
-                              No products added yet
-                            </td>
+                            <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Model</th>
+                            <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Brand</th>
+                            <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Category</th>
+                            <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Serial</th>
+                            <th className="px-3 py-3.5 text-center text-sm font-semibold text-gray-900">Action</th>
                           </tr>
-                        ) : (
-                          newReturnOrder.products.map(product => (
-                            <tr key={product.id}>
-                              <td className="px-3 py-4 text-sm text-gray-900">{product.model}</td>
-                              <td className="px-3 py-4 text-sm text-gray-500">{product.brand}</td>
-                              <td className="px-3 py-4 text-sm text-gray-500">{product.category}</td>
-                              <td className="px-3 py-4 text-sm text-gray-500">{product.serial}</td>
-                              <td className="px-3 py-4 text-sm text-center">
-                                <button 
-                                  className="text-red-600 hover:text-red-900"
-                                  onClick={() => handleRemoveProduct(product.id)}
-                                >
-                                  <Trash2 className="h-5 w-5 inline" />
-                                </button>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                          {newReturnOrder.products.length === 0 ? (
+                            <tr>
+                              <td colSpan="5" className="px-3 py-4 text-sm text-gray-500 text-center">
+                                No products added yet
                               </td>
                             </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-  
-              {/* Action Tabs for Replacement/Refund */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Return Process</h3>
-                <div className="border border-gray-200 rounded-lg p-4">
-                  {/* Process type selection */}
-                  <div className="mb-4">
-                    <div className="flex items-center mb-2">
-                      <input 
-                        type="radio" 
-                        id="process-replacement" 
-                        name="process-type" 
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
-                        checked={newReturnOrder.processType === "replacement"} 
-                        onChange={() => handleReturnOrderChange("processType", "replacement")}
-                      />
-                      <label htmlFor="process-replacement" className="ml-2 text-sm font-medium text-gray-700">
-                        Process as Replacement
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input 
-                        type="radio" 
-                        id="process-refund" 
-                        name="process-type" 
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
-                        checked={newReturnOrder.processType === "refund"} 
-                        onChange={() => handleReturnOrderChange("processType", "refund")}
-                      />
-                      <label htmlFor="process-refund" className="ml-2 text-sm font-medium text-gray-700">
-                        Process as Refund
-                      </label>
+                          ) : (
+                            newReturnOrder.products.map(product => (
+                              <tr key={product.id}>
+                                <td className="px-3 py-4 text-sm text-gray-900">{product.model}</td>
+                                <td className="px-3 py-4 text-sm text-gray-500">{product.brand}</td>
+                                <td className="px-3 py-4 text-sm text-gray-500">{product.category}</td>
+                                <td className="px-3 py-4 text-sm text-gray-500">{product.serial}</td>
+                                <td className="px-3 py-4 text-sm text-center">
+                                  <button 
+                                    className="text-red-600 hover:text-red-900"
+                                    onClick={() => handleRemoveProduct(product.id)}
+                                  >
+                                    <Trash2 className="h-5 w-5 inline" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
-
-                  {/* Conditional fields based on process type */}
-                  {newReturnOrder.processType === "replacement" && (
-                    <div className="p-3 bg-gray-50 rounded-md">
-                      <div className="mb-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Replacement Status</label>
-                        <select 
-                          className={`w-full border border-gray-300 p-2 rounded-md shadow-sm ${
-                            newReturnOrder.replacementStatus === "Completed" ? "bg-green-100 text-green-800" : 
-                            newReturnOrder.replacementStatus === "Pending" ? "bg-amber-100 text-amber-800" : 
-                            "bg-blue-100 text-blue-800"
-                          }`}
-                          value={newReturnOrder.replacementStatus || "Pending"}
-                          onChange={(e) => handleReturnOrderChange("replacementStatus", e.target.value)}
-                        >
-                          {replacementStatusOptions.map(option => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">New Item</label>
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="checkbox" 
-                            className="h-4 w-4 text-indigo-600 rounded border-gray-300"
-                            checked={newReturnOrder.isNewItem || false}
-                            onChange={(e) => handleReturnOrderChange("isNewItem", e.target.checked)}
-                          />
-                          <span className="text-sm text-gray-700">Yes</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {newReturnOrder.processType === "refund" && (
-                    <div className="p-3 bg-gray-50 rounded-md">
-                      <div className="mb-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Refund Amount</label>
-                        <div className="relative">
-                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₱</span>
-                          <input 
-                            type="number" 
-                            className="w-full border border-gray-300 p-2 pl-8 rounded-md shadow-sm"
-                            value={newReturnOrder.refundAmount || ""}
-                            onChange={(e) => handleReturnOrderChange("refundAmount", e.target.value)}
-                            placeholder="0.00"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Refund Method</label>
-                        <select 
-                          className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                          value={newReturnOrder.refundMethod || "Cash"}
-                          onChange={(e) => handleReturnOrderChange("refundMethod", e.target.value)}
-                        >
-                          <option value="Cash">Cash</option>
-                          <option value="Credit Card">Credit Card</option>
-                          <option value="Bank Transfer">Bank Transfer</option>
-                          <option value="Check">Check</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              </div>
-  
-              {/* Action buttons */}
-              <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
-                <button 
-                  className="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 font-medium"
-                  onClick={() => setShowCreateROModal(false)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 font-medium"
-                  onClick={handleCreateReturnOrder}
-                  disabled={!newReturnOrder.customer || newReturnOrder.products.length === 0}
-                >
-                  Process Return
-                </button>
+    
+                {/* Action Tabs for Replacement/Refund */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Return Process</h3>
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    {/* Process type selection */}
+                    <div className="mb-4">
+                      <div className="flex items-center mb-2">
+                        <input 
+                          type="radio" 
+                          id="process-replacement" 
+                          name="process-type" 
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                          checked={newReturnOrder.processType === "replacement"} 
+                          onChange={() => handleReturnOrderChange("processType", "replacement")}
+                        />
+                        <label htmlFor="process-replacement" className="ml-2 text-sm font-medium text-gray-700">
+                          Process as Replacement
+                        </label>
+                      </div>
+                      <div className="flex items-center">
+                        <input 
+                          type="radio" 
+                          id="process-refund" 
+                          name="process-type" 
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                          checked={newReturnOrder.processType === "refund"} 
+                          onChange={() => handleReturnOrderChange("processType", "refund")}
+                        />
+                        <label htmlFor="process-refund" className="ml-2 text-sm font-medium text-gray-700">
+                          Process as Refund
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Conditional fields based on process type */}
+                    {newReturnOrder.processType === "replacement" && (
+                      <div className="p-3 bg-gray-50 rounded-md">
+                        <div className="mb-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Replacement Status</label>
+                          <select 
+                            className={`w-full border border-gray-300 p-2 rounded-md shadow-sm ${
+                              newReturnOrder.replacementStatus === "Completed" ? "bg-green-100 text-green-800" : 
+                              newReturnOrder.replacementStatus === "Pending" ? "bg-amber-100 text-amber-800" : 
+                              "bg-blue-100 text-blue-800"
+                            }`}
+                            value={newReturnOrder.replacementStatus || "Pending"}
+                            onChange={(e) => handleReturnOrderChange("replacementStatus", e.target.value)}
+                          >
+                            {replacementStatusOptions.map(option => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">New Item</label>
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="checkbox" 
+                              className="h-4 w-4 text-indigo-600 rounded border-gray-300"
+                              checked={newReturnOrder.isNewItem || false}
+                              onChange={(e) => handleReturnOrderChange("isNewItem", e.target.checked)}
+                            />
+                            <span className="text-sm text-gray-700">Yes</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {newReturnOrder.processType === "refund" && (
+                      <div className="p-3 bg-gray-50 rounded-md">
+                        <div className="mb-3">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Refund Amount</label>
+                          <div className="relative">
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₱</span>
+                            <input 
+                              type="number" 
+                              className="w-full border border-gray-300 p-2 pl-8 rounded-md shadow-sm"
+                              value={newReturnOrder.refundAmount || ""}
+                              onChange={(e) => handleReturnOrderChange("refundAmount", e.target.value)}
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Refund Method</label>
+                          <select 
+                            className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
+                            value={newReturnOrder.refundMethod || "Cash"}
+                            onChange={(e) => handleReturnOrderChange("refundMethod", e.target.value)}
+                          >
+                            <option value="Cash">Cash</option>
+                            <option value="Credit Card">Credit Card</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Check">Check</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+    
+                {/* Action buttons */}
+                <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
+                  <button 
+                    className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 font-medium"
+                    onClick={handleCreateReturnOrder}
+                    disabled={!newReturnOrder.customer || newReturnOrder.products.length === 0}>
+                    Process Return
+                  </button>
+                </div>
               </div>
             </div>
           </div>

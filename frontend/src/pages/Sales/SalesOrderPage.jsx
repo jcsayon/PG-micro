@@ -899,9 +899,9 @@ return (
                   setSelectedCustomer("");
                   setPaymentMethod("");
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-white hover:text-black"
               >
-                <X className="h-6 w-6" />
+                <X className="h-6 w-6 bg-red-500 rounded" />
               </button>
             </div>
             
@@ -1076,18 +1076,7 @@ return (
             </div>
           </div>
           
-          <div className="p-4 border-t border-gray-200 flex justify-end space-x-3">
-            <button
-              onClick={() => {
-                setShowCreateModal(false);
-                setCart([]);
-                setSelectedCustomer("");
-                setPaymentMethod("");
-              }}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
-            >
-              Cancel
-            </button>
+          <div className="p-2 border-t border-gray-200 flex justify-end space-x-3">           
             <button
               onClick={handleCreateOrder}
               disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}

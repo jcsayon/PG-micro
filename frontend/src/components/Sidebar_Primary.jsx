@@ -190,7 +190,7 @@ const Sidebar_Primary = () => {
                       <NavLink
                         key={`${index}-${subIndex}`}
                         to={subItem.path}
-                        className={`flex items-center gap-3 px-5 py-2 text-md transition-all ${subBaseClass} pl-4`}
+                        className={`flex items-center gap-3 px-5 py-1 text-md transition-all ${subBaseClass} pl-4`}
                       >
                         <SubIcon className="w-4 h-4" />
                         {subItem.name}

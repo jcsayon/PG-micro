@@ -232,17 +232,17 @@ const CustomerSales = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
         {/* Left card - Registration Form */}
         <div className="lg:col-span-5">
-          <div className="bg-white shadow rounded-lg overflow-hidden h-full flex flex-col" style={{ maxHeight: "calc(100vh - 240px)" }}>
+          <div className="bg-white shadow rounded-lg overflow-hidden h-full flex flex-col" style={{ maxHeight: "calc(100vh - 100px)" }}>
             <div className="bg-indigo-600 px-6 py-4">
               <h3 className="text-lg font-bold text-white">
                 {isEditing ? "Update Client" : "Register New Client"}
               </h3>
             </div>
             
-            <div className="p-5 flex-grow overflow-y-auto">
+            <div className="p-3 flex-grow overflow-y-auto">
               {/* Form fields - with fixed spacing regardless of validation state */}
-              <div className="mb-5">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Client Name<span className="text-red-500">*</span></label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Client Name<span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   placeholder="Enter full name"
@@ -250,13 +250,13 @@ const CustomerSales = () => {
                   onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
                   className={`px-3 py-2 border ${formErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md w-full`}
                 />
-                <div className="h-5 mt-1">
+                <div className="h-3 mb-1">
                   {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
                 </div>
               </div>
               
-              <div className="mb-5">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Client Type</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Client Type</label>
                 <div className="relative">
                   <select
                     value={newCustomer.type}
@@ -270,11 +270,11 @@ const CustomerSales = () => {
                     <ChevronDown className="w-5 h-5 text-gray-400" />
                   </div>
                 </div>
-                <div className="h-5"></div> {/* Spacer to match other fields */}
+                <div className="h-3"></div> {/* Spacer to match other fields */}
               </div>
               
-              <div className="mb-5">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email<span className="text-red-500">*</span></label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email<span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   placeholder="client@gmail.com"
@@ -282,13 +282,13 @@ const CustomerSales = () => {
                   onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
                   className={`px-3 py-2 border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-md w-full`}
                 />
-                <div className="h-5 mt-1">
+                <div className="h-3 mb-1">
                   {formErrors.email && <p className="text-xs text-red-500">{formErrors.email}</p>}
                 </div>
               </div>
               
-              <div className="mb-5">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Address</label>
                 <textarea
                   placeholder="Complete address"
                   value={newCustomer.address}
@@ -296,11 +296,11 @@ const CustomerSales = () => {
                   className="px-3 py-2 border border-gray-300 rounded-md w-full"
                   rows="2"
                 />
-                <div className="h-5"></div> {/* Spacer to match other fields */}
+                <div className="h-3"></div> {/* Spacer to match other fields */}
               </div>
               
-              <div className="mb-5">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Contact Number</label>
                 <input
                   type="text"
                   placeholder="09XXXXXXXXX or +639XXXXXXXXX"
@@ -308,7 +308,7 @@ const CustomerSales = () => {
                   onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
                   className={`px-3 py-2 border ${formErrors.phone ? 'border-red-500' : 'border-gray-300'} rounded-md w-full`}
                 />
-                <div className="h-5 mt-1">
+                <div className="h-3 mb-1">
                   {formErrors.phone && <p className="text-xs text-red-500">{formErrors.phone}</p>}
                 </div>
               </div>
@@ -316,7 +316,7 @@ const CustomerSales = () => {
               <div className="flex justify-between pt-4 border-t border-gray-100">
                 <button
                   onClick={resetCustomerForm}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center"
+                  className="px-4 py-1 text-white rounded-md flex items-center bg-purple-700 hover:bg-purple-800 transition-colors"
                   type="button"
                 >
                   Clear
@@ -324,7 +324,7 @@ const CustomerSales = () => {
                 
                 <button
                   onClick={handleAddCustomer}
-                  className="px-4 py-2 text-white rounded-md flex items-center bg-purple-700 hover:bg-purple-800 transition-colors"
+                  className="px-4 py-1 text-white rounded-md flex items-center bg-purple-700 hover:bg-purple-800 transition-colors"
                   type="button"
                 >
                   Save
@@ -336,7 +336,7 @@ const CustomerSales = () => {
         
         {/* Right card - Client Registry */}
         <div className="lg:col-span-7">
-          <div className="bg-white shadow rounded-lg overflow-hidden h-full flex flex-col" style={{ maxHeight: "calc(100vh - 240px)" }}>
+          <div className="bg-white shadow rounded-lg overflow-hidden h-full flex flex-col" style={{ maxHeight: "calc(100vh - 100px)" }}>
             {/* Fixed header - completely separate from content */}
             <div className="bg-indigo-600 px-6 py-4 border-b border-purple-800">
               <div className="flex justify-between items-center">
@@ -445,11 +445,7 @@ const CustomerSales = () => {
           </div>
         </div>
       </div>
-      
-      {/* Footer */}
-      <div className="mt-8 py-4 border-t border-gray-200 text-center text-sm text-gray-500">
-        <p>© 2025 PG Micro World. All rights reserved.</p>
-      </div>
+  
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import { X } from "lucide-react";
 
 // -----------------------
 // Helper Functions - Consolidated
@@ -62,18 +63,12 @@ const Modal = ({ isOpen, onClose, title, children }) => {
       <div className="bg-white rounded-lg shadow-xl w-4/5 max-w-6xl max-h-[90vh] flex flex-col">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-800">{title}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <button onClick={onClose} className="text-white hover:text-black">
+            <X className="h-6 w-6 bg-red-500 rounded" />
           </button>
         </div>
         <div className="p-4 overflow-auto flex-1">{children}</div>
-        <div className="p-4 border-t flex justify-end">
-          <button onClick={onClose} className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">
-            Close
-          </button>
-        </div>
+        
       </div>
     </div>
   );
@@ -140,10 +135,8 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
       <div className="bg-white rounded-lg shadow-xl w-4/5 max-w-6xl max-h-[90vh] flex flex-col">
         <div className="p-6 border-b flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-800">Purchase Order Details</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <button onClick={onClose} className="text-white hover:text-black">
+            <X className="h-6 w-6 bg-red-500 rounded" />
           </button>
         </div>
 
