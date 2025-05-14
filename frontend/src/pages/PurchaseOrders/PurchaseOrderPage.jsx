@@ -636,7 +636,7 @@ const PurchaseOrderPage = () => {
       >
         {/* PO Info */}
         <div className="bg-gray-50 rounded-lg p-4 shadow-sm mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 ">
             <div>
               <div className="text-sm font-medium text-gray-500">PO Number</div>
               <div className="mt-1 font-semibold">#{purchaseOrders.length + 1}</div>
@@ -658,11 +658,10 @@ const PurchaseOrderPage = () => {
               <div className="text-sm font-medium text-gray-500">Time</div>
               <div className="mt-1">{currentTime.toLocaleTimeString()}</div>
             </div>
-          </div>
-          
-          <div className="mt-4">
-            <div className="text-sm font-medium text-gray-500">Employee</div>
-            <div className="mt-1">{sessionStorage.getItem("userEmail") || "Unknown"}</div>
+            <div>
+              <div className="text-sm font-medium text-gray-500">Employee</div>
+              <div className="mt-1">{sessionStorage.getItem("userEmail") || "Unknown"}</div>
+            </div>
           </div>
         </div>
 
@@ -693,23 +692,23 @@ const PurchaseOrderPage = () => {
           </div>
 
           {poSelectedSupplier ? (
-            <div className="bg-white p-4 border rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm font-medium text-gray-500">Name</div>
-                  <div className="mt-1 font-medium">{poSelectedSupplier.name}</div>
+            <div className="bg-white p-2 border rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="flex">
+                  <div className="font-medium text-gray-500 mr-1">Name:</div>
+                  <div className="font-medium">{poSelectedSupplier.name}</div>
                 </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-500">Address</div>
-                  <div className="mt-1">{poSelectedSupplier.address}</div>
+                <div className="flex">
+                  <div className="font-medium text-gray-500 mr-1">Address:</div>
+                  <div className="font-medium">{poSelectedSupplier.address}</div>
                 </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-500">Email</div>
-                  <div className="mt-1">{poSelectedSupplier.email}</div>
+                <div className="flex">
+                  <div className="font-medium text-gray-500 mr-1">Email:</div>
+                  <div className="font-medium">{poSelectedSupplier.email}</div>
                 </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-500">Contact</div>
-                  <div className="mt-1">{poSelectedSupplier.contact}</div>
+                <div className="flex">
+                  <div className="font-medium text-gray-500 mr-1">Contact:</div>
+                  <div className="font-medium">{poSelectedSupplier.contact}</div>
                 </div>
               </div>
             </div>

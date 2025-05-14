@@ -888,7 +888,7 @@ return (
     {/* Create Sales Order Modal */}
     {showCreateModal && (
       <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-        <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-6xl max-h-[90vh] flex flex-col">
+        <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-7xl max-h-[95vh] flex flex-col">
           <div className="p-4 border-b border-gray-200">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
@@ -905,7 +905,7 @@ return (
               </button>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-600">Sales Order ID:</label>
                 <p className="font-semibold">{newOrderId}</p>
@@ -948,31 +948,23 @@ return (
                   <option value="Online Payment">Online Payment</option>
                 </select>
               </div>
-            </div>
-            
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-600 mb-1">Select Customer:</label>
-              <div className="flex gap-2">
-                <select
-                  value={selectedCustomer}
-                  onChange={(e) => setSelectedCustomer(e.target.value)}
-                  className="p-2 border rounded w-full"
-                  required
-                >
-                  <option value="">Select Customer</option>
-                  {customers.map(customer => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name} - {customer.email}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={navigateToCustomerSales}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                  title="Manage Customers"
-                >
-                  Manage
-                </button>
+              <div className="w-[100%]">
+                <label className="block text-sm font-medium text-gray-600">Select Customer:</label>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedCustomer}
+                    onChange={(e) => setSelectedCustomer(e.target.value)}
+                    className="p-1 border rounded w-full"
+                    required
+                  >
+                    <option value="">Select Customer</option>
+                    {customers.map(customer => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name} - {customer.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -993,7 +985,7 @@ return (
                 </select>
               </div>
               
-              <div className="border rounded p-2 h-[420px] flex flex-col">
+              <div className="border rounded p-2 h-[350px] flex flex-col">
                 <h3 className="font-semibold mb-2">Available Products:</h3>
                 <div className="flex-1 overflow-y-auto">
                   {filteredProducts.length === 0 ? (
