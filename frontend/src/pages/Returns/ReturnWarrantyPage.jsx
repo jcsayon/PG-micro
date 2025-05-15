@@ -54,6 +54,11 @@ const ReturnWarrantyPage = () => {
   const [salesOrdersFilterType, setSalesOrdersFilterType] = useState("All");
   const [selectedSalesOrder, setSelectedSalesOrder] = useState(null);
 
+  // Add these with your other state declarations
+  const [salesOrderSearchTerm, setSalesOrderSearchTerm] = useState("");
+  const [filteredSalesOrderOptions, setFilteredSalesOrderOptions] = useState([]);
+  const [showSalesOrderSearchResults, setShowSalesOrderSearchResults] = useState(false);
+
   // View details modal state
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -129,13 +134,40 @@ const ReturnWarrantyPage = () => {
     }
   }, [customers]);
 
+  useEffect(() => {
+    if (salesOrderSearchTerm.trim() === "") {
+      setFilteredSalesOrderOptions([]);
+      return;
+    }
+    
+    const lowercaseSearch = salesOrderSearchTerm.toLowerCase();
+    const filtered = salesOrders.filter(order => 
+      order.id.toLowerCase().includes(lowercaseSearch) || 
+      order.customer.toLowerCase().includes(lowercaseSearch) ||
+      (order.dateSold && order.dateSold.includes(lowercaseSearch))
+    );
+    
+    setFilteredSalesOrderOptions(filtered);
+  }, [salesOrderSearchTerm, salesOrders]);
+  
+  // Add this useEffect to handle clicking outside of search results
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (showSalesOrderSearchResults && !event.target.closest('.sales-order-search-container')) {
+        setShowSalesOrderSearchResults(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSalesOrderSearchResults]);
+
   // ==========================================
   // DATA LOADING HELPER FUNCTIONS
   // ==========================================
-  
-  /**
-   * Load customers from localStorage
-   */
+
   const loadCustomers = () => {
     const savedCustomers = localStorage.getItem('customersData');
     if (savedCustomers) {
@@ -224,21 +256,12 @@ const ReturnWarrantyPage = () => {
   // EVENT HANDLERS
   // ==========================================
 
-  /**
-   * Handle changing the status of a return order
-   * @param {string} orderId - The ID of the order to update
-   * @param {string} newStatus - The new status to set
-   */
   const handleStatusChange = (orderId, newStatus) => {
     setReturnOrders((prev) => prev.map((order) => 
       order.id === orderId ? { ...order, status: newStatus } : order
     ));
   };
 
-  /**
-   * Handle viewing the details of a return order
-   * @param {Object} order - The order to view details for
-   */
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
     
@@ -261,11 +284,6 @@ const ReturnWarrantyPage = () => {
     setShowDetailsModal(true);
   };
 
-  /**
-   * Handle changes to replacement details fields
-   * @param {string} field - The field name to update
-   * @param {any} value - The new value for the field
-   */
   const handleReplacementChange = (field, value) => {
     setReplacementDetails(prev => ({
       ...prev,
@@ -273,11 +291,6 @@ const ReturnWarrantyPage = () => {
     }));
   };
 
-  /**
-   * Handle changes to refund details fields
-   * @param {string} field - The field name to update
-   * @param {any} value - The new value for the field
-   */
   const handleRefundChange = (field, value) => {
     setRefundDetails(prev => ({
       ...prev,
@@ -285,9 +298,6 @@ const ReturnWarrantyPage = () => {
     }));
   };
 
-  /**
-   * Save the changes made in the details modal
-   */
   const handleSaveDetails = () => {
     if (selectedOrder) {
       setReturnOrders(prev => prev.map(order => 
@@ -303,11 +313,6 @@ const ReturnWarrantyPage = () => {
     }
   };
 
-  /**
-   * Handle changes to the new return order form fields
-   * @param {string} field - The field name to update
-   * @param {any} value - The new value for the field
-   */
   const handleReturnOrderChange = (field, value) => {
     setNewReturnOrder({
       ...newReturnOrder,
@@ -315,9 +320,6 @@ const ReturnWarrantyPage = () => {
     });
   };
 
-  /**
-   * Add a product to the return order
-   */
   const handleAddProduct = () => {
     // Only add if model and serial are provided
     if (newProduct.model && newProduct.serial) {
@@ -336,10 +338,6 @@ const ReturnWarrantyPage = () => {
     }
   };
 
-  /**
-   * Remove a product from the return order
-   * @param {number} id - The ID of the product to remove
-   */
   const handleRemoveProduct = (id) => {
     setNewReturnOrder({
       ...newReturnOrder,
@@ -347,11 +345,6 @@ const ReturnWarrantyPage = () => {
     });
   };
   
-  /**
-   * Format price for display
-   * @param {number|string} price - The price to format
-   * @returns {string} - The formatted price string
-   */
   const formatPrice = (price) => {
     if (!price) return "0.00";
     
@@ -364,13 +357,14 @@ const ReturnWarrantyPage = () => {
     });
   };
 
-  /**
-   * Handle selecting a sales order for return
-   * @param {Object} salesOrder - The selected sales order
-   */
-  const handleSelectSalesOrder = (salesOrder) => {
-    setSelectedSalesOrder(salesOrder);
+    const handleSelectSalesOrderFromSearch = (salesOrder) => {
+      handleSelectSalesOrder(salesOrder);
+      setSalesOrderSearchTerm(salesOrder.id); // Set the search input to the selected order ID
+      setShowSalesOrderSearchResults(false); // Hide the search results
+    };
     
+    const handleSelectSalesOrder = (salesOrder) => {
+      setSelectedSalesOrder(salesOrder);
     // Find the customer details
     const customer = customers.find(c => c.name === salesOrder.customer);
     
@@ -394,9 +388,6 @@ const ReturnWarrantyPage = () => {
     setShowSalesOrdersModal(false);
   };
 
-  /**
-   * Create a new return order
-   */
   const handleCreateReturnOrder = () => {
     // Generate a new return order ID
     const newROId = `#RO${(returnOrders.length + 1).toString().padStart(3, '0')}`;
@@ -481,9 +472,6 @@ const ReturnWarrantyPage = () => {
     return matchesType && matchesSearch;
   });
 
-  // ==========================================
-  // COMPONENT RENDERING
-  // ==========================================
   return (
     <DashboardLayout>
       <div className="p-4 bg-white min-h-screen">
@@ -890,28 +878,53 @@ const ReturnWarrantyPage = () => {
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Return Information</h3>
                   
-                  {/* Sales Order Selection - Option 1: Integrated Dropdown */}
-                  <div className="mb-4">
+                {/* Sales Order Reference - Search Bar */}
+                  <div className="mb-4 sales-order-search-container">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Sales Order Reference</label>
-                    <select 
-                      className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                      value={newReturnOrder.salesOrderId || ""}
-                      onChange={(e) => {
-                        const selectedOrder = salesOrders.find(order => order.id === e.target.value);
-                        if (selectedOrder) {
-                          handleSelectSalesOrder(selectedOrder);
-                        }
-                      }}
-                    >
-                      <option value="">Select a Sales Order</option>
-                      {salesOrders.map(order => (
-                        <option key={order.id} value={order.id}>
-                          {order.id} - {order.customer} - ₱{formatPrice(order.total)}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        className="w-full border border-gray-300 p-2 pl-10 rounded-md shadow-sm"
+                        placeholder="Search by Sales Order ID or Customer"
+                        value={salesOrderSearchTerm}
+                        onChange={(e) => {
+                          setSalesOrderSearchTerm(e.target.value);
+                          setShowSalesOrderSearchResults(true);
+                        }}
+                        onFocus={() => setShowSalesOrderSearchResults(true)}
+                      />
+                      {/* Search icon */}
+                      <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                      
+                      {/* Search results dropdown */}
+                      {showSalesOrderSearchResults && filteredSalesOrderOptions.length > 0 && (
+                        <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm border border-gray-200">
+                          {filteredSalesOrderOptions.map(order => (
+                            <div
+                              key={order.id}
+                              className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100"
+                              onClick={() => handleSelectSalesOrderFromSearch(order)}
+                            >
+                              <div className="flex items-center">
+                                <span className="text-indigo-600 font-medium block truncate mr-2">
+                                  {order.id}
+                                </span>
+                                <span className="text-gray-600 block truncate">
+                                  {order.customer} - ₱{formatPrice(order.total)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {newReturnOrder.salesOrderId && (
+                      <p className="text-sm text-indigo-600 mt-1">
+                        Selected: {newReturnOrder.salesOrderId}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-500 mt-1">
-                      Select a sales order to auto-fill product and customer information
+                      Search for a sales order to auto-fill product and customer information
                     </p>
                   </div>
 
@@ -1084,108 +1097,7 @@ const ReturnWarrantyPage = () => {
                     </div>
                   </div>
                 </div>
-    
-                {/* Action Tabs for Replacement/Refund */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-4 pb-2 border-b border-gray-200">Return Process</h3>
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    {/* Process type selection */}
-                    <div className="mb-4">
-                      <div className="flex items-center mb-2">
-                        <input 
-                          type="radio" 
-                          id="process-replacement" 
-                          name="process-type" 
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
-                          checked={newReturnOrder.processType === "replacement"} 
-                          onChange={() => handleReturnOrderChange("processType", "replacement")}
-                        />
-                        <label htmlFor="process-replacement" className="ml-2 text-sm font-medium text-gray-700">
-                          Process as Replacement
-                        </label>
-                      </div>
-                      <div className="flex items-center">
-                        <input 
-                          type="radio" 
-                          id="process-refund" 
-                          name="process-type" 
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
-                          checked={newReturnOrder.processType === "refund"} 
-                          onChange={() => handleReturnOrderChange("processType", "refund")}
-                        />
-                        <label htmlFor="process-refund" className="ml-2 text-sm font-medium text-gray-700">
-                          Process as Refund
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Conditional fields based on process type */}
-                    {newReturnOrder.processType === "replacement" && (
-                      <div className="p-3 bg-gray-50 rounded-md">
-                        <div className="mb-3">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Replacement Status</label>
-                          <select 
-                            className={`w-full border border-gray-300 p-2 rounded-md shadow-sm ${
-                              newReturnOrder.replacementStatus === "Completed" ? "bg-green-100 text-green-800" : 
-                              newReturnOrder.replacementStatus === "Pending" ? "bg-amber-100 text-amber-800" : 
-                              "bg-blue-100 text-blue-800"
-                            }`}
-                            value={newReturnOrder.replacementStatus || "Pending"}
-                            onChange={(e) => handleReturnOrderChange("replacementStatus", e.target.value)}
-                          >
-                            {replacementStatusOptions.map(option => (
-                              <option key={option.value} value={option.value}>{option.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">New Item</label>
-                          <div className="flex items-center gap-2">
-                            <input 
-                              type="checkbox" 
-                              className="h-4 w-4 text-indigo-600 rounded border-gray-300"
-                              checked={newReturnOrder.isNewItem || false}
-                              onChange={(e) => handleReturnOrderChange("isNewItem", e.target.checked)}
-                            />
-                            <span className="text-sm text-gray-700">Yes</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {newReturnOrder.processType === "refund" && (
-                      <div className="p-3 bg-gray-50 rounded-md">
-                        <div className="mb-3">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Refund Amount</label>
-                          <div className="relative">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₱</span>
-                            <input 
-                              type="number" 
-                              className="w-full border border-gray-300 p-2 pl-8 rounded-md shadow-sm"
-                              value={newReturnOrder.refundAmount || ""}
-                              onChange={(e) => handleReturnOrderChange("refundAmount", e.target.value)}
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Refund Method</label>
-                          <select 
-                            className="w-full border border-gray-300 p-2 rounded-md shadow-sm"
-                            value={newReturnOrder.refundMethod || "Cash"}
-                            onChange={(e) => handleReturnOrderChange("refundMethod", e.target.value)}
-                          >
-                            <option value="Cash">Cash</option>
-                            <option value="Credit Card">Credit Card</option>
-                            <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Check">Check</option>
-                          </select>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-    
+                
                 {/* Action buttons */}
                 <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
                   <button 
