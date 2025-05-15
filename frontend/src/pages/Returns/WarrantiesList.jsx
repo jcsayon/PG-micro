@@ -389,12 +389,7 @@ const WarrantyList = () => {
               </div>
 
               <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
-                <button
-                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 font-medium"
-                  onClick={() => setShowWarrantyDetailsModal(false)}
-                >
-                  Close
-                </button>
+
                 <button
                   className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 font-medium"
                   onClick={() => {
