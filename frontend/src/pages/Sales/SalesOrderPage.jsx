@@ -861,8 +861,8 @@ return (
                     <td className="p-3">{order.dateSold}</td>
                     <td className="p-3">{order.customer}</td>
                     <td className="p-3">
-                      <span className={`px-2 py-1 rounded-full text-white ${
-                        order.type === "Walk-In" ? "bg-green-500" : "bg-yellow-500"
+                      <span className={`px-2 rounded-full ${
+                        order.type === "Walk-In" ? "bg-emerald-100 text-emerald-800" : "bg-yellow-100 text-yellow-800"
                       }`}>
                         {order.type}
                       </span>
