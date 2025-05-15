@@ -339,9 +339,9 @@ const ProductList = () => {
             </div>
 
             {/* Add New Product Form - Always Visible */}
-            <div className="bg-white shadow sm:rounded-lg p-6 mt-8">
+            <div className="bg-white shadow sm:rounded-lg p-2 mt-8">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Add New Product</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <InputField label="Brand" value={newProduct.brand} onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })} />
                 <InputField label="Model" value={newProduct.model} onChange={(e) => setNewProduct({ ...newProduct, model: e.target.value })} />
                 <InputField label="Description" value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} />
@@ -359,10 +359,11 @@ const ProductList = () => {
                     <option value="true">Yes</option>
                   </select>
                 </div>
-                <div className="md:col-span-3 flex justify-end items-end">
+                <div className="col-span-1 flex justify-end items-center">
+                  
                   <button
                     onClick={handleAddProduct}
-                    className="w-full md:w-auto inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="w-full md:w-auto inline-flex justify-center items-center px-3 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     Add Product
                   </button>

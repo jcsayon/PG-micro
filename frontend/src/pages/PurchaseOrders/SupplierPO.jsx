@@ -210,10 +210,10 @@ const SupplierPO = () => {
                             />
                             </td>
                         ))}
-                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        <td className="px-5 py-3 whitespace-nowrap text-sm font-medium">
                            <button
                              onClick={() => handleOpenCatalogModal(supplier)}
-                             className="text-white bg-indigo-400 rounded p-1 hover:text-indigo-900"
+                             className="text-indigo-700 bold bg-indigo-200 rounded p-1 hover:bg-indigo-300"
                            >
                              View/Edit ({supplier.catalog.length} items)
                            </button>
@@ -224,8 +224,8 @@ const SupplierPO = () => {
                                 onClick={() => handleEditSupplier(index)}
                                 className={`px-3 py-1 rounded-md text-sm font-medium ${
                                 supplier.isEditing
-                                    ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                                    : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                                    ? "bg-emerald-200 text-emerald-700 hover:bg-emerald-300"
+                                    : "bg-indigo-200 text-indigo-700 hover:bg-indigo-300"
                                 }`}
                             >
                                 {supplier.isEditing ? "Save" : "Edit"}
@@ -233,7 +233,7 @@ const SupplierPO = () => {
                             {!supplier.isEditing && (
                                 <button
                                     onClick={() => handleDeleteSupplier(supplier.id)}
-                                    className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-md text-sm font-medium"
+                                    className="px-3 py-1 bg-red-200 text-red-700 hover:bg-red-300 rounded-md text-sm font-medium"
                                 >
                                 Delete
                                 </button>
@@ -255,17 +255,17 @@ const SupplierPO = () => {
             </div>
 
             {/* Add New Supplier Form */}
-            <div className="bg-white shadow sm:rounded-lg p-6">
+            <div className="bg-white shadow sm:rounded-lg p-2">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Add New Supplier</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
                 <InputField label="Name" value={newSupplier.name} onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })} />
                 <InputField label="Address" value={newSupplier.address} onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })} />
                 <InputField label="Email" type="email" value={newSupplier.email} onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })} />
                 <InputField label="Contact" value={newSupplier.contact} onChange={(e) => setNewSupplier({ ...newSupplier, contact: e.target.value })} />
-                <div className="md:col-span-2 flex justify-end items-end">
+                <div className="flex justify-end items-end">
                 <button
                     onClick={handleAddSupplier}
-                    className="w-full md:w-auto inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="w-full md:w-auto inline-flex justify-center items-center px-3 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                     Add Supplier
                 </button>
