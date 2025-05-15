@@ -1,6 +1,31 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../../layouts/DashboardLayout"; 
+import DashboardLayout from "../../layouts/DashboardLayout";
+import { X } from "lucide-react";
+
+// Placeholder for all products (ideally fetched or imported)
+// For now, using a simplified version of the ProductList generation
+const allProductsData = (() => {
+    const products = [];
+    const brands = ["Acer", "Corsair", "Logitech", "Asus", "MSI", "Razer", "HyperX", "Samsung", "LG", "Dell"];
+    const models = ["Predator", "K68", "G502", "ROG Strix", "Stealth", "BlackWidow", "Cloud II", "Odyssey", "UltraGear", "Alienware"];
+    const descriptions = ["Gaming Laptop", "Mechanical Keyboard", "Gaming Mouse", "Motherboard", "Gaming PC", "Headset", "Monitor", "SSD", "RAM", "CPU Cooler"];
+
+    for (let i = 1; i <= 100; i++) {
+      products.push({
+        id: i,
+        brand: brands[i % brands.length],
+        model: models[i % models.length] + `-${i}`,
+        description: descriptions[i % descriptions.length],
+        purchasePrice: Math.floor(Math.random() * 100000) + 1000,
+        reorderPoint: Math.floor(Math.random() * 50) + 5,
+        warrantyDuration: "1 Year", // Simplified
+        damage: false,
+      });
+    }
+    return products;
+  })();
+
 
 // Reusable InputField Component
 const InputField = ({ label, value, onChange, type = "text", prefix, disabled = false }) => (
@@ -25,15 +50,72 @@ const InputField = ({ label, value, onChange, type = "text", prefix, disabled = 
   </div>
 );
 
+// Modal for Managing Catalog (Basic Structure)
+const ManageCatalogModal = ({ isOpen, onClose, supplier, allProducts, onSaveCatalog }) => {
+  const [currentCatalog, setCurrentCatalog] = useState(supplier ? [...supplier.catalog] : []);
+
+  useEffect(() => {
+    if (supplier) {
+      setCurrentCatalog([...supplier.catalog]);
+    }
+  }, [supplier]);
+
+  if (!isOpen || !supplier) return null;
+
+  const handleToggleProduct = (productId) => {
+    setCurrentCatalog(prev =>
+      prev.find(p => p.id === productId)
+        ? prev.filter(p => p.id !== productId)
+        : [...prev, allProducts.find(p => p.id === productId)]
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-900/80 flex justify-center items-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-4/5 max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="p-4 border-b flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-800">Manage Catalog for {supplier.name}</h2>
+          <button onClick={onClose} className="text-white hover:text-black">
+            <X className="h-6 w-6 bg-red-500 rounded"/>
+          </button>
+        </div>
+        <div className="p-4 overflow-auto flex-1">
+          <h3 className="text-lg font-medium mb-2">Available Products:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+            {allProducts.map(product => (
+              <div key={product.id} className="flex items-center p-2 border rounded">
+                <input
+                  type="checkbox"
+                  id={`product-${product.id}`}
+                  checked={currentCatalog.some(p => p.id === product.id)}
+                  onChange={() => handleToggleProduct(product.id)}
+                  className="mr-2"
+                />
+                <label htmlFor={`product-${product.id}`}>{product.brand} {product.model} (ID: {product.id})</label>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="p-4 border-t flex justify-end gap-2">          
+          <button onClick={() => { onSaveCatalog(supplier.id, currentCatalog); onClose(); }} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Save Catalog</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const SupplierPO = () => {
   const navigate = useNavigate();
+  const [isCatalogModalOpen, setIsCatalogModalOpen] = useState(false);
+  const [selectedSupplierForCatalog, setSelectedSupplierForCatalog] = useState(null);
 
   const [suppliers, setSuppliers] = useState([
-    { id: 1, name: "Hardware World", address: "123 Main St, Davao City", email: "info@hardwareworld.com", contact: "0912-345-6789", isEditing: false },
-    { id: 2, name: "CD-R King", address: "456 IT Park, Cebu City", email: "support@cdrking.com", contact: "0901-234-5678", isEditing: false },
-    { id: 3, name: "MGM Marketing Inc.", address: "789 Market St, Manila", email: "contact@mgm.com", contact: "0934-567-8910", isEditing: false },
+    { id: 1, name: "Hardware World", address: "123 Main St, Davao City", email: "info@hardwareworld.com", contact: "0912-345-6789", isEditing: false, catalog: allProductsData.slice(0, 10) }, // First 10 products
+    { id: 2, name: "CD-R King", address: "456 IT Park, Cebu City", email: "support@cdrking.com", contact: "0901-234-5678", isEditing: false, catalog: allProductsData.slice(10, 25) }, // Next 15 products
+    { id: 3, name: "MGM Marketing Inc.", address: "789 Market St, Manila", email: "contact@mgm.com", contact: "0934-567-8910", isEditing: false, catalog: allProductsData.slice(25, 35) }, // Next 10 products
   ]);
-  
+
   const [newSupplier, setNewSupplier] = useState({
     name: "", address: "", email: "", contact: "",
   });
@@ -45,7 +127,7 @@ const SupplierPO = () => {
     );
     setSuppliers(updatedSuppliers);
   };
-  
+
   const handleChangeSupplier = (index, field, value) => {
     setSuppliers(prev => {
       const updated = [...prev];
@@ -53,7 +135,7 @@ const SupplierPO = () => {
       return updated;
     });
   };
-  
+
   const handleDeleteSupplier = (idToDelete) => {
     setSuppliers(prev => prev.filter(s => s.id !== idToDelete));
   };
@@ -63,16 +145,30 @@ const SupplierPO = () => {
         alert("Please fill in at least Name and Address.");
         return;
     }
-    setSuppliers(prev => [...prev, { 
-      id: prev.length > 0 ? Math.max(...prev.map(s => s.id)) + 1 : 1, 
-      ...newSupplier, 
-      isEditing: false 
+    setSuppliers(prev => [...prev, {
+      id: prev.length > 0 ? Math.max(...prev.map(s => s.id)) + 1 : 1,
+      ...newSupplier,
+      catalog: [], // New suppliers start with an empty catalog
+      isEditing: false
     }]);
     setNewSupplier({ name: "", address: "", email: "", contact: "" });
   };
 
+  const handleOpenCatalogModal = (supplier) => {
+    setSelectedSupplierForCatalog(supplier);
+    setIsCatalogModalOpen(true);
+  };
+
+  const handleSaveCatalog = (supplierId, newCatalog) => {
+    setSuppliers(prev => prev.map(s =>
+      s.id === supplierId ? { ...s, catalog: newCatalog } : s
+    ));
+  };
+
+
   useEffect(() => {
     // Optional: localStorage.setItem('suppliersData', JSON.stringify(suppliers));
+    // console.log("Updated Supplier List for other components:", JSON.stringify(suppliers)); // For debugging
   }, [suppliers]);
 
 
@@ -82,17 +178,16 @@ const SupplierPO = () => {
         <div className="max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Manage Suppliers</h1>
-                {/* "Back to Purchase Orders" button removed */}
             </div>
-            
+
             {/* Suppliers Table */}
             <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
                 <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                     <tr>
-                        {["ID", "Name", "Address", "Email", "Contact", "Actions"].map((header, i) => (
-                        <th key={i} scope="col" className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${i === 5 ? "text-right" : ""}`}>
+                        {["ID", "Name", "Address", "Email", "Contact", "Catalog", "Actions"].map((header, i) => (
+                        <th key={i} scope="col" className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${i === 6 ? "text-right" : ""}`}>
                             {header}
                         </th>
                         ))}
@@ -115,6 +210,14 @@ const SupplierPO = () => {
                             />
                             </td>
                         ))}
+                        <td className="px-4 py-3 whitespace-nowrap text-sm">
+                           <button
+                             onClick={() => handleOpenCatalogModal(supplier)}
+                             className="text-white bg-indigo-400 rounded p-1 hover:text-indigo-900"
+                           >
+                             View/Edit ({supplier.catalog.length} items)
+                           </button>
+                        </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex justify-end space-x-2">
                             <button
@@ -141,7 +244,7 @@ const SupplierPO = () => {
                     ))}
                     {suppliers.length === 0 && (
                         <tr>
-                            <td colSpan="6" className="px-4 py-4 text-center text-sm text-gray-500">
+                            <td colSpan="7" className="px-4 py-4 text-center text-sm text-gray-500"> {/* Updated colSpan */}
                                 No suppliers found. Add a new supplier below.
                             </td>
                         </tr>
@@ -171,6 +274,15 @@ const SupplierPO = () => {
             </div>
         </div>
       </div>
+      {selectedSupplierForCatalog && (
+        <ManageCatalogModal
+          isOpen={isCatalogModalOpen}
+          onClose={() => setIsCatalogModalOpen(false)}
+          supplier={selectedSupplierForCatalog}
+          allProducts={allProductsData}
+          onSaveCatalog={handleSaveCatalog}
+        />
+      )}
     </DashboardLayout>
   );
 };

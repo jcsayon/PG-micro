@@ -876,7 +876,7 @@ const ReturnWarrantyPage = () => {
         {/* CREATE RO MODAL */}
         {showCreateROModal && (
           <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg p-6 w-[900px] max-h-[90vh] shadow-xl flex flex-col">
+            <div className="bg-white rounded-lg p-6 w-[80%] max-h-[90vh] shadow-xl flex flex-col">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Create Return Order</h2>
                 <button
@@ -915,7 +915,7 @@ const ReturnWarrantyPage = () => {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-4 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Return Order ID</label>
                       <input 
