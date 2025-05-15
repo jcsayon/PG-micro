@@ -148,9 +148,9 @@ const ProductList = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-6 min-h-screen bg-gray-50">
+      <div className="p-1 min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-2 gap-4">
                 <h1 className="text-2xl font-bold text-gray-900">Manage Products</h1>
                 {/* Search Input */}
                 <div className="relative w-full sm:w-auto">
@@ -174,7 +174,7 @@ const ProductList = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       {["ID", "Brand", "Model", "Description", "Purchase Price", "Reorder Point", "Warranty", "Damage", "Actions"].map((header, i) => (
-                        <th key={i} scope="col" className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${i === 8 ? "text-right" : ""}`}>
+                        <th key={i} scope="col" className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider mr-1${i === 8 ? "text-right" : ""}`}>
                           {header}
                         </th>
                       ))}
@@ -182,15 +182,15 @@ const ProductList = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentItems.map((product) => ( // Changed from 'products' to 'currentItems'
-                      <tr key={product.id} className={product.isEditing ? "bg-indigo-50" : "hover:bg-gray-50"}>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <tr key={product.id} className={product.isEditing ? "bg-indigo-200" : "hover:bg-gray-300"}>
+                        <td className="px-4 py-1 whitespace-nowrap text-sm font-medium text-gray-900">
                           {product.id}
                         </td>
                         {["brand", "model", "description"].map((field) => (
-                          <td key={field} className="px-4 py-3 whitespace-nowrap text-sm">
+                          <td key={field} className="px-4 py-3 whitespace-nowrap text-sm mr-1">
                             <input
                               type="text"
-                              className={`w-full px-2 py-1 ${product.isEditing ? "border border-gray-300 rounded" : "border-0 bg-transparent"}`}
+                              className={`w-full px-2 py-1 ${product.isEditing ? "border border-indigo-400 rounded" : "border-0 bg-transparent"}`}
                               value={product[field]}
                               disabled={!product.isEditing}
                               onChange={(e) => handleChangeProduct(product.id, field, e.target.value)}
@@ -202,7 +202,7 @@ const ProductList = () => {
                             <span className={`mr-1 ${product.isEditing ? "" : "hidden"}`}>₱</span>
                             <input
                               type="number"
-                              className={`w-full px-2 py-1 ${product.isEditing ? "border border-gray-300 rounded" : "border-0 bg-transparent"}`}
+                              className={`w-full px-2 py-1 ${product.isEditing ? "border border-indigo-400 rounded" : "border-0 bg-transparent"}`}
                               value={product.isEditing ? product.purchasePrice : `₱${product.purchasePrice}`}
                               disabled={!product.isEditing}
                               onChange={(e) => handleChangeProduct(product.id, "purchasePrice", e.target.value)}
@@ -213,7 +213,7 @@ const ProductList = () => {
                         <td className="px-4 py-3 whitespace-nowrap text-sm">
                           <input
                             type="number"
-                            className={`w-full px-2 py-1 ${product.isEditing ? "border border-gray-300 rounded" : "border-0 bg-transparent"}`}
+                            className={`w-full px-2 py-1 ${product.isEditing ? "border border-indigo-400 rounded" : "border-0 bg-transparent"}`}
                             value={product.reorderPoint}
                             disabled={!product.isEditing}
                             onChange={(e) => handleChangeProduct(product.id, "reorderPoint", e.target.value)}
@@ -222,7 +222,7 @@ const ProductList = () => {
                         <td className="px-4 py-3 whitespace-nowrap text-sm">
                           <input
                             type="text"
-                            className={`w-full px-2 py-1 ${product.isEditing ? "border border-gray-300 rounded" : "border-0 bg-transparent"}`}
+                            className={`w-full px-2 py-1 ${product.isEditing ? "border border-indigo-400 rounded" : "border-0 bg-transparent"}`}
                             value={product.warrantyDuration}
                             disabled={!product.isEditing}
                             onChange={(e) => handleChangeProduct(product.id, "warrantyDuration", e.target.value)}
@@ -231,7 +231,7 @@ const ProductList = () => {
                         <td className="px-4 py-3 whitespace-nowrap text-sm">
                           {product.isEditing ? (
                             <select
-                              className={`text-sm rounded-full px-3 py-1 font-medium border border-gray-300 ${helpers.statusBadge(String(product.damage))}`}
+                              className={`text-sm rounded-full px-3 py-1 font-medium border border-indigo-400 ${helpers.statusBadge(String(product.damage))}`}
                               value={String(product.damage)}
                               onChange={(e) => handleChangeProduct(product.id, "damage", e.target.value)}
                             >
@@ -309,7 +309,7 @@ const ProductList = () => {
                                 <button
                                     onClick={() => paginate(currentPage - 1)}
                                     disabled={currentPage === 1}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-600 bg-white text-sm font-medium text-gray-500 hover:bg-gray-300 disabled:opacity-50"
                                 >
                                     <span className="sr-only">Previous</span>
                                     &lt;
@@ -318,7 +318,7 @@ const ProductList = () => {
                                   <button
                                     key={number + 1}
                                     onClick={() => paginate(number + 1)}
-                                    className={`relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium ${currentPage === number + 1 ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : 'text-gray-700 hover:bg-gray-50'}`}
+                                    className={`relative inline-flex items-center px-4 py-2 border border-gray-600 bg-indigo-100 text-sm font-medium ${currentPage === number + 1 ? 'z-10 bg-indigo-300 border-indigo-500 text-indigo-600' : 'text-gray-700 hover:bg-gray-300'}`}
                                   >
                                     {number + 1}
                                   </button>
@@ -326,7 +326,7 @@ const ProductList = () => {
                                 <button
                                     onClick={() => paginate(currentPage + 1)}
                                     disabled={currentPage === totalPages}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-600 bg-white text-sm font-medium text-gray-500 hover:bg-gray-300 disabled:opacity-50"
                                 >
                                     <span className="sr-only">Next</span>
                                     &gt;
@@ -339,9 +339,9 @@ const ProductList = () => {
             </div>
 
             {/* Add New Product Form - Always Visible */}
-            <div className="bg-white shadow sm:rounded-lg p-6 mt-8">
+            <div className="bg-white shadow sm:rounded-lg p-2 mt-8">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Add New Product</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <InputField label="Brand" value={newProduct.brand} onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })} />
                 <InputField label="Model" value={newProduct.model} onChange={(e) => setNewProduct({ ...newProduct, model: e.target.value })} />
                 <InputField label="Description" value={newProduct.description} onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} />
@@ -359,10 +359,11 @@ const ProductList = () => {
                     <option value="true">Yes</option>
                   </select>
                 </div>
-                <div className="md:col-span-3 flex justify-end items-end">
+                <div className="col-span-1 flex justify-end items-center">
+                  
                   <button
                     onClick={handleAddProduct}
-                    className="w-full md:w-auto inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    className="w-full md:w-auto inline-flex justify-center items-center px-3 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     Add Product
                   </button>
