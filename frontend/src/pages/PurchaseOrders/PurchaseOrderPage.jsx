@@ -13,7 +13,7 @@ const helpers = {
     const day = String(dateObj.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   },
-  
+
   convertWarrantyToSeconds: (durationStr) => {
     const lower = durationStr?.toLowerCase().trim() || "";
     if (lower.includes("year")) return 365 * 24 * 3600;
@@ -21,7 +21,7 @@ const helpers = {
     if (lower.includes("day")) return (parseInt(lower) || 1) * 24 * 3600;
     return 0;
   },
-  
+
   formatTime: (totalSeconds) => {
     const days = Math.floor(totalSeconds / (3600 * 24));
     const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
@@ -29,7 +29,7 @@ const helpers = {
     const seconds = totalSeconds % 60;
     return `${days}d:${hours}h:${minutes}m:${seconds}s`;
   },
-  
+
   statusBadge: (status) => {
     const badges = {
       "All": "bg-gray-100 text-gray-800",
@@ -57,7 +57,7 @@ const statusOptions = [
 // -----------------------
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
-  
+
   return (
     <div className="fixed inset-0 bg-gray-900/80 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-4/5 max-w-6xl max-h-[90vh] flex flex-col">
@@ -68,7 +68,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
           </button>
         </div>
         <div className="p-4 overflow-auto flex-1">{children}</div>
-        
+
       </div>
     </div>
   );
@@ -126,8 +126,8 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
     setAssignments(init);
   }, [order.items]);
 
-  const approvedItems = order.items?.filter((_, i) => assignments[i] === "approved") || [];
-  const damagedItems = order.items?.filter((_, i) => assignments[i] === "damaged") || [];
+  const approvedItems = order.items?.filter((item, i) => assignments[i] === "approved") || [];
+  const damagedItems = order.items?.filter((item, i) => assignments[i] === "damaged") || [];
   const allAssigned = order.items?.length > 0 && order.items.every((_, i) => assignments[i] !== "");
 
   return (
@@ -163,7 +163,7 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
                 <div className="mt-1 text-base">{currentTime.toLocaleTimeString()}</div>
               </div>
             </div>
-            
+
             <div className="mt-4">
               <div className="text-sm font-medium text-gray-500">Supplier</div>
               <div className="mt-1 text-base font-medium">{order.supplier}</div>
@@ -179,11 +179,11 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
                   <div className="bg-gray-50 p-3 border-b flex justify-between">
                     <div className="font-medium">{item.brand} {item.model}</div>
                     <div className="text-gray-600">
-                      Qty: <span className="font-medium">{item.quantity}</span> | 
+                      Qty: <span className="font-medium">{item.quantity}</span> |
                       Total: <span className="font-medium">₱{(item.purchasePrice * item.quantity).toFixed(2)}</span>
                     </div>
                   </div>
-                  
+
                   {/* Item Details */}
                   <div className="px-3 py-2">
                     <div className="grid grid-cols-4 gap-4 mb-2">
@@ -246,7 +246,7 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
           {poStatus === "Delivered" && (
             <div className="bg-white border rounded-lg shadow-sm p-4 mb-6">
               <h3 className="text-lg font-medium mb-4 text-gray-800">Audit Items</h3>
-              
+
               <div className="space-y-4 mb-6">
                 {order.items?.map((item, idx) => (
                   <div key={idx} className="p-4 border rounded-lg bg-gray-50">
@@ -287,8 +287,8 @@ function ViewPurchaseOrderModal({ order, onClose, onSendToInventory }) {
                     </div>
                     <div className="divide-y divide-gray-200">
                       {section.items.length > 0 ? (
-                        section.items.map((item, i) => (
-                          <div key={i} className="px-4 py-3 flex justify-between">
+                        section.items.map((item, itemIdx) => ( // Changed i to itemIdx to avoid conflict
+                          <div key={itemIdx} className="px-4 py-3 flex justify-between">
                             <div>{item.brand} {item.model}</div>
                             <div className="font-medium">Qty: {item.quantity}</div>
                           </div>
@@ -337,11 +337,11 @@ const PurchaseOrderPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   // Modal states
   const [showCreatePOModal, setShowCreatePOModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  
+
   // Data states
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -352,35 +352,50 @@ const PurchaseOrderPage = () => {
   const [poSelectedSupplier, setPoSelectedSupplier] = useState(null);
   const [poProductSearch, setPoProductSearch] = useState("");
   const [poSelectedProduct, setPoSelectedProduct] = useState(null);
-  
+
   // Product and supplier data for "Create PO Modal" dropdowns
-  const [products, setProducts] = useState([
-    {
-      id: 1, brand: "Acer", model: "Predator", description: "Gaming Laptop",
-      purchasePrice: 55000, reorderPoint: 10, warrantyDuration: "1 Year", damage: false,
-    },
-    {
-      id: 2, brand: "Corsair", model: "K68", description: "Mechanical Keyboard",
-      purchasePrice: 3500, reorderPoint: 20, warrantyDuration: "6 Months", damage: false,
-    },
-  ]);
-  
+  // These should ideally be fetched or managed globally (e.g., via Context or Redux)
+  // For now, we'll use the data similar to how it's defined in their respective components
+   const [products, setProducts] = useState(() => { // This will be filtered
+    const initialProducts = [];
+    const brands = ["Acer", "Corsair", "Logitech", "Asus", "MSI", "Razer", "HyperX", "Samsung", "LG", "Dell"];
+    const models = ["Predator", "K68", "G502", "ROG Strix", "Stealth", "BlackWidow", "Cloud II", "Odyssey", "UltraGear", "Alienware"];
+    const descriptions = ["Gaming Laptop", "Mechanical Keyboard", "Gaming Mouse", "Motherboard", "Gaming PC", "Headset", "Monitor", "SSD", "RAM", "CPU Cooler"];
+    const warrantyDurations = ["1 Year", "6 Months", "2 Years", "3 Years"];
+
+    for (let i = 1; i <= 100; i++) {
+      initialProducts.push({
+        id: i,
+        brand: brands[i % brands.length],
+        model: models[i % models.length] + `-${i}`,
+        description: descriptions[i % descriptions.length],
+        purchasePrice: Math.floor(Math.random() * 100000) + 1000,
+        reorderPoint: Math.floor(Math.random() * 50) + 5,
+        warrantyDuration: warrantyDurations[i % warrantyDurations.length],
+        damage: Math.random() < 0.1,
+      });
+    }
+    return initialProducts;
+  });
+
   const [suppliers, setSuppliers] = useState([
-    { id: 1, name: "Hardware World", address: "123 Main St, Davao City", email: "info@hardwareworld.com", contact: "0912-345-6789" },
-    { id: 2, name: "CD-R King", address: "456 IT Park, Cebu City", email: "support@cdrking.com", contact: "0901-234-5678" },
-    { id: 3, name: "MGM Marketing Inc.", address: "789 Market St, Manila", email: "contact@mgm.com", contact: "0934-567-8910" },
+    // Simplified product data for catalogs here for easier management in this component
+    // In a real app, this catalog data would be richer, referencing full product objects
+    { id: 1, name: "Hardware World", address: "123 Main St, Davao City", email: "info@hardwareworld.com", contact: "0912-345-6789", catalog: products.slice(0,10).map(p => ({id: p.id, model: p.model, brand: p.brand, purchasePrice: p.purchasePrice, warrantyDuration: p.warrantyDuration})) },
+    { id: 2, name: "CD-R King", address: "456 IT Park, Cebu City", email: "support@cdrking.com", contact: "0901-234-5678", catalog: products.slice(10,25).map(p => ({id: p.id, model: p.model, brand: p.brand, purchasePrice: p.purchasePrice, warrantyDuration: p.warrantyDuration})) },
+    { id: 3, name: "MGM Marketing Inc.", address: "789 Market St, Manila", email: "contact@mgm.com", contact: "0934-567-8910", catalog: products.slice(25,35).map(p => ({id: p.id, model: p.model, brand: p.brand, purchasePrice: p.purchasePrice, warrantyDuration: p.warrantyDuration})) },
   ]);
-  
+
   // Initialize sample PO data
   useEffect(() => {
-    const initialSuppliersData = [ 
+    const initialSuppliersData = [
       { name: "Hardware World" },
       { name: "CD-R King" },
       { name: "MGM Marketing Inc." },
-      { name: "Sara Davis" },
+      { name: "Sara Davis" }, // Example additional suppliers
       { name: "Mike Tyson Inc." },
     ];
-    
+
     setPurchaseOrders([...Array(5)].map((_, i) => ({
       id: i + 1,
       poNumber: `#PO${(i + 1).toString().padStart(2, '0')}`,
@@ -389,8 +404,11 @@ const PurchaseOrderPage = () => {
       total: `₱${(10000 + i * 1000).toLocaleString()}.00`,
       status: i % 4 === 0 ? "Order Placed" : i % 4 === 1 ? "Shipped" : i % 4 === 2 ? "Delivered" : "In Progress",
       employee: "admin@pgmicro.com",
+       items: [ // Sample items for existing POs
+        { ...(products[i % products.length]), quantity: Math.floor(Math.random() * 5) + 1, serials: [{id:1, damage:false}] },
+      ]
     })));
-  }, []);
+  }, [products]); // Depend on products if using it for sample PO items
 
   // Timer effect
   useEffect(() => {
@@ -432,20 +450,28 @@ const PurchaseOrderPage = () => {
     setPoSupplierSearch(e.target.value);
     const found = suppliers.find(s => s.name.toLowerCase() === e.target.value.toLowerCase());
     setPoSelectedSupplier(found || null);
+    setPoProductSearch(""); // Reset product search when supplier changes
+    setPoSelectedProduct(null);
   };
 
   const handlePoProductSearchChange = (e) => {
     setPoProductSearch(e.target.value);
-    const found = products.find(p => p.model.toLowerCase() === e.target.value.toLowerCase());
+    const productPool = poSelectedSupplier?.catalog || []; // Use catalog if supplier selected
+    const found = productPool.find(p => p.model.toLowerCase() === e.target.value.toLowerCase());
     setPoSelectedProduct(found || null);
   };
 
   const handleAddOrderItem = () => {
     if (poSelectedProduct) {
+      // Find the full product details from the main products list if needed,
+      // or ensure poSelectedProduct (from catalog) has all necessary fields.
+      // For simplicity, we assume the catalog item (poSelectedProduct) is sufficient.
+      const fullProductDetails = products.find(p => p.id === poSelectedProduct.id) || poSelectedProduct;
+
       const newItem = {
-        ...poSelectedProduct,
+        ...fullProductDetails, // Use full details
         quantity: 1,
-        serials: [{ id: 1, damage: false, isEditing: false }], 
+        serials: [{ id: 1, damage: false, isEditing: false }],
       };
       setOrderItems(prev => [...prev, newItem]);
       setPoProductSearch("");
@@ -459,13 +485,13 @@ const PurchaseOrderPage = () => {
       const item = updated[index];
       const qty = parseInt(newQty) || 1;
       item.quantity = qty;
-      
+
       item.serials = Array.from({ length: qty }, (_, i) => ({
-        id: i + 1, 
-        damage: false, 
-        isEditing: false 
+        id: i + 1,
+        damage: false,
+        isEditing: false
       }));
-      
+
       return updated;
     });
   };
@@ -479,7 +505,7 @@ const PurchaseOrderPage = () => {
       alert("Please add at least one product.");
       return;
     }
-    
+
     const newPO = {
       id: purchaseOrders.length + 1,
       poNumber: `#PO${(purchaseOrders.length + 1).toString().padStart(2, '0')}`,
@@ -487,17 +513,17 @@ const PurchaseOrderPage = () => {
       date: helpers.formatDateToYMD(currentTime),
       time: currentTime.toLocaleTimeString(),
       status: poStatus,
-      items: orderItems.map(item => ({ 
+      items: orderItems.map(item => ({
         ...item,
-        serials: item.serials.map((serial, index) => ({ ...serial, id: index + 1})) 
+        serials: item.serials.map((serial, index) => ({ ...serial, id: index + 1}))
       })),
       total: `₱${orderTotal.toFixed(2)}`,
       employee: sessionStorage.getItem("userEmail") || "Unknown",
     };
-    
+
     setPurchaseOrders(prev => [...prev, newPO]);
     setShowCreatePOModal(false);
-    
+
     setPoSupplierSearch("");
     setPoSelectedSupplier(null);
     setPoProductSearch("");
@@ -505,6 +531,9 @@ const PurchaseOrderPage = () => {
     setOrderItems([]);
     setPoStatus("Order Placed");
   };
+
+  const availableProductsForSelectedSupplier = poSelectedSupplier?.catalog || [];
+
 
   return (
     <DashboardLayout>
@@ -514,9 +543,8 @@ const PurchaseOrderPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <h1 className="text-2xl font-bold text-gray-900">Purchase Orders</h1>
-              
+
               <div className="flex flex-wrap gap-2">
-                {/* Navigation buttons removed as per user request */}
                 <button
                     onClick={() => setShowCreatePOModal(true)}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
@@ -528,7 +556,7 @@ const PurchaseOrderPage = () => {
                   </button>
               </div>
             </div>
-            
+
             {/* Filters */}
             <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
@@ -547,7 +575,7 @@ const PurchaseOrderPage = () => {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <select
                   className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
@@ -565,7 +593,7 @@ const PurchaseOrderPage = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Purchase Orders Table */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -596,9 +624,9 @@ const PurchaseOrderPage = () => {
                         {order.supplier}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <StatusBadge 
-                          status={order.status} 
-                          onChange={(e) => handleStatusChange(order.id, e.target.value)} 
+                        <StatusBadge
+                          status={order.status}
+                          onChange={(e) => handleStatusChange(order.id, e.target.value)}
                         />
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
@@ -629,9 +657,9 @@ const PurchaseOrderPage = () => {
       </div>
 
       {/* Create PO Modal */}
-      <Modal 
-        isOpen={showCreatePOModal} 
-        onClose={() => setShowCreatePOModal(false)} 
+      <Modal
+        isOpen={showCreatePOModal}
+        onClose={() => setShowCreatePOModal(false)}
         title="Create Purchase Order"
       >
         {/* PO Info */}
@@ -644,9 +672,9 @@ const PurchaseOrderPage = () => {
             <div>
               <div className="text-sm font-medium text-gray-500">Status</div>
               <div className="mt-1">
-                <StatusBadge 
-                  status={poStatus} 
-                  onChange={(e) => setPoStatus(e.target.value)} 
+                <StatusBadge
+                  status={poStatus}
+                  onChange={(e) => setPoStatus(e.target.value)}
                 />
               </div>
             </div>
@@ -727,26 +755,29 @@ const PurchaseOrderPage = () => {
               Order Total: <span className="text-indigo-600">₱{orderTotal.toFixed(2)}</span>
             </div>
           </div>
-          
+
           <div className="flex gap-2 mb-4">
             <div className="relative w-full">
               <input
-                list="productList"
+                list="productListForSupplier"
                 value={poProductSearch}
                 onChange={handlePoProductSearchChange}
-                placeholder="Search for product..."
+                placeholder={poSelectedSupplier ? "Search supplier's catalog..." : "Select a supplier first"}
                 className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                disabled={!poSelectedSupplier}
               />
-              <datalist id="productList">
-                {products.map((p) => (
-                  <option key={p.id} value={p.model} />
+              <datalist id="productListForSupplier">
+                {availableProductsForSelectedSupplier.map((p) => (
+                  <option key={p.id} value={p.model}>
+                    {p.brand} - {p.model}
+                  </option>
                 ))}
               </datalist>
             </div>
             <button
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
               onClick={handleAddOrderItem}
-              disabled={!poSelectedProduct}
+              disabled={!poSelectedProduct || !poSelectedSupplier}
             >
               Add
             </button>
@@ -758,7 +789,7 @@ const PurchaseOrderPage = () => {
               orderItems.map((item, index) => {
                 const collapsed = serialsCollapsed[item.id] || false;
                 return (
-                  <div key={item.id} className="border rounded-lg overflow-hidden">
+                  <div key={item.id + '-' + index} className="border rounded-lg overflow-hidden"> {/* Added index to key for potential duplicate product ids */}
                     <div className="bg-gray-50 p-3 flex justify-between items-center">
                       <div className="font-medium">{item.brand} {item.model}</div>
                       <div className="flex gap-2">
@@ -774,7 +805,7 @@ const PurchaseOrderPage = () => {
                           onClick={() => {
                             setSerialsCollapsed(prev => ({
                               ...prev,
-                              [item.id]: !prev[item.id] 
+                              [item.id]: !prev[item.id]
                             }));
                           }}
                         >
@@ -794,7 +825,7 @@ const PurchaseOrderPage = () => {
                         </button>
                       </div>
                     </div>
-                    
+
                     {!collapsed && item.serials && item.serials.length > 0 && (
                       <div className="p-3 border-t">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -838,7 +869,7 @@ const PurchaseOrderPage = () => {
               })
             ) : (
               <div className="p-4 bg-gray-50 text-gray-500 rounded-lg text-center border">
-                No items added to order yet.
+                No items added to order yet. {poSelectedSupplier && availableProductsForSelectedSupplier.length === 0 && "(Selected supplier has an empty catalog)"}
               </div>
             )}
           </div>
@@ -863,7 +894,8 @@ const PurchaseOrderPage = () => {
           onSendToInventory={(approvedItems, damagedItems) => {
             console.log("Approved Items:", approvedItems);
             console.log("Damaged Items:", damagedItems);
-            alert(`${approvedItems.length} approved items and ${damagedItems.length} damaged items were sent to inventory.`);
+            // Here you would typically update your main inventory state
+            alert(`${approvedItems.reduce((sum, item) => sum + item.quantity, 0)} approved items and ${damagedItems.reduce((sum,item) => sum + item.quantity, 0)} damaged items were processed.`);
           }}
         />
       )}
