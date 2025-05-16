@@ -10,34 +10,31 @@ const Header = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     sessionStorage.removeItem('user');
-    sessionStorage.removeItem('isAuthenticated'); // Important: Remove the auth flag used in your ProtectedRoute
-    sessionStorage.removeItem('userRole'); // Also remove the role used in your ProtectedRoute
-    
-    // Clear any cookies
+    sessionStorage.removeItem('isAuthenticated');
+    sessionStorage.removeItem('userRole');
+
+    // Clear cookies
     document.cookie.split(";").forEach((cookie) => {
       const eqPos = cookie.indexOf("=");
       const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
       document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
     });
-    
-    // Redirect to login page (which is at root '/' in your case)
+
+    // Redirect to login
     navigate('/', { replace: true });
   };
 
   return (
     <header className="bg-purple-100 shadow h-16 flex items-center justify-between px-8">
-      {/* Left side - Dashboard label */}
       <div className="flex items-center">
         <h1 className="text-xl font-bold text-purple-600">PG Micro Dashboard</h1>
       </div>
 
-      {/* Right side - User profile */}
       <div className="flex items-center gap-3">
         <span className="text-white bg-purple-500 py-1 px-4 rounded-full text-sm font-medium shadow-sm">
           Admin
         </span>
-        
-        {/* Logout button */}
+
         <button 
           onClick={handleLogout}
           className="text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded-full p-1.5 transition-colors"
@@ -58,8 +55,7 @@ const Header = () => {
             />
           </svg>
         </button>
-        
-        {/* User avatar */}
+
         <div className="w-10 h-10 rounded-full border bg-white shadow-sm flex items-center justify-center">
           <svg
             className="w-6 h-6 text-gray-400"
