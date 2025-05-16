@@ -4,7 +4,7 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import IncomeList from "../../pages/Sales/IncomeList";
-import CustomerList from "../../pages/Sales/CustomerList";
+import CustomerList from "./CustomerSales";
 import { X, RefreshCw, Plus } from "lucide-react";
 
 // Define a constant for warranty storage
