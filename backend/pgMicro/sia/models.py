@@ -49,9 +49,9 @@ class DamageProduct(models.Model):
 
 
 class Account(models.Model):
-    employee = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='account')
+    employee = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='account', null=True, blank=True)
     username = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)  # Hash this in production!
+    password = models.CharField(max_length=128)
     role = models.CharField(max_length=50)
     status = models.CharField(max_length=10, choices=[("Active", "Active"), ("Inactive", "Inactive")])
 
