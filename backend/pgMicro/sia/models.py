@@ -63,13 +63,20 @@ class Product(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
-    reorder_point = models.IntegerField(default=5)
+    reorder_point = models.IntegerField()
     warranty_duration = models.CharField(max_length=100)
     model = models.CharField(max_length=255)
     brand = models.CharField(max_length=100)
-    status = models.CharField(max_length=50, default="Active")
-    category = models.ForeignKey(ProductCategory, on_delete=models.CASCADE, related_name='products')
+    status = models.CharField(max_length=50)
 
+    # 🛠 This matches your Supabase schema column: `productcategory`
+    category = models.ForeignKey(
+        ProductCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        db_column='productcategory',  # This fixes the problem
+        related_name='products'
+    )
 
     def __str__(self):
         return self.name
@@ -81,23 +88,24 @@ class ProductWarranty(models.Model):
 
 
 class Inventory(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='inventories')
-    date_received = models.DateTimeField(auto_now_add=True)
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        db_column='product',  # Match SQL column name
+        related_name='inventories'
+    )
+    date_received = models.DateTimeField()
     quantity_received = models.IntegerField()
     quantity_available = models.IntegerField()
-    stock_status = models.CharField(max_length=50, default="In Stock")
+    stock_status = models.CharField(max_length=50)
     location = models.CharField(max_length=255)
     serial_number = models.CharField(max_length=255, unique=True)
-    old_item = models.BooleanField(default=False)
+    old_item = models.BooleanField()
     selling_price = models.DecimalField(max_digits=10, decimal_places=2)
-    damage_product = models.ForeignKey(DamageProduct, on_delete=models.SET_NULL, null=True, blank=True, related_name='damaged_inventory')
 
     def __str__(self):
-        return f"{self.product.name} - {self.serial_number}"
-    
-        
-    def is_damaged(self):
-        return self.damage_product is not None
+        return f"{self.product.name if self.product else 'No Product'} - {self.serial_number}"
 
 
 class Orders(models.Model):

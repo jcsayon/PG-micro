@@ -65,13 +65,19 @@ class AccountSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     category = ProductCategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
-        queryset=ProductCategory.objects.all(), source='category', write_only=True
+        queryset=ProductCategory.objects.all(),
+        source='category',  # still maps to `category` field
+        write_only=True
     )
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'purchase_price', 'reorder_point', 
-                  'warranty_duration', 'model', 'brand', 'status', 'category', 'category_id']
+        fields = [
+            'id', 'name', 'description', 'purchase_price',
+            'reorder_point', 'warranty_duration', 'model',
+            'brand', 'status', 'category', 'category_id'
+        ]
+
 
 
 class ProductWarrantySerializer(serializers.ModelSerializer):
@@ -84,20 +90,21 @@ from .models import Inventory
 
 class InventorySerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
-    product_category = serializers.CharField(source='product.category.name', read_only=True)
     brand = serializers.CharField(source='product.brand', read_only=True)
     model = serializers.CharField(source='product.model', read_only=True)
-    sale_status = serializers.CharField(source='product.status', read_only=True)
+    category = serializers.CharField(source='product.category.name', read_only=True)
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
 
     class Meta:
         model = Inventory
         fields = [
-            'id', 'serial_number', 'location', 'selling_price', 
-            'quantity_received', 'quantity_available', 'stock_status', 
-            'old_item', 'date_received', 'product', 'damage_product',
-            'product_name', 'product_category', 'brand', 'model', 'sale_status'
+            'id', 'serial_number', 'location', 'selling_price',
+            'quantity_received', 'quantity_available', 'stock_status',
+            'old_item', 'date_received', 'product',
+            'product_name', 'brand', 'model', 'category'
         ]
+
+
 
 
 
