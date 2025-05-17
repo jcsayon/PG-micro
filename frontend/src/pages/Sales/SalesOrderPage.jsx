@@ -3,1108 +3,662 @@ import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import DashboardLayout from "../../layouts/DashboardLayout";
-import IncomeList from "../../pages/Sales/IncomeList";
-import CustomerList from "./CustomerSales";
 import { X, RefreshCw, Plus } from "lucide-react";
 
-// Define a constant for warranty storage
-const WARRANTY_STORAGE_KEY = 'warrantyData';
+const CUSTOMER_API     = "http://localhost:8000/api/customers/";
+const SALES_ORDERS_API = "http://127.0.0.1:8000/api/api/orders/";
+const PRODUCTS_API     = "http://localhost:8000/api/products/";
 
-// Define constants
-const INCOME_STORAGE_KEY = 'incomeData';
-
-const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
+const SalesOrderPage = () => {
   const navigate = useNavigate();
-  
-  //---------------------------------------------
-  // STATE MANAGEMENT
-  //---------------------------------------------
-  
-  // Sales order management states
-  const [salesOrders, setSalesOrders] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("All");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Order creation states
-  const [newOrderId, setNewOrderId] = useState("");
+
+  // ─── STATE ─────────────────────────────────────────────────────────────
+  const [salesOrders,      setSalesOrders]      = useState([]);
+  const [customers,        setCustomers]        = useState([]);
+  const [availableProducts,setAvailableProducts]= useState([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const [newOrderId,       setNewOrderId]       = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [orderType, setOrderType] = useState("Walk-In");
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [cart, setCart] = useState([]);
-  const [totalAmount, setTotalAmount] = useState(0);
-  const [categoryFilter, setCategoryFilter] = useState("All");
-  const [availableProducts, setAvailableProducts] = useState([]);
-  
-  // Customer management states
-  const [customers, setCustomers] = useState([
-    { id: 1, name: "Juan Dela Cruz", email: "juan@example.com", phone: "0912-345-6789", address: "123 Main St, Davao City", type: "Walk-In" },
-    { id: 2, name: "Maria Santos", email: "maria@example.com", phone: "0901-234-5678", address: "456 IT Park, Cebu City", type: "Contract" }
-  ]);
+  const [orderType,        setOrderType]        = useState("Walk-In");
+  const [paymentMethod,    setPaymentMethod]    = useState("");
+  const [referenceNumber,  setReferenceNumber]  = useState("");
+  const [cardLastFour,     setCardLastFour]     = useState("");
+  const [bankName,         setBankName]         = useState("");
+  const [cart,             setCart]             = useState([]);
+  const [totalAmount,      setTotalAmount]      = useState(0);
 
-  //---------------------------------------------
-  // DATA LOADING & PERSISTENCE FUNCTIONS
-  //---------------------------------------------
-  
-  // Function to save orders to localStorage
-  const saveOrdersToLocalStorage = (orders) => {
-    localStorage.setItem('salesOrdersData', JSON.stringify(orders));
-  };
+  const [categoryFilter,   setCategoryFilter]   = useState("All");
+  const [filterType,       setFilterType]       = useState("All");
+  const [searchTerm,       setSearchTerm]       = useState("");
 
+  const [showCreateModal,  setShowCreateModal]  = useState(false);
+  const [isLoading,        setIsLoading]        = useState(false);
+
+  // ─── FETCH CUSTOMERS ────────────────────────────────────────────────────
   useEffect(() => {
-    const savedCustomers = localStorage.getItem('customersData');
-    if (savedCustomers) {
-      try {
-        const parsedCustomers = JSON.parse(savedCustomers);
-        setCustomers(parsedCustomers);
-      } catch (error) {
-        console.error("Error parsing customers from localStorage:", error);
-        // Keep the default customers if parsing fails
-      }
-    } else {
-      // If no customers in localStorage, save the initial ones
-      localStorage.setItem('customersData', JSON.stringify(customers));
-    }
+    fetch(CUSTOMER_API, { credentials: "include" })
+      .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then(setCustomers)
+      .catch(console.error);
   }, []);
 
-  // Add this useEffect hook to automatically set order type based on selected customer
+  // auto‐set orderType when customer changes
   useEffect(() => {
-    if (selectedCustomer) {
-      const customer = customers.find(c => c.id === parseInt(selectedCustomer));
-      if (customer) {
-        setOrderType(customer.type);
-      }
-    }
+    const c = customers.find(c => c.id === +selectedCustomer);
+    if (c) setOrderType(c.type);
   }, [selectedCustomer, customers]);
 
-  // Load inventory data
-  useEffect(() => {
-    loadInventoryData();
-    
-    // Listen for changes to inventory data
-    const handleStorageChange = (e) => {
-      if (e.key === 'inventoryData') {
-        loadInventoryData();
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+  // ─── FETCH PRODUCTS ─────────────────────────────────────────────────────
+  const loadProducts = () => {
+    fetch(PRODUCTS_API, { credentials: "include" })
+      .then(r => { if (!r.ok) throw r; return r.json(); })
+      .then(data => {
+        const avail = data.filter(p => p.sale_status !== "Sold" && p.sale_status !== "Damaged");
+        setAvailableProducts(avail);
+      })
+      .catch(console.error);
+  };
+  useEffect(loadProducts, []);
 
-  // Load inventory data from localStorage or API
-  const loadInventoryData = () => {
+  // ─── FETCH SALES ORDERS ─────────────────────────────────────────────────
+  const loadSales = () => {
     setIsLoading(true);
-    console.log("Loading inventory data...");
-    
-    /* 
-    // When API is ready, uncomment this section
-    fetchInventory().then(inventoryData => {
-      if (inventoryData) {
-        // Filter out sold and damaged items
-        const availableItems = inventoryData.filter(item => 
-          item.saleStatus !== "Sold" && item.saleStatus !== "Damaged"
-        );
-        setAvailableProducts(availableItems);
-      } else {
-        // Fallback to localStorage if API fails
-        loadInventoryFromLocalStorage();
-      }
-      setIsLoading(false);
-    }).catch(error => {
-      console.error("Error loading inventory from API:", error);
-      loadInventoryFromLocalStorage();
-      setIsLoading(false);
-    });
-    */
-    
-    // For now, load from localStorage
-    loadInventoryFromLocalStorage();
-    setIsLoading(false);
+    fetch(SALES_ORDERS_API, { credentials: "include" })
+      .then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
+      .then(data => {
+        setSalesOrders(data);
+        // compute next #SO
+        const maxNum = data
+          .map(o => {
+            if (typeof o.id === "number") return o.id;
+            const s = String(o.id).replace(/^#SO/, "");
+            const n = parseInt(s, 10);
+            return isNaN(n) ? 0 : n;
+          })
+          .reduce((a,b)=>Math.max(a,b), 1000);
+        setNewOrderId(`#SO${maxNum+1}`);
+      })
+      .catch(console.error)
+      .finally(()=>setIsLoading(false));
   };
-  
-  // Load inventory from localStorage (fallback)
-  const loadInventoryFromLocalStorage = () => {
-    const savedInventory = localStorage.getItem('inventoryData');
-    
-    if (savedInventory) {
-      try {
-        const parsedInventory = JSON.parse(savedInventory);
-        console.log(`Loaded ${parsedInventory.length} inventory items from localStorage`);
-        
-        // Only show available (not sold) products
-        const availableItems = parsedInventory.filter(item => 
-          item.saleStatus !== "Sold" && item.saleStatus !== "Damaged"
-        );
-        
-        setAvailableProducts(availableItems);
-      } catch (error) {
-        console.error("Error parsing inventory data:", error);
-        setAvailableProducts([]);
-      }
-    } else {
-      console.warn("No inventory data found in localStorage");
-      setAvailableProducts([]);
-    }
-  };
+  useEffect(loadSales, []);
 
-  // Update inventory item status - either use the prop or fallback to local implementation
-  const handleUpdateInventoryStatus = async (productId, newStatus) => {
-    console.log(`Updating product status: ID=${productId}, Status=${newStatus}`);
-    
-    if (typeof updateInventoryStatus === 'function') {
-      // Use the provided function from props
-      return updateInventoryStatus(productId, newStatus);
-    } else {
-      // Fallback to local implementation
-      try {
-        const savedInventory = localStorage.getItem('inventoryData');
-        if (!savedInventory) {
-          console.error("No inventory data in localStorage");
-          return false;
-        }
-        
-        const inventory = JSON.parse(savedInventory);
-        
-        // Find the item by ID
-        const itemIndex = inventory.findIndex(item => item.id === productId);
-        
-        if (itemIndex === -1) {
-          console.error(`Product with ID ${productId} not found in inventory`);
-          return false;
-        }
-        
-        // Update the item's status
-        inventory[itemIndex].saleStatus = newStatus;
-        console.log(`Updated item:`, inventory[itemIndex]);
-        
-        // Save back to localStorage
-        localStorage.setItem('inventoryData', JSON.stringify(inventory));
-        
-        // Update local state by reloading
-        loadInventoryData();
-        
-        return true;
-      } catch (error) {
-        console.error("Error updating inventory status:", error);
-        return false;
-      }
-    }
-  };
-
-  // Load sales orders data
+  // ─── CART & TOTAL ───────────────────────────────────────────────────────
   useEffect(() => {
-    loadSalesOrdersData();
-  }, []);
-  
-  // Function to load sales orders data
-  const loadSalesOrdersData = () => {
-    setIsLoading(true);
-    
-    /* 
-    // When API is ready, uncomment this section
-    fetchSalesOrders().then(ordersData => {
-      if (ordersData) {
-        setSalesOrders(ordersData);
-        
-        // Set next order ID based on highest existing ID
-        if (ordersData.length > 0) {
-          const orderNumbers = ordersData.map(order => 
-            parseInt(order.id.replace('#SO', ''))
-          );
-          const maxOrderNumber = Math.max(...orderNumbers);
-          setNewOrderId(`#SO${maxOrderNumber + 1}`);
-        } else {
-          setNewOrderId('#SO1001');
-        }
-      } else {
-        // Fallback to localStorage if API fails
-        loadSalesOrdersFromLocalStorage();
-      }
-      setIsLoading(false);
-    }).catch(error => {
-      console.error("Error loading sales orders from API:", error);
-      loadSalesOrdersFromLocalStorage();
-      setIsLoading(false);
-    });
-    */
-    
-    // For now, load from localStorage
-    loadSalesOrdersFromLocalStorage();
-    setIsLoading(false);
-  };
-  
-  // Load sales orders from localStorage (fallback)
-  const loadSalesOrdersFromLocalStorage = () => {
-    // Try to load from localStorage first
-    const savedOrders = localStorage.getItem('salesOrdersData');
-    
-    if (savedOrders) {
-      try {
-        const parsedOrders = JSON.parse(savedOrders);
-        setSalesOrders(parsedOrders);
-        
-        // Set next order ID based on highest existing ID
-        if (parsedOrders.length > 0) {
-          const orderNumbers = parsedOrders.map(order => 
-            parseInt(order.id.replace('#SO', ''))
-          );
-          const maxOrderNumber = Math.max(...orderNumbers);
-          setNewOrderId(`#SO${maxOrderNumber + 1}`);
-        } else {
-          setNewOrderId('#SO1001');
-        }
-      } catch (error) {
-        console.error("Error loading orders:", error);
-        loadInitialOrders(); // Fall back to mock data
-      }
-    } else {
-      // No saved orders found, load initial mock data
-      loadInitialOrders();
-    }
-  };
-
-  // Load initial mock sales orders
-  const loadInitialOrders = () => {
-    const initialOrders = [
-      { id: "#SO1001", employee: "sales@pgmicro.com", dateSold: "2023-01-01", customer: "Juan Dela Cruz", type: "Walk-In", total: 10000.00 },
-      { id: "#SO1002", employee: "sales@pgmicro.com", dateSold: "2023-01-02", customer: "Maria Santos", type: "Contract", total: 11000.00 },
-      { id: "#SO1003", employee: "sales@pgmicro.com", dateSold: "2023-01-03", customer: "Juan Dela Cruz", type: "Walk-In", total: 12000.00 },
-      { id: "#SO1004", employee: "sales@pgmicro.com", dateSold: "2023-01-04", customer: "Maria Santos", type: "Contract", total: 13000.00 },
-      { id: "#SO1005", employee: "sales@pgmicro.com", dateSold: "2023-01-05", customer: "Juan Dela Cruz", type: "Walk-In", total: 14000.00 },
-      { id: "#SO1006", employee: "sales@pgmicro.com", dateSold: "2023-01-06", customer: "Maria Santos", type: "Contract", total: 15000.00 },
-      { id: "#SO1007", employee: "sales@pgmicro.com", dateSold: "2023-01-07", customer: "Juan Dela Cruz", type: "Walk-In", total: 16000.00 },
-      { id: "#SO1008", employee: "sales@pgmicro.com", dateSold: "2023-01-08", customer: "Maria Santos", type: "Contract", total: 17000.00 },
-      { id: "#SO1009", employee: "sales@pgmicro.com", dateSold: "2023-01-09", customer: "Juan Dela Cruz", type: "Walk-In", total: 18000.00 },
-      { id: "#SO1010", employee: "sales@pgmicro.com", dateSold: "2023-01-10", customer: "Maria Santos", type: "Contract", total: 19000.00 }
-    ];
-    
-    setSalesOrders(initialOrders);
-    // Save initial orders to localStorage
-    saveOrdersToLocalStorage(initialOrders);
-    setNewOrderId('#SO1011');
-  };
-
-  //---------------------------------------------
-  // CALCULATION & UTILITY FUNCTIONS
-  //---------------------------------------------
-  
-  // Calculate total when cart changes
-  useEffect(() => {
-    let total = 0;
-    cart.forEach(item => {
-      const priceValue = parseFloat(
-        String(item.sellingPrice).replace('₱', '').replace(/,/g, '')
-      );
-      total += isNaN(priceValue) ? 0 : priceValue;
-    });
-    setTotalAmount(total);
+    setTotalAmount(
+      cart.reduce((sum, i) => sum + parseFloat(i.selling_price||0), 0)
+    );
   }, [cart]);
 
-  // Format price for display
-  const formatPrice = (price) => {
-    if (!price) return "0.00";
-    
-    // Remove any existing formatting (currency symbols and commas)
-    const numericPrice = String(price).replace(/[₱±,]/g, '');
-    
-    return parseFloat(numericPrice).toLocaleString('en-PH', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
+  // ─── HELPERS ────────────────────────────────────────────────────────────
+  const formatPrice = price => {
+    const n = price == null ? 0 : parseFloat(price)||0;
+    return n.toLocaleString("en-PH", { minimumFractionDigits:2 });
   };
-  
-  // Find customer by name
-  const findCustomerByName = (name) => {
-    return customers.find(c => c.name === name) || null;
-  };
-  
-  // Generate category list from products
-  const categories = ["All", ...new Set(availableProducts.map(p => p.category).filter(Boolean))];
-  
-  // Filter products by category
-  const filteredProducts = categoryFilter === "All" 
-    ? availableProducts 
-    : availableProducts.filter(p => p.category === categoryFilter);
-  
-  // Filter orders based on search and type
-  const filteredOrders = salesOrders.filter(order => {
-    const matchesType = filterType === "All" || order.type === filterType;
-    const matchesSearch = searchTerm === "" || 
-                         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.dateSold.includes(searchTerm);
-    return matchesType && matchesSearch;
+
+  const categories = ["All", ...new Set(availableProducts.map(p=>p.category))];
+  const filteredProducts =
+    categoryFilter==="All"
+      ? availableProducts
+      : availableProducts.filter(p=>p.category===categoryFilter);
+
+  const filteredOrders = salesOrders.filter(o => {
+    const byType = filterType==="All" || o.type===filterType;
+    const term = searchTerm.toLowerCase();
+    const bySearch = !term
+      || String(o.id).toLowerCase().includes(term)
+      || (customers.find(c=>c.id===o.customer)?.name||"").toLowerCase().includes(term)
+      || o.date_sold.includes(term);
+    return byType && bySearch;
   });
 
-  //---------------------------------------------
-  // INVOICE GENERATION
-  //---------------------------------------------
-  
-  // Generate PDF invoice
-  const generateInvoice = (order) => {
-    return new Promise((resolve) => {
-      try {
-        const doc = new jsPDF();
-        
-        // Enhanced header with deeper purple
-        doc.setFillColor(48, 44, 122);
-        doc.rect(0, 0, 210, 25, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(22);
-        doc.setFont("helvetica", "bold");
-        doc.text("PG Micro World", 15, 17);
-        
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "normal");
-        doc.text("Invoice", 180, 17);
-        
-        // Reset text color for body content
-        doc.setTextColor(0, 0, 0);
-        
-        // Company info with improved formatting
-        doc.setFontSize(10);
-        doc.text("PG Micro World Inc.", 15, 35);
-        doc.text("123 Tech Plaza, Makati City", 15, 40);
-        doc.text("Philippines, 1200", 15, 45);
-        doc.text("Tel: +63 2 8123 4567", 15, 50);
-        doc.text("Email: info@pgmicro.com", 15, 55);
-        
-        // Invoice details in a clean light gray box
-        doc.setDrawColor(220, 220, 220);
-        doc.setFillColor(245, 245, 245);
-        doc.roundedRect(120, 30, 75, 40, 2, 2, 'FD');
-        
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("INVOICE", 145, 38);
-        
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Invoice #: ${order.id}`, 125, 45);
-        doc.text(`Date: ${order.dateSold}`, 125, 50);
-        doc.text(`Payment: ${order.paymentMethod}`, 125, 55);
-        doc.text(`Type: ${order.type}`, 125, 60);
-        
-        // Customer info in a clean light blue-gray box
-        doc.setFillColor(240, 242, 245);
-        doc.roundedRect(15, 65, 180, 30, 2, 2, 'FD');
-        
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text("Customer Information", 20, 73);
-        
-        // Find customer details
-        const customer = findCustomerByName(order.customer);
-        
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Customer: ${order.customer}`, 20, 80);
-        doc.text(`Address: ${customer?.address || 'N/A'}`, 20, 85);
-        
-        doc.text(`Email: ${customer?.email || 'N/A'}`, 120, 80);
-        doc.text(`Contact: ${customer?.phone || 'N/A'}`, 120, 85);
-        
-       // Items table with improved styling
-        doc.setFillColor(240, 236, 255);
-        doc.rect(15, 100, 180, 10, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.line(15, 100, 195, 100);
+  // ─── PDF GENERATION ─────────────────────────────────────────────────────
+  const generateInvoice = order => new Promise(resolve => {
+    try {
+      const doc = new jsPDF();
+      // header
+      doc.setFillColor(48,44,122); doc.rect(0,0,210,25,"F");
+      doc.setTextColor(255,255,255).setFontSize(22).setFont("helvetica","bold");
+      doc.text("PG Micro World",15,17);
+      doc.setFontSize(14).setFont("helvetica","normal");
+      doc.text("Invoice",180,17).setTextColor(0,0,0);
 
-        doc.setFont("helvetica", "bold");
-        doc.text("Item ID", 20, 107);
-        doc.text("Item", 60, 107);
-        doc.text("Brand/Model", 100, 107);
-        doc.text("Serial Number", 140, 107); // Changed from 150 to 140
-        doc.text("Price", 180, 107, { align: "right" });
-        doc.line(15, 110, 195, 110);
+      // company block
+      doc.setFontSize(10);
+      doc.text("PG Micro World Inc.",15,35);
+      doc.text("123 Tech Plaza, Makati City",15,40);
+      doc.text("Philippines, 1200",15,45);
+      doc.text("Tel: +63 2 8123 4567",15,50);
+      doc.text("Email: info@pgmicro.com",15,55);
 
-        // Items list with subtle alternating backgrounds
-        let yPos = 120;
-        if (order.items && order.items.length > 0) {
-          order.items.forEach((item, index) => {
-            if (index % 2 === 0) {
-              doc.setFillColor(248, 248, 252);
-              doc.rect(15, yPos - 6, 180, 14, 'F');
-            }
-            
-            doc.setFont("helvetica", "normal");
-            doc.text(item.id.toString(), 20, yPos);
-            doc.text(item.category || "Unknown", 60, yPos);
-            doc.text(`${item.brand || ""} ${item.model || ""}`, 100, yPos);
-            doc.text(item.serialNumber || "N/A", 140, yPos); // Changed from 150 to 140
-            doc.text(`₱${formatPrice(item.sellingPrice)}`, 180, yPos, { align: "right" });
-                          
-            doc.setDrawColor(240, 240, 240);
-            doc.line(15, yPos + 4, 195, yPos + 4);
-            
-            yPos += 15;
-          });
+      // details box
+      doc.setDrawColor(220,220,220).setFillColor(245,245,245);
+      doc.roundedRect(120,30,75,40,2,2,"FD");
+      doc.setFontSize(12).setFont("helvetica","bold");
+      doc.text("INVOICE",145,38);
+      doc.setFontSize(10).setFont("helvetica","normal");
+      doc.text(`#${order.id}`,125,45);
+      doc.text(`Date: ${order.date_sold}`,125,50);
+      doc.text(`Pay: ${order.payment_method}`,125,55);
+      doc.text(`Type: ${order.type}`,125,60);
+
+      // customer box
+      const cust = customers.find(c=>c.id===order.customer) || {};
+      doc.setFillColor(240,242,245);
+      doc.roundedRect(15,65,180,30,2,2,"FD");
+      doc.setFontSize(11).setFont("helvetica","bold");
+      doc.text("Customer Information",20,73);
+      doc.setFontSize(10).setFont("helvetica","normal");
+      doc.text(`Name: ${cust.name||""}`,20,80);
+      doc.text(`Email: ${cust.email||""}`,120,80);
+      doc.text(`Phone: ${cust.phone||""}`,120,85);
+
+      // items header
+      doc.setFillColor(240,236,255);
+      doc.rect(15,100,180,10,"F");
+      doc.setDrawColor(200,200,200).line(15,100,195,100);
+      doc.setFont("helvetica","bold");
+      doc.text("Item ID",20,107);
+      doc.text("Brand/Model",80,107);
+      doc.text("Price",180,107,{align:"right"});
+      doc.line(15,110,195,110);
+
+      // items rows
+      let y=120;
+      order.items.forEach((it,i)=>{
+        if(i%2===0) {
+          doc.setFillColor(248,248,252).rect(15,y-6,180,14,"F");
         }
-        
-        // Total section with stronger styling
-        yPos += 5;
-        doc.setDrawColor(180, 180, 180);
-        doc.line(15, yPos, 195, yPos);
-        
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        doc.text("Total:", 150, yPos + 10);
-        doc.text(`₱${formatPrice(order.total)}`, 180, yPos + 10, { align: "right" });
-        
-        // Footer with subtle top border
-        doc.setDrawColor(200, 200, 200);
-        doc.line(15, 250, 195, 250);
-        
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "italic");
-        doc.setTextColor(80, 80, 80);
-        doc.text("Thank you for your business. For inquiries, please contact us at support@pgmicro.com", 105, 260, { align: "center" });
-        doc.text("This invoice was generated electronically and is valid without a signature.", 105, 265, { align: "center" });
-        
-        // Add page numbers
-        doc.setFont("helvetica", "normal");
-        doc.text(`Page 1 of 1`, 180, 280);
-        
-        // Save PDF
-        const pdfOutput = doc.output('datauristring');
-        resolve(pdfOutput);
-      } catch (error) {
-        console.error("Error generating PDF:", error);
-        const fallbackDoc = new jsPDF();
-        fallbackDoc.text("Invoice generation failed: " + error.message, 20, 20);
-        const fallbackPdf = fallbackDoc.output('datauristring');
-        resolve(fallbackPdf);
-      }
-    });
-  };
-
-  //---------------------------------------------
-  // CART MANAGEMENT FUNCTIONS
-  //---------------------------------------------
-  
-  // Add product to cart
-  const addToCart = (product) => {
-    if (product.saleStatus === "Sold") {
-      alert("This product is already sold");
-      return;
-    }
-    
-    if (cart.some(item => item.id === product.id)) {
-      alert("This product is already in your cart");
-      return;
-    }
-    
-    setCart([...cart, product]);
-  };
-
-  // Remove product from cart
-  const removeFromCart = (productId) => {
-    setCart(cart.filter(item => item.id !== productId));
-  };
-
-  //---------------------------------------------
-  // ORDER MANAGEMENT FUNCTIONS
-  //---------------------------------------------
-
-  // Create warranty entries for purchased products
-  const createWarrantyEntries = (order) => {
-    try {
-      // Get existing warranty data from localStorage or initialize empty array
-      const existingWarranties = JSON.parse(localStorage.getItem(WARRANTY_STORAGE_KEY) || '[]');
-      
-      // Calculate next warranty ID
-      const nextId = existingWarranties.length > 0 
-        ? Math.max(...existingWarranties.map(w => w.id)) + 1 
-        : 1;
-      
-      // Create warranty entries for each product in the order
-      const newWarranties = order.items.map((item, index) => {
-        // Calculate warranty period (1 year from purchase date)
-        const issueDate = order.dateSold;
-        const expiryDate = new Date(issueDate);
-        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-        
-        return {
-          id: nextId + index,
-          type: "Customer Warranty",
-          product: `${item.brand || ''} ${item.model || item.category || 'Unknown Product'}`.trim(),
-          customer: order.customer,
-          salesOrderId: order.id,
-          itemId: item.id, // Ensure this is properly passed
-          serialNumber: item.serialNumber,
-          issueDate: issueDate,
-          expiryDate: expiryDate.toISOString().split('T')[0],
-          status: "Active",
-          warrantyUse: 0
-        };
+        doc.setFont("helvetica","normal");
+        doc.text(String(it.id),20,y);
+        doc.text(`${it.brand||""} ${it.model||""}`,80,y);
+        doc.text(`₱${formatPrice(it.selling_price)}`,180,y,{align:"right"});
+        doc.setDrawColor(240,240,240).line(15,y+4,195,y+4);
+        y+=15;
       });
-      
-      // Combine existing and new warranties
-      const updatedWarranties = [...existingWarranties, ...newWarranties];
-      
-      // Save updated warranties to localStorage
-      localStorage.setItem(WARRANTY_STORAGE_KEY, JSON.stringify(updatedWarranties));
-      
-      console.log(`Created ${newWarranties.length} warranty entries for order ${order.id}`);
-    } catch (error) {
-      console.error("Error creating warranty entries:", error);
+
+      // total
+      y+=5;
+      doc.setDrawColor(180,180,180).line(15,y,195,y);
+      doc.setFont("helvetica","bold");
+      doc.text("Total:",150,y+10);
+      doc.text(`₱${formatPrice(order.total)}`,180,y+10,{align:"right"});
+
+      // footer
+      doc.setDrawColor(200,200,200).line(15,250,195,250);
+      doc.setFontSize(9).setFont("helvetica","italic").setTextColor(80,80,80);
+      doc.text("Valid without signature",105,265,{align:"center"});
+      doc.text(`Page 1 of 1`,180,280);
+
+      resolve(doc.output("datauristring"));
+    } catch(e) {
+      console.error(e);
+      const f = new jsPDF();
+      f.text("Invoice failed: "+e.message,20,20);
+      resolve(f.output("datauristring"));
     }
+  });
+
+  // ─── PAYMENT DETAILS FIELDS ─────────────────────────────────────────────
+  const renderPaymentDetailsFields = () => {
+    if (!paymentMethod || paymentMethod==="Cash") return null;
+    if (paymentMethod==="Credit Card" || paymentMethod==="Debit Card") {
+      return (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={referenceNumber}
+            onChange={e=>setReferenceNumber(e.target.value)}
+            placeholder="Ref #"
+            className="border p-1 flex-1"
+            required
+          />
+          <input
+            type="text"
+            value={cardLastFour}
+            onChange={e=>setCardLastFour(e.target.value.replace(/\D/g,"").slice(0,4))}
+            placeholder="Last 4"
+            className="border p-1 w-20"
+            required
+          />
+        </div>
+      );
+    }
+    // Bank Transfer or Cheque
+    return (
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={referenceNumber}
+          onChange={e=>setReferenceNumber(e.target.value)}
+          placeholder="Ref # / Cheque #"
+          className="border p-1 flex-1"
+          required
+        />
+        <input
+          type="text"
+          value={bankName}
+          onChange={e=>setBankName(e.target.value)}
+          placeholder="Bank"
+          className="border p-1 flex-1"
+          required
+        />
+      </div>
+    );
   };
 
-  // Create income record for the order
-  const createIncomeRecord = (order) => {
-    try {
-      // Get existing income records from localStorage or initialize empty array
-      const existingIncomes = JSON.parse(localStorage.getItem(INCOME_STORAGE_KEY) || '[]');
-      
-      // Calculate next income ID
-      const nextId = existingIncomes.length > 0 
-        ? Math.max(...existingIncomes.map(income => income.id)) + 1 
-        : 1;
-      
-      // For now, simple calculation where netIncome is 70% of total
-      // In a real implementation, you'd calculate this based on actual costs
-      const netIncome = order.total * 0.7;
-      
-      // Create the income record
-      const newIncome = {
-        id: nextId,
-        incomeAmount: order.total,
-        netIncome: netIncome,
-        status: "Received", // Default status for completed orders
-        paymentMethod: order.paymentMethod,
-        dateReceived: new Date().toISOString(),
-        orderId: order.id,
-        customerName: order.customer,
-        notes: ""
-      };
-      
-      // Add the new income record to the array
-      const updatedIncomes = [...existingIncomes, newIncome];
-      
-      // Save updated incomes to localStorage
-      localStorage.setItem(INCOME_STORAGE_KEY, JSON.stringify(updatedIncomes));
-      
-      console.log(`Created income record #${nextId} for order ${order.id}`);
-      
-      return newIncome;
-    } catch (error) {
-      console.error("Error creating income record:", error);
-      return null;
-    }
-  };
-  
-  // Create new sales order
+  // ─── CREATE ORDER ────────────────────────────────────────────────────────
   const handleCreateOrder = async () => {
-    if (!selectedCustomer) {
-      alert("Please select a customer");
-      return;
+    if (!selectedCustomer || !paymentMethod || cart.length===0) {
+      return alert("Fill all required fields and add ≥1 item");
     }
-    
-    if (!paymentMethod) {
-      alert("Please select a payment method");
-      return;
-    }
-    
-    if (cart.length === 0) {
-      alert("Cart is empty");
-      return;
-    }
-    
+
+    const paymentDetails = {};
+    if (referenceNumber) paymentDetails.referenceNumber = referenceNumber;
+    if (cardLastFour)     paymentDetails.cardLastFour = cardLastFour;
+    if (bankName)         paymentDetails.bankName = bankName;
+
+    const payload = {
+      id:             newOrderId,
+      employee:       "sales@pgmicro.com",
+      date_sold:      new Date().toISOString().slice(0,10),
+      customer:       +selectedCustomer,
+      type:           orderType,
+      total:          totalAmount,
+      payment_method: paymentMethod,
+      payment_details: paymentDetails,
+      items:          cart.map(i=>({
+                        product:       i.id,
+                        quantity:      1,
+                        selling_price: i.selling_price
+                      }))
+    };
+
     try {
-      // Find the selected customer
-      const customer = customers.find(c => c.id === parseInt(selectedCustomer));
-      if (!customer) {
-        alert("Invalid customer selected");
-        return;
-      }
-      
-      // Create the order object
-      const newOrder = {
-        id: newOrderId,
-        employee: "sales@pgmicro.com",
-        dateSold: new Date().toISOString().split('T')[0],
-        customer: customer.name,
-        type: orderType,
-        total: totalAmount,
-        items: cart,
-        paymentMethod: paymentMethod
-      };
-      
-      // Generate the invoice PDF
-      console.log("Generating invoice for order:", newOrder);
-      const invoiceUrl = await generateInvoice(newOrder);
-      
-      if (!invoiceUrl) {
-        throw new Error("Failed to generate invoice");
-      }
-      
-      newOrder.invoiceUrl = invoiceUrl;
-      
-      // For now, mark items as sold in localStorage inventory
-      for (const item of cart) {
-        const updated = await handleUpdateInventoryStatus(item.id, "Sold");
-        console.log(`Updated item ${item.id} status:`, updated ? "Success" : "Failed");
-      }
-      
-      // Add the new order to the sales orders list
-      const updatedOrders = [...salesOrders, newOrder];
-      setSalesOrders(updatedOrders);
-      
-      // Save to localStorage so orders persist after refresh
-      saveOrdersToLocalStorage(updatedOrders);
-      
-      // Create warranty entries for each purchased product
-      createWarrantyEntries(newOrder);
-  
-      // Create income record for the order
-      const incomeRecord = createIncomeRecord(newOrder);
-  
-      /* 
-      // When API is ready, uncomment this section - This is correctly placed here
-      try {
-        const response = await fetch(`${API_BASE_URL}/income/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            orderId: newOrder.id,
-            customerName: newOrder.customer,
-            incomeAmount: newOrder.total,
-            netIncome: newOrder.total * 0.7,
-            status: "Received",
-            paymentMethod: newOrder.paymentMethod,
-            dateReceived: new Date().toISOString(),
-            notes: ""
-          }),
-        });
-  
-        if (!response.ok) throw new Error("Failed to create income record");
-        const incomeData = await response.json();
-        console.log("Income record created:", incomeData);
-      } catch (error) {
-        console.error("Error creating income record in API:", error);
-        // Continue with the order process even if API fails
-      }
-      */
-  
-      // FIRST: Reset the form and close the modal
+      // POST order
+      const res = await fetch(SALES_ORDERS_API, {
+        method:      "POST",
+        credentials: "include",
+        headers:     { "Content-Type":"application/json" },
+        body:        JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const saved = await res.json();
+
+      // PATCH each product
+      await Promise.all(cart.map(p =>
+        fetch(`${PRODUCTS_API}${p.id}/`, {
+          method:  "PATCH",
+          headers: { "Content-Type":"application/json" },
+          body:    JSON.stringify({ sale_status:"Sold" })
+        })
+      ));
+
+      // invoice
+      const url = await generateInvoice({
+        ...payload,
+        date_sold: payload.date_sold
+      });
+      window.open("").document.write(
+        `<iframe width="100%" height="100%" src="${url}"></iframe>`
+      );
+
+      // update UI
+      setSalesOrders(so=>[...so, saved]);
       setCart([]);
       setSelectedCustomer("");
       setPaymentMethod("");
+      setReferenceNumber("");
+      setCardLastFour("");
+      setBankName("");
       setShowCreateModal(false);
-      
-      // THEN: Generate next order ID
-      const nextOrderNumber = parseInt(newOrderId.replace("#SO", "")) + 1;
-      setNewOrderId(`#SO${nextOrderNumber}`);
-      
-      // NEXT: Open the invoice in a new window
-      const pdfWindow = window.open("", "_blank");
-      if (pdfWindow) {
-        pdfWindow.document.write(
-          `<iframe width="100%" height="100%" src="${invoiceUrl}"></iframe>`
-        );
-      } else {
-        alert("Pop-up blocked. Please allow pop-ups to view the invoice.");
-      }
-      
-      // FINALLY: Show success message
-      alert("Order created successfully!");
-      
-    } catch (error) {
-      console.error("Error creating order:", error);
-      alert(`Failed to create order: ${error.message || "Unknown error"}`);
+
+      // next ID
+      const n = parseInt(newOrderId.replace("#SO",""),10)||0;
+      setNewOrderId(`#SO${n+1}`);
+
+      alert("Order created!");
+    } catch(err) {
+      console.error(err);
+      alert("Failed to create order: "+err.message);
     }
   };
 
-  // View order details
-  const viewOrderDetails = (order) => {
-    try {
-      if (order.invoiceUrl) {
-        const pdfWindow = window.open("", "_blank");
-        if (pdfWindow) {
-          pdfWindow.document.write(
-            `<iframe width="100%" height="100%" src="${order.invoiceUrl}"></iframe>`
-          );
-        } else {
-          alert("Pop-up blocked. Please allow pop-ups to view the invoice.");
-        }
-      } else {
-        // Generate invoice on-the-fly if not available
-        generateInvoice(order).then(invoiceUrl => {
-          const pdfWindow = window.open("", "_blank");
-          if (pdfWindow) {
-            pdfWindow.document.write(
-              `<iframe width="100%" height="100%" src="${invoiceUrl}"></iframe>`
-            );
-          } else {
-            alert("Pop-up blocked. Please allow pop-ups to view the invoice.");
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Error viewing order:", error);
-      alert("Failed to view order details");
-    }
+  // ─── VIEW INVOICE ────────────────────────────────────────────────────────
+  const viewOrder = order => {
+    generateInvoice({
+      ...order,
+      date_sold: order.date_sold,
+      payment_method: order.payment_method
+    }).then(url => {
+      window.open("").document.write(
+        `<iframe width="100%" height="100%" src="${url}"></iframe>`
+      );
+    });
   };
 
-  // Refresh data manually
-  const handleRefreshData = () => {
+  // ─── REFRESH ─────────────────────────────────────────────────────────────
+  const handleRefresh = () => {
     setIsLoading(true);
-    loadInventoryData();
-    loadSalesOrdersData();
-    setTimeout(() => setIsLoading(false), 500); // Add a small delay for UX
+    loadSales();
+    loadProducts();
+    setTimeout(()=>setIsLoading(false),500);
   };
-  
-  // Navigate to Income List page
-  const navigateToIncomeList = () => {
-    navigate("/income-list");
-  };
-  
-  // Navigate to Customer List page
-  const navigateToCustomerList = () => {
-    navigate("/customer-list");
-  };
-  
-  //---------------------------------------------
-// RENDER UI
-//---------------------------------------------
 
-return (
-  <div className="p-4 bg-white min-h-screen">
-    {/* Header and controls section */}
-    <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-purple-800">Issued Sale Orders</h1>
-      </div>
-      
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div>
-          <label htmlFor="type-filter" className="mr-2">Type:</label>
-          <select
-            id="type-filter"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="p-2 border rounded bg-white"
-          >
-            <option value="All">All</option>
-            <option value="Walk-In">Walk-In</option>
-            <option value="Contract">Contract</option>
-          </select>
-        </div>
-        
-        <div className="flex-grow">
-          <input
-            type="text"
-            placeholder="Search by SO ID, Customer, or Date"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="p-2 border rounded w-full max-w-xl"
-          />
-        </div>
-        
-        <div className="flex space-x-2">
-          <button 
-            onClick={handleRefreshData} 
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center"
+ // ─── RENDER ─────────────────────────────────────────────────────────────
+ return (
+  <DashboardLayout>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Header & Controls */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+        <h1 className="text-3xl font-bold text-purple-800">Issued Sale Orders</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <select
+              className="pl-3 pr-8 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              value={filterType}
+              onChange={e=>setFilterType(e.target.value)}
+            >
+              <option>All</option>
+              <option>Walk-In</option>
+              <option>Contract</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </div>
+          <div className="relative flex-grow max-w-md">
+            <input
+              className="pl-10 pr-4 py-2 w-full rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              placeholder="Search by SO ID or customer..."
+              value={searchTerm}
+              onChange={e=>setSearchTerm(e.target.value)}
+            />
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+          </div>
+          <button
+            onClick={handleRefresh}
             disabled={isLoading}
+            className="flex items-center justify-center px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 transition-colors text-white font-medium disabled:opacity-70"
           >
-            <RefreshCw className="h-4 w-4 mr-1" />
-            {isLoading ? "Loading..." : "Refresh Data"}
+            <RefreshCw className="w-4 h-4 mr-2" /> 
+            {isLoading ? "Refreshing..." : "Refresh"}
           </button>
-          
-          <button 
-            onClick={() => setShowCreateModal(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
+          <button
+            onClick={()=>setShowCreateForm(!showCreateForm)}
+            className={`flex items-center justify-center px-4 py-2 rounded-lg ${
+              showCreateForm ? "bg-gray-600 hover:bg-gray-700" : "bg-green-600 hover:bg-green-700"
+            } transition-colors text-white font-medium`}
           >
-            <Plus className="h-4 w-4 mr-1" /> Create SO
+            {showCreateForm ? (
+              <>
+                <X className="w-4 h-4 mr-2" />Cancel
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4 mr-2" />Create SO
+              </>
+            )}
           </button>
         </div>
       </div>
-      
-      {/* Loading indicator */}
-      {isLoading && (
-        <div className="flex justify-center items-center py-4">
-          <p className="text-purple-700 text-lg">Loading data...</p>
-        </div>
-      )}
-      
-      {/* Sales Orders Table */}
-      {!isLoading && (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
-            <thead>
-              <tr className="bg-gray-100 text-gray-800">
-                <th className="p-3 text-left">Sale Order ID</th>
-                <th className="p-3 text-left">Employee</th>
-                <th className="p-3 text-left">Date Sold</th>
-                <th className="p-3 text-left">Customer</th>
-                <th className="p-3 text-left">Type</th>
-                <th className="p-3 text-right">Total</th>
-                <th className="p-3 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="p-4 text-center text-gray-500">No sales orders found</td>
-                </tr>
-              ) : (
-                filteredOrders.map((order, index) => (
-                  <tr key={order.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                    <td className="p-3 text-purple-700">{order.id}</td>
-                    <td className="p-3">{order.employee}</td>
-                    <td className="p-3">{order.dateSold}</td>
-                    <td className="p-3">{order.customer}</td>
-                    <td className="p-3">
-                      <span className={`px-2 py-1 rounded-full text-white ${
-                        order.type === "Walk-In" ? "bg-green-500" : "bg-yellow-500"
-                      }`}>
-                        {order.type}
-                      </span>
-                    </td>
-                    <td className="p-3 text-right">₱{formatPrice(order.total)}</td>
-                    <td className="p-3 text-center">
-                      <button
-                        onClick={() => viewOrderDetails(order)}
-                        className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
-                      >
-                        View details
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-    
-    {/* Create Sales Order Modal */}
-    {showCreateModal && (
-      <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-        <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-6xl max-h-[90vh] flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
-              <button 
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setCart([]);
-                  setSelectedCustomer("");
-                  setPaymentMethod("");
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Sales Order ID:</label>
-                <p className="font-semibold">{newOrderId}</p>
+
+      {/* Create Order Form */}
+      {showCreateForm && (
+        <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-purple-50 px-6 py-4 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-purple-800">Create New Sales Order</h2>
+          </div>
+
+          <div className="p-6">
+            {/* Order Info Row */}
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+              <div className="bg-gray-50 rounded-lg p-3">
+                <label className="block text-xs font-medium text-gray-500 mb-1">SO ID</label>
+                <div className="font-mono text-gray-800">{newOrderId}</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Employee</label>
+                <div className="text-gray-800">sales@pgmicro.com</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Date</label>
+                <div className="text-gray-800">{new Date().toISOString().slice(0,10)}</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                <div className="text-gray-800">{orderType}</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3">
+                <label className="block text-xs font-medium text-gray-500 mb-1">Time</label>
+                <div className="text-gray-800">
+                  {new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600">Employee:</label>
-                <p className="font-semibold">sales@pgmicro.com</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Date:</label>
-                <p className="font-semibold">{new Date().toISOString().split('T')[0]}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Status:</label>
-                <p className="font-semibold">{orderType}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Time:</label>
-                <p className="font-semibold">
-                  {new Date().toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    hour12: true 
-                  })}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Payment Method:</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Customer</label>
                 <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="p-1 border rounded w-full"
-                  required
-                >
-                  <option value="">Select Payment Method</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="Debit Card">Debit Card</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Online Payment">Online Payment</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-600 mb-1">Select Customer:</label>
-              <div className="flex gap-2">
-                <select
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50"
                   value={selectedCustomer}
-                  onChange={(e) => setSelectedCustomer(e.target.value)}
-                  className="p-2 border rounded w-full"
+                  onChange={e=>setSelectedCustomer(e.target.value)}
                   required
                 >
-                  <option value="">Select Customer</option>
-                  {customers.map(customer => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.name} - {customer.email}
+                  <option value="">Select customer...</option>
+                  {customers.map(c=>(
+                    <option key={c.id} value={c.id}>
+                      {typeof c.name === "string" ? c.name : JSON.stringify(c.name)}
                     </option>
                   ))}
                 </select>
-                <button
-                  onClick={navigateToCustomerList}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                  title="Manage Customers"
-                >
-                  Manage
-                </button>
               </div>
             </div>
-          </div>
-          
-          <div className="flex-1 overflow-hidden flex flex-col md:flex-row p-4">
-            {/* Product Selection */}
-            <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
+
+            {/* Payment Row */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="col-span-1 md:col-span-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Payment Method</label>
                 <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="p-2 border rounded w-full"
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50"
+                  value={paymentMethod}
+                  onChange={e=>setPaymentMethod(e.target.value)}
+                  required
                 >
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
+                  <option value="">Select payment method...</option>
+                  <option>Cash</option>
+                  <option>Credit Card</option>
+                  <option>Debit Card</option>
+                  <option>Bank Transfer</option>
+                  <option>Cheque</option>
                 </select>
               </div>
-              
-              <div className="border rounded p-2 h-[420px] flex flex-col">
-                <h3 className="font-semibold mb-2">Available Products:</h3>
-                <div className="flex-1 overflow-y-auto">
+              <div className="col-span-1 md:col-span-2">
+                {renderPaymentDetailsFields()}
+              </div>
+            </div>
+
+            {/* Main Body: Products & Cart */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* Products */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-medium text-gray-800">Available Products</h3>
+                  <div className="relative">
+                    <select
+                      className="pl-3 pr-8 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      value={categoryFilter}
+                      onChange={e=>setCategoryFilter(e.target.value)}
+                    >
+                      {categories.map(cat=>(
+                        <option key={cat} value={cat}>{cat}</option>
+                     ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-64 overflow-auto border border-gray-200 rounded-lg bg-white shadow-sm">
                   {filteredProducts.length === 0 ? (
-                    <p className="text-gray-500 italic text-center p-4">No products available</p>
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 p-4">
+                      <svg className="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                      </svg>
+                      <p>No products in this category</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200">
+                      {filteredProducts.map(p=>(
+                        <div
+                          key={p.id}
+                          className="flex justify-between items-center p-3 hover:bg-gray-50"
+                        >
+                          <div>
+                            <div className="font-medium text-gray-800">{p.brand} {p.model}</div>
+                            <div className="text-sm text-green-600 font-medium">₱{formatPrice(p.selling_price)}</div>
+                          </div>
+                          <button
+                            onClick={()=>setCart(c=>[...c,p])}
+                            className="flex items-center px-2 py-1 text-sm rounded-md bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
+                          >
+                            <Plus className="w-4 h-4 mr-1" /> Add
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Cart */}
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-medium text-gray-800">Shopping Cart</h3>
+                  <div className="text-green-600 font-medium">₱{formatPrice(totalAmount)}</div>
+                </div>
+                <div className="h-64 border border-gray-200 rounded-lg bg-white shadow-sm overflow-auto p-3">
+                  {cart.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                      <svg className="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                      </svg>
+                      <p>Your cart is empty</p>
+                    </div>
                   ) : (
                     <div className="space-y-2">
-                      {filteredProducts.map(product => (
-                        product.saleStatus !== "Sold" && (
-                          <div 
-                            key={product.id} 
-                            className="p-3 border rounded bg-white flex justify-between items-center"
-                            style={{minHeight: "80px"}}
-                          >
-                            <div>
-                              <p className="font-semibold">{product.category || "Unknown Category"}</p>
-                              <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
-                              <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
-                              <p>{product.sellingPrice || "Price not available"}</p>
-                            </div>
-                            <button
-                              onClick={() => addToCart(product)}
-                              className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                            >
-                              Add to Cart
-                            </button>
+                      {cart.map((item, index) => (
+                        <div 
+                          key={`${item.id}-${index}`} 
+                          className="flex justify-between items-center p-2 rounded-md bg-gray-50 border border-gray-100"
+                        >
+                          <div>
+                            <div className="font-medium text-gray-800">{item.brand} {item.model}</div>
+                            <div className="text-sm text-gray-500">₱{formatPrice(item.selling_price)}</div>
                           </div>
-                        )
+                          <button
+                            onClick={()=>setCart(c=>c.filter((_, i)=>i!==index))}
+                            className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
             </div>
-            
-            {/* Shopping Cart */}
-            <div className="md:w-1/2 pl-0 md:pl-2">
-              <div className="border rounded flex flex-col h-[420px]">
-                <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
-                <div className="flex-1 overflow-y-auto">
-                  {cart.length === 0 ? (
-                    <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
-                  ) : (
-                    <table className="min-w-full">
-                      <thead className="bg-gray-100 sticky top-0">
-                        <tr>
-                          <th className="p-2 text-left">Item ID</th>
-                          <th className="p-2 text-left">Brand</th>
-                          <th className="p-2 text-left">Model</th>
-                          <th className="p-2 text-right">Price</th>
-                          <th className="p-2 text-center">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cart.map(item => (
-                          <tr key={item.id} className="border-b">
-                            <td className="p-2">{item.id}</td>
-                            <td className="p-2">{item.brand}</td>
-                            <td className="p-2">{item.model}</td>
-                            <td className="p-2 text-right">{item.sellingPrice}</td>
-                            <td className="p-2 text-center">
-                              <button
-                                onClick={() => removeFromCart(item.id)}
-                                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
-                              >
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-                <div className="bg-gray-100 p-2 border-t">
-                  <div className="font-semibold text-right">
-                    Total: ₱{totalAmount.toFixed(2)}
-                  </div>
-                </div>
-              </div>
+
+            {/* Footer Actions */}
+            <div className="flex justify-end gap-3 border-t border-gray-200 pt-4">
+              <button
+                onClick={()=>setShowCreateForm(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateOrder}
+                disabled={!selectedCustomer || !paymentMethod || !cart.length}
+                className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create Order
+              </button>
             </div>
           </div>
-          
-          <div className="p-4 border-t border-gray-200 flex justify-end space-x-3">
-            <button
-              onClick={() => {
-                setShowCreateModal(false);
-                setCart([]);
-                setSelectedCustomer("");
-                setPaymentMethod("");
-              }}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-24"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleCreateOrder}
-              disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}
-              className={`px-4 py-2 rounded text-white w-32 ${
-                !selectedCustomer || cart.length === 0 || !paymentMethod
-                  ? "bg-green-300 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700"
-              }`}
-            >
-              Create Order
-            </button>
-          </div>
         </div>
+      )}
+
+      {/* Orders Table */}
+      <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+        <table className="min-w-full bg-white divide-y divide-gray-200">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SO ID</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+              <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+              <th className="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredOrders.length===0 ? (
+              <tr>
+                <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                  <svg className="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
+                  <p className="mt-2 font-medium">No orders found</p>
+                  <p className="text-sm">Try adjusting your search or filter criteria</p>
+                </td>
+              </tr>
+            ) : (
+              filteredOrders.map((o,i)=>(
+                <tr key={o.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap font-medium text-purple-700">{o.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">{o.employee}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">{o.date_sold}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                    {customers.find(c=>c.id===o.customer)?.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      o.type === 'Walk-In' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {o.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right font-medium">
+                    ₱{formatPrice(o.total)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <button
+                      onClick={()=>viewOrder(o)}
+                      className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-medium text-sm"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-    )}
-  </div>
+    </div>
+  </DashboardLayout>
 );
+
 };
 
 export default SalesOrderPage;

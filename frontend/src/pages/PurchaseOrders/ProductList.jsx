@@ -41,8 +41,26 @@ const ProductList = () => {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [newProduct, setNewProduct] = useState({
-    brand: "", model: "", description: "", purchase_price: "", reorder_point: "", warranty_duration: "", damage: false,
+    name: "",
+    description: "",
+    purchase_price: "",
+    reorder_point: "",
+    warranty_duration: "",
+    model: "",
+    brand: "",
+    status: "",
+    category_id: "",  // this must be an ID, not name like "Processor"
+    damage: false,    // optional if not used in backend
   });
+  const [categories, setCategories] = useState([]);
+
+useEffect(() => {
+  fetch(`${API_BASE_URL}/product-categories/`)
+    .then((res) => res.json())
+    .then((data) => setCategories(data))
+    .catch((err) => console.error("Failed to fetch categories:", err));
+}, []);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -91,10 +109,26 @@ const ProductList = () => {
     }
   
     try {
+      console.log("Sending product data:", {
+        name: newProduct.name,
+        status: newProduct.status,
+        category_id: parseInt(newProduct.category_id),
+        brand: newProduct.brand,
+        model: newProduct.model,
+        description: newProduct.description,
+        purchase_price: parseFloat(newProduct.purchase_price),
+        reorder_point: parseInt(newProduct.reorder_point),
+        warranty_duration: newProduct.warranty_duration,
+        damage: newProduct.damage === true,
+      });
+      
       const response = await fetch(`${API_BASE_URL}/products/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: newProduct.name,                       // ✅ Must be included
+          status: newProduct.status,                   // ✅ Must be included
+          category_id: parseInt(newProduct.category_id), // ✅ Must be an integer ID
           brand: newProduct.brand,
           model: newProduct.model,
           description: newProduct.description,
@@ -104,22 +138,36 @@ const ProductList = () => {
           damage: newProduct.damage === true,
         }),
       });
+      
   
       if (!response.ok) {
+        const errorText = await response.text(); // use .json() if response is JSON
+        console.error("Backend response:", errorText);
         throw new Error("Failed to add product.");
       }
   
       const created = await response.json();
-      setProducts(prev => [...prev, { ...created, isEditing: false }]);
+      setProducts((prev) => [...prev, { ...created, isEditing: false }]);
   
       setNewProduct({
-        brand: "", model: "", description: "", purchase_price: "", reorder_point: "", warranty_duration: "", damage: false,
+        name: "",
+        status: "",
+        category_id: "",
+        brand: "",
+        model: "",
+        description: "",
+        purchase_price: "",
+        reorder_point: "",
+        warranty_duration: "",
+        damage: false,
       });
+      
     } catch (error) {
       console.error("Error adding product:", error);
       alert("Something went wrong while adding the product.");
     }
   };
+  
   
 
   const filtered = products.filter(p =>
@@ -307,6 +355,44 @@ const ProductList = () => {
                 value={newProduct.warranty_duration}
                 onChange={(e) => setNewProduct({ ...newProduct, warranty_duration: e.target.value })}
               />
+              <InputField
+                label="Name"
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+              />
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={newProduct.status}
+                    onChange={(e) => setNewProduct({ ...newProduct, status: e.target.value })}
+                    className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  >
+                    <option value="">Select status...</option>
+                    <option value="In Stock">In Stock</option>
+                    <option value="Out of Stock">Out of Stock</option>
+                    <option value="Low Stock">Low Stock</option>
+                    <option value="Discontinued">Discontinued</option>
+                  </select>
+                </div>
+
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select
+                    value={newProduct.category_id}
+                    onChange={(e) => setNewProduct({ ...newProduct, category_id: e.target.value })}
+                    className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  >
+                    <option value="">Select category...</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Damage</label>
                 <select
