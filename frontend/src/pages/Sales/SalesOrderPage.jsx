@@ -355,157 +355,192 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
   
   // Generate PDF invoice
   const generateInvoice = (order) => {
-    return new Promise((resolve) => {
-      try {
-        const doc = new jsPDF();
-        
-        // Enhanced header with deeper purple
-        doc.setFillColor(48, 44, 122);
-        doc.rect(0, 0, 210, 25, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(22);
-        doc.setFont("helvetica", "bold");
-        doc.text("PG Micro World", 15, 17);
-        
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "normal");
-        doc.text("Invoice", 180, 17);
-        
-        // Reset text color for body content
-        doc.setTextColor(0, 0, 0);
-        
-        // Company info with improved formatting
-        doc.setFontSize(10);
-        doc.text("PG Micro World Inc.", 15, 35);
-        doc.text("123 Tech Plaza, Makati City", 15, 40);
-        doc.text("Philippines, 1200", 15, 45);
-        doc.text("Tel: +63 2 8123 4567", 15, 50);
-        doc.text("Email: info@pgmicro.com", 15, 55);
-        
-        // Invoice details in a clean light gray box
-        doc.setDrawColor(220, 220, 220);
-        doc.setFillColor(245, 245, 245);
-        doc.roundedRect(120, 30, 75, 40, 2, 2, 'FD');
-        
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("INVOICE", 145, 38);
-        
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Invoice #: ${order.id}`, 125, 45);
-        doc.text(`Date: ${order.dateSold}`, 125, 50);
-        doc.text(`Payment: ${order.paymentMethod}`, 125, 55);
-        doc.text(`Type: ${order.type}`, 125, 60);
-        
-        // Payment details if available
-        if (order.paymentDetails) {
-          if (order.paymentDetails.referenceNumber) {
-            doc.text(`Ref #: ${order.paymentDetails.referenceNumber}`, 125, 65);
-          }
-          if (order.paymentMethod === "Credit Card" || order.paymentMethod === "Debit Card") {
-            if (order.paymentDetails.cardLastFourDigits) {
-              doc.text(`Card: xxxx-xxxx-xxxx-${order.paymentDetails.cardLastFourDigits}`, 125, 70);
-            }
-          } else if (order.paymentMethod === "Bank Transfer") {
-            if (order.paymentDetails.bankName) {
-              doc.text(`Bank: ${order.paymentDetails.bankName}`, 125, 70);
-            }
-          }
+  return new Promise((resolve) => {
+    try {
+      const doc = new jsPDF();
+      
+      // Simple header with purple background
+      doc.setFillColor(48, 44, 122);
+      doc.rect(0, 0, 210, 25, 'F');
+      
+      // Company name and invoice title in white
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text("PG Micro World", 15, 17);
+      
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "normal");
+      doc.text("INVOICE", 180, 17, { align: "right" });
+      
+      // Reset to black text
+      doc.setTextColor(0, 0, 0);
+      
+      // Company info - left aligned and simple
+      doc.setFontSize(10);
+      doc.text("PG Micro World Inc.", 15, 35);
+      doc.text("8000 Davao City, Magallanes Street", 15, 40);
+      doc.text("Tel: +63 2 8123 4567 | Email: info@pgmicro.com", 15, 45);
+      
+      // Invoice details - FURTHER ENLARGED box to fit all payment details
+      doc.setDrawColor(220, 220, 220);
+      doc.setFillColor(245, 245, 245);
+      doc.roundedRect(120, 32, 75, 60, 1, 1, 'FD'); // Increased height from 38 to 60
+      
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Invoice Details", 125, 39);
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      
+      // Basic invoice details - keep spacing consistent and ensure there's enough space
+      let detailsY = 46; // Starting Y position for details
+      const lineHeight = 5; // Slightly reduced line height to fit more content
+      
+      doc.text(`Invoice #: ${order.id}`, 125, detailsY);
+      detailsY += lineHeight;
+      
+      doc.text(`Date: ${order.dateSold}`, 125, detailsY);
+      detailsY += lineHeight;
+      
+      doc.text(`Payment: ${order.paymentMethod}`, 125, detailsY);
+      detailsY += lineHeight;
+      
+      doc.text(`Type: ${order.type}`, 125, detailsY);
+      detailsY += lineHeight;
+      
+      // Payment details if available - using consistent positioning
+      if (order.paymentDetails) {
+        if (order.paymentDetails.referenceNumber) {
+          doc.text(`Ref #: ${order.paymentDetails.referenceNumber}`, 125, detailsY);
+          detailsY += lineHeight;
         }
         
-        // Customer info in a clean light blue-gray box
-        doc.setFillColor(240, 242, 245);
-        doc.roundedRect(15, 75, 180, 30, 2, 2, 'FD');
-        
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text("Customer Information", 20, 83);
-        
-        // Find customer details
-        const customer = findCustomerByName(order.customer);
-        
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Customer: ${order.customer}`, 20, 90);
-        doc.text(`Address: ${customer?.address || 'N/A'}`, 20, 95);
-        
-        doc.text(`Email: ${customer?.email || 'N/A'}`, 120, 90);
-        doc.text(`Contact: ${customer?.phone || 'N/A'}`, 120, 95);
-        
-       // Items table with improved styling
-        doc.setFillColor(240, 236, 255);
-        doc.rect(15, 110, 180, 10, 'F');
-        doc.setDrawColor(200, 200, 200);
-        doc.line(15, 110, 195, 110);
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Item ID", 20, 117);
-        doc.text("Item", 60, 117);
-        doc.text("Brand/Model", 100, 117);
-        doc.text("Serial Number", 140, 117); // Changed from 150 to 140
-        doc.text("Price", 180, 117, { align: "right" });
-        doc.line(15, 120, 195, 120);
-
-        // Items list with subtle alternating backgrounds
-        let yPos = 130;
-        if (order.items && order.items.length > 0) {
-          order.items.forEach((item, index) => {
-            if (index % 2 === 0) {
-              doc.setFillColor(248, 248, 252);
-              doc.rect(15, yPos - 6, 180, 14, 'F');
-            }
-            
-            doc.setFont("helvetica", "normal");
-            doc.text(item.id.toString(), 20, yPos);
-            doc.text(item.category || "Unknown", 60, yPos);
-            doc.text(`${item.brand || ""} ${item.model || ""}`, 100, yPos);
-            doc.text(item.serialNumber || "N/A", 140, yPos); // Changed from 150 to 140
-            doc.text(`₱${formatPrice(item.sellingPrice)}`, 180, yPos, { align: "right" });
-                          
-            doc.setDrawColor(240, 240, 240);
-            doc.line(15, yPos + 4, 195, yPos + 4);
-            
-            yPos += 15;
-          });
+        if (order.paymentMethod === "Credit Card" || order.paymentMethod === "Debit Card") {
+          if (order.paymentDetails.cardLastFourDigits) {
+            doc.text(`Card: xxxx-xxxx-xxxx-${order.paymentDetails.cardLastFourDigits}`, 125, detailsY);
+            detailsY += lineHeight;
+          }
+        } else if (order.paymentMethod === "Bank Transfer" || order.paymentMethod === "Cheque") {
+          if (order.paymentDetails.bankName) {
+            doc.text(`Bank: ${order.paymentDetails.bankName}`, 125, detailsY);
+            detailsY += lineHeight;
+          }
         }
-        
-        // Total section with stronger styling
-        yPos += 5;
-        doc.setDrawColor(180, 180, 180);
-        doc.line(15, yPos, 195, yPos);
-        
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        doc.text("Total:", 150, yPos + 10);
-        doc.text(`₱${formatPrice(order.total)}`, 180, yPos + 10, { align: "right" });
-        
-        // Footer with subtle top border
-        doc.setDrawColor(200, 200, 200);
-        doc.line(15, 250, 195, 250);
-        
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "italic");
-        doc.setTextColor(80, 80, 80);
-        doc.text("Thank you for your business. For inquiries, please contact us at support@pgmicro.com", 105, 260, { align: "center" });
-        doc.text("This invoice was generated electronically and is valid without a signature.", 105, 265, { align: "center" });
-        
-        // Add page numbers
-        doc.setFont("helvetica", "normal");
-        doc.text(`Page 1 of 1`, 180, 280);
-        
-        // Save PDF
-        const pdfOutput = doc.output('datauristring');
-        resolve(pdfOutput);
-      } catch (error) {
-        console.error("Error generating PDF:", error);
-        const fallbackDoc = new jsPDF();
-        fallbackDoc.text("Invoice generation failed: " + error.message, 20, 20);
-        const fallbackPdf = fallbackDoc.output('datauristring');
-        resolve(fallbackPdf);
       }
-    });
-  };
+      
+      // Customer Info
+      doc.setFillColor(248, 248, 252);
+      doc.roundedRect(15, 75, 180, 25, 1, 1, 'FD');
+      
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Customer Information", 20, 82);
+      
+      // Find customer details
+      const customer = findCustomerByName(order.customer);
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Customer: ${order.customer}`, 20, 88);
+      doc.text(`Email: ${customer?.email || 'N/A'}`, 110, 88);
+      doc.text(`Address: ${customer?.address || 'N/A'}`, 20, 94);
+      doc.text(`Contact: ${customer?.phone || 'N/A'}`, 110, 94);
+      
+      // Simple table header
+      const tableTop = 110;
+      doc.setFillColor(240, 240, 248);
+      doc.rect(15, tableTop, 180, 8, 'F');
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("Item ID", 20, tableTop + 5.5);
+      doc.text("Item", 50, tableTop + 5.5);
+      doc.text("Brand/Model", 90, tableTop + 5.5);
+      doc.text("Serial Number", 140, tableTop + 5.5);
+      doc.text("Price", 180, tableTop + 5.5, { align: "right" });
+      
+      // Draw a line under the header
+      doc.setDrawColor(180, 180, 180);
+      doc.line(15, tableTop + 8, 195, tableTop + 8);
+      
+      // Items list
+      let yPos = tableTop + 16;
+      if (order.items && order.items.length > 0) {
+        order.items.forEach((item, index) => {
+          // Simple alternating row colors
+          if (index % 2 === 0) {
+            doc.setFillColor(250, 250, 255);
+            doc.rect(15, yPos - 6, 180, 10, 'F');
+          }
+          
+          doc.setFont("helvetica", "normal");
+          doc.text(item.id.toString(), 20, yPos);
+          doc.text(item.category || "Unknown", 50, yPos);
+          doc.text(`${item.brand || ""} ${item.model || ""}`, 90, yPos);
+          doc.text(item.serialNumber || "N/A", 140, yPos);
+          
+          // FIX: Remove peso sign completely and use clean number formatting
+          let priceValue = "0.00";
+          if (item.sellingPrice) {
+            // Convert any price format to a clean number, removing peso sign
+            const numericPrice = String(item.sellingPrice).replace(/[₱,]/g, '').trim();
+            priceValue = parseFloat(numericPrice).toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            });
+          }
+          
+          // Position the price without peso sign
+          doc.text(priceValue, 180, yPos, { align: "right" });
+          
+          yPos += 13;
+        });
+      }
+      
+      // Total
+      yPos += 5;
+      doc.setDrawColor(100, 100, 100);
+      doc.line(15, yPos, 195, yPos);
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Total:", 155, yPos + 10);
+      
+      // FIX: Format the total without peso sign
+      let totalValue = "0.00";
+      if (order.total) {
+        // Convert any price format to a clean number
+        const numericTotal = String(order.total).replace(/[₱,]/g, '').trim();
+        totalValue = parseFloat(numericTotal).toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+      }
+      
+      // Show total without peso sign
+      doc.text(totalValue, 180, yPos + 10, { align: "right" });
+      
+      // Simple footer
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(100, 100, 100);
+      doc.text("Thank you for your business.", 105, 260, { align: "center" });
+      doc.text("This invoice was generated electronically and is valid without a signature.", 105, 265, { align: "center" });
+      
+      // Save PDF
+      const pdfOutput = doc.output('datauristring');
+      resolve(pdfOutput);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      const fallbackDoc = new jsPDF();
+      fallbackDoc.text("Invoice generation failed: " + error.message, 20, 20);
+      const fallbackPdf = fallbackDoc.output('datauristring');
+      resolve(fallbackPdf);
+    }
+  });
+};
 
   //---------------------------------------------
   // CART MANAGEMENT FUNCTIONS
