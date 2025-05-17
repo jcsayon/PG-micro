@@ -2,6 +2,9 @@ from rest_framework import viewsets, generics, permissions
 from .models import *
 from .serializers import *
 from .serializers import CustomerSerializer
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import viewsets, status
 
 # 👇 VIEWSETS FOR ROUTER-REGISTERED ENDPOINTS
 class EmployeeViewSet(viewsets.ModelViewSet):
@@ -24,6 +27,18 @@ class SupplierViewSet(viewsets.ModelViewSet):
     queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
 
+    @action(detail=True, methods=['put'], url_path='catalog')
+    def update_catalog(self, request, pk=None):
+        supplier = self.get_object()
+        product_ids = request.data.get('catalog', [])
+        
+        if not isinstance(product_ids, list):
+            return Response({"error": "Catalog must be a list of product IDs."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        supplier.catalog.set(product_ids)
+        supplier.save()
+        return Response(SupplierSerializer(supplier).data, status=status.HTTP_200_OK)
+    
 class AccountViewSet(viewsets.ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer

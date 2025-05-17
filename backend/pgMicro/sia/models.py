@@ -28,6 +28,11 @@ class Supplier(models.Model):
     contact_number = models.TextField()
     email = models.TextField(unique=True)
 
+    # 💡 New field:
+    catalog = models.ManyToManyField('Product', blank=True, related_name='suppliers')
+
+    def __str__(self):
+        return self.name
 
 class DamageProduct(models.Model):
     inventory_item = models.ForeignKey('Inventory', on_delete=models.CASCADE)

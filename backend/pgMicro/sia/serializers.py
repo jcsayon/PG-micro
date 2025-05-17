@@ -29,9 +29,14 @@ class ProductCategorySerializer(serializers.ModelSerializer):
 
 
 class SupplierSerializer(serializers.ModelSerializer):
+    catalog = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(), many=True, required=False
+    )
+
     class Meta:
         model = Supplier
         fields = '__all__'
+
 
 # ------------------------
 # DAMAGE PRODUCT SERIALIZER

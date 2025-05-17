@@ -6,18 +6,28 @@ import { X } from "lucide-react";
 // Base URL for backend API (Vite env variable)
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 // Reusable InputField Component
-const InputField = ({ label, value, onChange, type = "text", disabled = false }) => (
-  <div>
-    {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-    <input
-      type={type}
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      className={`w-full px-3 py-2 border ${disabled ? 'bg-transparent border-0' : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'} rounded-md shadow-sm sm:text-sm`}
-    />
-  </div>
-);
+const InputField = ({ label = "", value, onChange, type = "text", disabled = false }) => {
+  const safeId = label ? label.toLowerCase().replace(/\s+/g, "-") : "input";
+
+  return (
+    <div>
+      {label && <label htmlFor={safeId} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      <input
+        id={safeId}
+        name={safeId}
+        type={type}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        className={`w-full px-3 py-2 border ${
+          disabled ? 'bg-transparent border-0' : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
+        } rounded-md shadow-sm sm:text-sm`}
+      />
+    </div>
+  );
+};
+
+
 
 // Modal for Managing Catalog
 const ManageCatalogModal = ({ isOpen, onClose, supplier, products, onSave }) => {
@@ -80,7 +90,7 @@ const SupplierPO = () => {
   const navigate = useNavigate();
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
-  const [newSupplier, setNewSupplier] = useState({ name: "", address: "", email: "", contact: "" });
+  const [newSupplier, setNewSupplier] = useState({ name: "", address: "", email: "", contact_number: "" });
   const [modalOpen, setModalOpen] = useState(false);
   const [activeSupplier, setActiveSupplier] = useState(null);
 
@@ -100,16 +110,31 @@ const SupplierPO = () => {
   // Add supplier
   const addSupplier = () => {
     if (!newSupplier.name || !newSupplier.address) return;
+  
     fetch(`${API_BASE_URL}/suppliers/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...newSupplier, catalog: [] }),
     })
-      .then(res => res.json())
-      .then(created => setSuppliers(prev => [...prev, created]))
-      .catch(err => console.error(err));
-    setNewSupplier({ name: "", address: "", email: "", contact: "" });
+      .then(async (res) => {
+        if (!res.ok) {
+          const errorText = await res.text();  // <-- this will show actual error like IntegrityError
+          throw new Error(`Backend error: ${errorText}`);
+        }
+        return res.json();
+      })
+      .then((created) => {
+        const safeCreated = { ...created, catalog: created.catalog || [] };
+        setSuppliers((prev) => [...prev, safeCreated]);
+      })
+      .catch((err) => {
+        console.error("Failed to add supplier:", err.message);
+        alert("Something went wrong. Check console for details.");
+      });
+  
+    setNewSupplier({ name: "", address: "", email: "", contact_number: "" });
   };
+  
 
   // Edit supplier field
   const updateSupplierField = (id, field, value) => {
@@ -146,12 +171,17 @@ const SupplierPO = () => {
     fetch(`${API_BASE_URL}/suppliers/${supplierId}/catalog/`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ catalog: catalogIds }),
+      body: JSON.stringify({ catalog: catalogIds }), // 👈 correct format
     })
-      .then(res => res.json())
-      .then(updated => setSuppliers(prev => prev.map(s => s.id === updated.id ? updated : s)))
-      .catch(err => console.error(err));
+      .then((res) => res.json())
+      .then((updated) =>
+        setSuppliers((prev) =>
+          prev.map((s) => (s.id === updated.id ? updated : s))
+        )
+      )
+      .catch((err) => console.error(err));
   };
+  
 
   return (
     <DashboardLayout>
@@ -167,20 +197,34 @@ const SupplierPO = () => {
             {suppliers.map(s => (
               <tr key={s.id} className="border-b">
                 <td className="p-2">{s.id}</td>
-                {['name','address','email','contact'].map(f => (
-                  <td key={f} className="p-2">
-                    <InputField
-                      value={s[f] || ''}
-                      disabled={false}
-                      onChange={e => updateSupplierField(s.id, f, e.target.value)}
-                    />
-                  </td>
-                ))}
-                <td className="p-2 text-center">
-                  <button onClick={() => openCatalog(s)} className="px-2 py-1 bg-indigo-200 rounded">
-                    Edit ({s.catalog?.length || 0})
-                  </button>
-                </td>
+                {['name','address','email','contact_number'].map(f => (
+                    <td key={`${s.id}-${f}`} className="p-2">
+                      <InputField
+                        value={s[f] || ''}
+                        disabled={false}
+                        onChange={e => updateSupplierField(s.id, f, e.target.value)}
+                      />
+                    </td>
+                  ))}
+
+                      <td className="p-2 text-center">
+                        <button onClick={() => openCatalog(s)} className="px-2 py-1 bg-indigo-200 rounded">
+                          Edit (
+                          {Array.isArray(s.catalog) && s.catalog.map((id, index) => {
+                            const prod = products.find(p => p.id === id);
+                            return (
+                              <React.Fragment key={`${s.id}-${id}`}>
+                                {prod ? `${prod.brand} ${prod.model}` : ''}
+                                {index < s.catalog.length - 1 ? ', ' : ''}
+                              </React.Fragment>
+                            );
+                          })}
+                          )
+                        </button>
+                      </td>
+
+
+
                 <td className="p-2 space-x-2">
                   <button onClick={() => saveSupplier(s)} className="px-2 py-1 bg-emerald-200 rounded">Save</button>
                   <button onClick={() => deleteSupplier(s.id)} className="px-2 py-1 bg-red-200 rounded">Delete</button>
@@ -196,8 +240,8 @@ const SupplierPO = () => {
             <InputField label="Name" value={newSupplier.name} onChange={e => setNewSupplier({...newSupplier,name: e.target.value})} />
             <InputField label="Address" value={newSupplier.address} onChange={e => setNewSupplier({...newSupplier,address: e.target.value})} />
             <InputField label="Email" type="email" value={newSupplier.email} onChange={e => setNewSupplier({...newSupplier,email: e.target.value})} />
-            <InputField label="Contact" value={newSupplier.contact} onChange={e => setNewSupplier({...newSupplier,contact: e.target.value})} />
-          </div>
+            <InputField label="Contact Number" value={newSupplier.contact_number} onChange={e => setNewSupplier({...newSupplier, contact_number: e.target.value})} />
+            </div>
           <button onClick={addSupplier} className="px-4 py-2 bg-indigo-600 text-white rounded">Add Supplier</button>
         </div>
 
