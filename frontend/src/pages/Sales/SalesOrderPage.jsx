@@ -447,16 +447,19 @@ const SalesOrderPage = () => {
                 <select
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring focus:ring-purple-500 focus:ring-opacity-50"
                   value={selectedCustomer}
-                  onChange={e=>setSelectedCustomer(e.target.value)}
+                  onChange={e => setSelectedCustomer(e.target.value)}
                   required
                 >
                   <option value="">Select customer...</option>
-                  {customers.map(c=>(
+                  {customers.map(c => (
                     <option key={c.id} value={c.id}>
-                      {typeof c.name === "string" ? c.name : JSON.stringify(c.name)}
+                      {typeof c.name === "string"
+                        ? c.name
+                        : `${c.name?.first || ""} ${c.name?.last || ""}`.trim() || "Unnamed"}
                     </option>
                   ))}
                 </select>
+
               </div>
             </div>
 
