@@ -32,6 +32,9 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [orderType, setOrderType] = useState("Walk-In");
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [cardLastFourDigits, setCardLastFourDigits] = useState("");
+  const [bankName, setBankName] = useState("");
   const [cart, setCart] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -77,6 +80,13 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
       }
     }
   }, [selectedCustomer, customers]);
+
+  // Reset payment-related fields when payment method changes
+  useEffect(() => {
+    setReferenceNumber("");
+    setCardLastFourDigits("");
+    setBankName("");
+  }, [paymentMethod]);
 
   // Load inventory data
   useEffect(() => {
@@ -388,41 +398,57 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
         doc.text(`Payment: ${order.paymentMethod}`, 125, 55);
         doc.text(`Type: ${order.type}`, 125, 60);
         
+        // Payment details if available
+        if (order.paymentDetails) {
+          if (order.paymentDetails.referenceNumber) {
+            doc.text(`Ref #: ${order.paymentDetails.referenceNumber}`, 125, 65);
+          }
+          if (order.paymentMethod === "Credit Card" || order.paymentMethod === "Debit Card") {
+            if (order.paymentDetails.cardLastFourDigits) {
+              doc.text(`Card: xxxx-xxxx-xxxx-${order.paymentDetails.cardLastFourDigits}`, 125, 70);
+            }
+          } else if (order.paymentMethod === "Bank Transfer") {
+            if (order.paymentDetails.bankName) {
+              doc.text(`Bank: ${order.paymentDetails.bankName}`, 125, 70);
+            }
+          }
+        }
+        
         // Customer info in a clean light blue-gray box
         doc.setFillColor(240, 242, 245);
-        doc.roundedRect(15, 65, 180, 30, 2, 2, 'FD');
+        doc.roundedRect(15, 75, 180, 30, 2, 2, 'FD');
         
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.text("Customer Information", 20, 73);
+        doc.text("Customer Information", 20, 83);
         
         // Find customer details
         const customer = findCustomerByName(order.customer);
         
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        doc.text(`Customer: ${order.customer}`, 20, 80);
-        doc.text(`Address: ${customer?.address || 'N/A'}`, 20, 85);
+        doc.text(`Customer: ${order.customer}`, 20, 90);
+        doc.text(`Address: ${customer?.address || 'N/A'}`, 20, 95);
         
-        doc.text(`Email: ${customer?.email || 'N/A'}`, 120, 80);
-        doc.text(`Contact: ${customer?.phone || 'N/A'}`, 120, 85);
+        doc.text(`Email: ${customer?.email || 'N/A'}`, 120, 90);
+        doc.text(`Contact: ${customer?.phone || 'N/A'}`, 120, 95);
         
        // Items table with improved styling
         doc.setFillColor(240, 236, 255);
-        doc.rect(15, 100, 180, 10, 'F');
+        doc.rect(15, 110, 180, 10, 'F');
         doc.setDrawColor(200, 200, 200);
-        doc.line(15, 100, 195, 100);
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Item ID", 20, 107);
-        doc.text("Item", 60, 107);
-        doc.text("Brand/Model", 100, 107);
-        doc.text("Serial Number", 140, 107); // Changed from 150 to 140
-        doc.text("Price", 180, 107, { align: "right" });
         doc.line(15, 110, 195, 110);
 
+        doc.setFont("helvetica", "bold");
+        doc.text("Item ID", 20, 117);
+        doc.text("Item", 60, 117);
+        doc.text("Brand/Model", 100, 117);
+        doc.text("Serial Number", 140, 117); // Changed from 150 to 140
+        doc.text("Price", 180, 117, { align: "right" });
+        doc.line(15, 120, 195, 120);
+
         // Items list with subtle alternating backgrounds
-        let yPos = 120;
+        let yPos = 130;
         if (order.items && order.items.length > 0) {
           order.items.forEach((item, index) => {
             if (index % 2 === 0) {
@@ -614,6 +640,40 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
       return;
     }
     
+    // Validate payment details
+    if (paymentMethod === "Credit Card" || paymentMethod === "Debit Card") {
+  if (!referenceNumber) {
+    alert("Please enter a reference number");
+    return;
+  }
+  if (!cardLastFourDigits) {
+    alert("Please enter the last 4 digits of the card");
+    return;
+  }
+  if (!/^\d{4}$/.test(cardLastFourDigits)) {
+    alert("Card digits must be exactly 4 numbers");
+    return;
+  }
+} else if (paymentMethod === "Bank Transfer") {
+  if (!referenceNumber) {
+    alert("Please enter a reference number");
+    return;
+  }
+  if (!bankName) {
+    alert("Please enter the bank name");
+    return;
+  }
+} else if (paymentMethod === "Cheque") {
+  if (!referenceNumber) {
+    alert("Please enter a cheque number");
+    return;
+  }
+  if (!bankName) {
+    alert("Please enter the bank name");
+    return;
+  }
+}
+    
     try {
       // Find the selected customer
       const customer = customers.find(c => c.id === parseInt(selectedCustomer));
@@ -621,6 +681,23 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
         alert("Invalid customer selected");
         return;
       }
+      
+      // Prepare payment details based on method
+      const paymentDetails = {};
+      
+              if (referenceNumber) {
+          paymentDetails.referenceNumber = referenceNumber;
+        }
+
+        if (paymentMethod === "Credit Card" || paymentMethod === "Debit Card") {
+          if (cardLastFourDigits) {
+            paymentDetails.cardLastFourDigits = cardLastFourDigits;
+          }
+        } else if (paymentMethod === "Bank Transfer" || paymentMethod === "Cheque") {
+          if (bankName) {
+            paymentDetails.bankName = bankName;
+          }
+        }
       
       // Create the order object
       const newOrder = {
@@ -631,7 +708,8 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
         type: orderType,
         total: totalAmount,
         items: cart,
-        paymentMethod: paymentMethod
+        paymentMethod: paymentMethod,
+        paymentDetails: paymentDetails
       };
       
       // Generate the invoice PDF
@@ -696,6 +774,9 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
       setCart([]);
       setSelectedCustomer("");
       setPaymentMethod("");
+      setReferenceNumber("");
+      setCardLastFourDigits("");
+      setBankName("");
       setShowCreateModal(false);
       
       // THEN: Generate next order ID
@@ -770,322 +851,465 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
     navigate("/customer-sales");
   };
   
-  //---------------------------------------------
-// RENDER UI
-//---------------------------------------------
+  const renderPaymentDetailsFields = () => {
+  if (!paymentMethod || paymentMethod === "Cash") return null;
 
-return (
-  <div className="p-4 bg-white min-h-screen">
-    {/* Header and controls section */}
-    <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-purple-800">Issued Sale Orders</h1>
-      </div>
-      
-      <div className="flex flex-wrap items-center gap-3 mb-4">
-        <div>
-          <label htmlFor="type-filter" className="mr-2">Type:</label>
-          <select
-            id="type-filter"
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="p-2 border rounded bg-white"
-          >
-            <option value="All">All</option>
-            <option value="Walk-In">Walk-In</option>
-            <option value="Contract">Contract</option>
-          </select>
+  // Different fields based on payment method
+  switch(paymentMethod) {
+    case "Credit Card":
+    case "Debit Card":
+      return (
+        <div className="flex flex-row gap-2">
+          <div className="w-1/2">
+            <label className="block text-xs font-medium text-gray-600">Reference Number:</label>
+            <input
+              type="text"
+              value={referenceNumber}
+              onChange={(e) => setReferenceNumber(e.target.value)}
+              className="p-1 border rounded w-full text-sm"
+              placeholder="Enter reference number"
+              required
+            />
+          </div>
+          <div className="w-1/2">
+            <label className="block text-xs font-medium text-gray-600">Last 4 Digits:</label>
+            <input
+              type="text"
+              value={cardLastFourDigits}
+              onChange={(e) => {
+                // Only allow digits and limit to 4 characters
+                const value = e.target.value.replace(/[^\d]/g, '').slice(0, 4);
+                setCardLastFourDigits(value);
+              }}
+              className="p-1 border rounded w-full text-sm"
+              placeholder="Last 4 digits of card"
+              required
+              maxLength="4"
+              pattern="\d{4}"
+            />
+          </div>
         </div>
-        
-        <div className="flex-grow">
-          <input
-            type="text"
-            placeholder="Search by SO ID, Customer, or Date"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="p-2 border rounded w-full max-w-xl"
-          />
-        </div>
-        
-        <div className="flex space-x-2">
-          <button 
-            onClick={handleRefreshData} 
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center"
-            disabled={isLoading}
-          >
-            <RefreshCw className="h-4 w-4 mr-1" />
-            {isLoading ? "Loading..." : "Refresh Data"}
-          </button>
-          
-          <button 
-            onClick={() => setShowCreateModal(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
-          >
-            <Plus className="h-4 w-4 mr-1" /> Create SO
-          </button>
-        </div>
-      </div>
-      
-      {/* Loading indicator */}
-      {isLoading && (
-        <div className="flex justify-center items-center py-4">
-          <p className="text-purple-700 text-lg">Loading data...</p>
-        </div>
-      )}
-      
-      {/* Sales Orders Table */}
-      {!isLoading && (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
-            <thead>
-              <tr className="bg-gray-100 text-gray-800">
-                <th className="p-3 text-left">Sale Order ID</th>
-                <th className="p-3 text-left">Employee</th>
-                <th className="p-3 text-left">Date Sold</th>
-                <th className="p-3 text-left">Customer</th>
-                <th className="p-3 text-left">Type</th>
-                <th className="p-3 text-right">Total</th>
-                <th className="p-3 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="p-4 text-center text-gray-500">No sales orders found</td>
-                </tr>
-              ) : (
-                filteredOrders.map((order, index) => (
-                  <tr key={order.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                    <td className="p-3 text-purple-700">{order.id}</td>
-                    <td className="p-3">{order.employee}</td>
-                    <td className="p-3">{order.dateSold}</td>
-                    <td className="p-3">{order.customer}</td>
-                    <td className="p-3">
-                      <span className={`px-2 rounded-full ${
-                        order.type === "Walk-In" ? "bg-emerald-100 text-emerald-800" : "bg-yellow-100 text-yellow-800"
-                      }`}>
-                        {order.type}
-                      </span>
-                    </td>
-                    <td className="p-3 text-right">₱{formatPrice(order.total)}</td>
-                    <td className="p-3 text-center">
-                      <button
-                        onClick={() => viewOrderDetails(order)}
-                        className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
-                      >
-                        View details
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+      );
     
-    {/* Create Sales Order Modal */}
-    {showCreateModal && (
-      <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-        <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-7xl max-h-[95vh] flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
-              <button 
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setCart([]);
-                  setSelectedCustomer("");
-                  setPaymentMethod("");
-                }}
-                className="text-white hover:text-black"
-              >
-                <X className="h-6 w-6 bg-red-500 rounded" />
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Sales Order ID:</label>
-                <p className="font-semibold">{newOrderId}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Employee:</label>
-                <p className="font-semibold">sales@pgmicro.com</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Date:</label>
-                <p className="font-semibold">{new Date().toISOString().split('T')[0]}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Status:</label>
-                <p className="font-semibold">{orderType}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Time:</label>
-                <p className="font-semibold">
-                  {new Date().toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    hour12: true 
-                  })}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">Payment Method:</label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="p-1 border rounded w-full"
-                  required
-                >
-                  <option value="">Select Payment Method</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="Debit Card">Debit Card</option>
-                  <option value="Bank Transfer">Bank Transfer</option>
-                  <option value="Online Payment">Online Payment</option>
-                </select>
-              </div>
-              <div className="w-[100%]">
-                <label className="block text-sm font-medium text-gray-600">Select Customer:</label>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedCustomer}
-                    onChange={(e) => setSelectedCustomer(e.target.value)}
-                    className="p-1 border rounded w-full"
-                    required
-                  >
-                    <option value="">Select Customer</option>
-                    {customers.map(customer => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name} - {customer.email}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
+    case "Bank Transfer":
+      return (
+        <div className="flex flex-row gap-2">
+          <div className="w-1/2">
+            <label className="block text-xs font-medium text-gray-600">Reference Number:</label>
+            <input
+              type="text"
+              value={referenceNumber}
+              onChange={(e) => setReferenceNumber(e.target.value)}
+              className="p-1 border rounded w-full text-sm"
+              placeholder="Enter reference number"
+              required
+            />
           </div>
-          
-          <div className="flex-1 overflow-hidden flex flex-col md:flex-row p-4">
-            {/* Product Selection */}
-            <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="p-2 border rounded w-full"
-                >
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="border rounded p-2 h-[350px] flex flex-col">
-                <h3 className="font-semibold mb-2">Available Products:</h3>
-                <div className="flex-1 overflow-y-auto">
-                  {filteredProducts.length === 0 ? (
-                    <p className="text-gray-500 italic text-center p-4">No products available</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {filteredProducts.map(product => (
-                        product.saleStatus !== "Sold" && (
-                          <div 
-                            key={product.id} 
-                            className="p-3 border rounded bg-white flex justify-between items-center"
-                            style={{minHeight: "80px"}}
-                          >
-                            <div>
-                              <p className="font-semibold">{product.category || "Unknown Category"}</p>
-                              <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
-                              <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
-                              <p>{product.sellingPrice || "Price not available"}</p>
-                            </div>
-                            <button
-                              onClick={() => addToCart(product)}
-                              className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                            >
-                              Add to Cart
-                            </button>
-                          </div>
-                        )
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {/* Shopping Cart */}
-            <div className="md:w-1/2 pl-0 md:pl-2">
-              <div className="border rounded flex flex-col h-[420px]">
-                <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
-                <div className="flex-1 overflow-y-auto">
-                  {cart.length === 0 ? (
-                    <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
-                  ) : (
-                    <table className="min-w-full">
-                      <thead className="bg-gray-100 sticky top-0">
-                        <tr>
-                          <th className="p-2 text-left">Item ID</th>
-                          <th className="p-2 text-left">Brand</th>
-                          <th className="p-2 text-left">Model</th>
-                          <th className="p-2 text-right">Price</th>
-                          <th className="p-2 text-center">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cart.map(item => (
-                          <tr key={item.id} className="border-b">
-                            <td className="p-2">{item.id}</td>
-                            <td className="p-2">{item.brand}</td>
-                            <td className="p-2">{item.model}</td>
-                            <td className="p-2 text-right">{item.sellingPrice}</td>
-                            <td className="p-2 text-center">
-                              <button
-                                onClick={() => removeFromCart(item.id)}
-                                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
-                              >
-                                Remove
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-                <div className="bg-gray-100 p-2 border-t">
-                  <div className="font-semibold text-right">
-                    Total: ₱{totalAmount.toFixed(2)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-2 border-t border-gray-200 flex justify-end space-x-3">           
-            <button
-              onClick={handleCreateOrder}
-              disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}
-              className={`px-4 py-2 rounded text-white w-32 ${
-                !selectedCustomer || cart.length === 0 || !paymentMethod
-                  ? "bg-green-300 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700"
-              }`}
+          <div className="w-1/2">
+            <label className="block text-xs font-medium text-gray-600">Bank Name:</label>
+            <select
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              className="p-1 border rounded w-full text-sm"
+              required
             >
-              Create Order
+              <option value="">Select Bank</option>
+              <option value="BDO">BDO</option>
+              <option value="BPI">BPI</option>
+              <option value="Metrobank">Metrobank</option>
+              <option value="Security Bank">Security Bank</option>
+              <option value="UnionBank">UnionBank</option>
+              <option value="PNB">PNB</option>
+              <option value="LBP">Land Bank of the Philippines</option>
+              <option value="RCBC">RCBC</option>
+              <option value="Eastwest">Eastwest Bank</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+      );
+    
+    case "Cheque":
+      return (
+        <div className="flex flex-row gap-2">
+          <div className="w-1/2">
+            <label className="block text-xs font-medium text-gray-600">Cheque Number:</label>
+            <input
+              type="text"
+              value={referenceNumber}
+              onChange={(e) => setReferenceNumber(e.target.value)}
+              className="p-1 border rounded w-full text-sm"
+              placeholder="Enter cheque number"
+              required
+            />
+          </div>
+          <div className="w-1/2">
+            <label className="block text-xs font-medium text-gray-600">Bank Name:</label>
+            <select
+              value={bankName}
+              onChange={(e) => setBankName(e.target.value)}
+              className="p-1 border rounded w-full text-sm"
+              required
+            >
+              <option value="">Select Bank</option>
+              <option value="BDO">BDO</option>
+              <option value="BPI">BPI</option>
+              <option value="Metrobank">Metrobank</option>
+              <option value="Security Bank">Security Bank</option>
+              <option value="UnionBank">UnionBank</option>
+              <option value="PNB">PNB</option>
+              <option value="LBP">Land Bank of the Philippines</option>
+              <option value="RCBC">RCBC</option>
+              <option value="Eastwest">Eastwest Bank</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+      );
+    
+    default:
+      return null;
+  }
+};
+  
+  //---------------------------------------------
+  // RENDER UI
+  //---------------------------------------------
+
+  return (
+    <div className="p-4 bg-white min-h-screen">
+      {/* Header and controls section */}
+      <div className="bg-white p-4 rounded-lg mb-4 border border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold text-purple-800">Issued Sale Orders</h1>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div>
+            <label htmlFor="type-filter" className="mr-2">Type:</label>
+            <select
+              id="type-filter"
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="p-2 border rounded bg-white"
+            >
+              <option value="All">All</option>
+              <option value="Walk-In">Walk-In</option>
+              <option value="Contract">Contract</option>
+            </select>
+          </div>
+          
+          <div className="flex-grow">
+            <input
+              type="text"
+              placeholder="Search by SO ID, Customer, or Date"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="p-2 border rounded w-full max-w-xl"
+            />
+          </div>
+          
+          <div className="flex space-x-2">
+            <button 
+              onClick={handleRefreshData} 
+              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center"
+              disabled={isLoading}
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              {isLoading ? "Loading..." : "Refresh Data"}
+            </button>
+            
+            <button 
+              onClick={() => setShowCreateModal(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Create SO
             </button>
           </div>
         </div>
+        
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-4">
+            <p className="text-purple-700 text-lg">Loading data...</p>
+          </div>
+        )}
+        
+        {/* Sales Orders Table */}
+        {!isLoading && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white">
+              <thead>
+                <tr className="bg-gray-100 text-gray-800">
+                  <th className="p-3 text-left">Sale Order ID</th>
+                  <th className="p-3 text-left">Employee</th>
+                  <th className="p-3 text-left">Date Sold</th>
+                  <th className="p-3 text-left">Customer</th>
+                  <th className="p-3 text-left">Type</th>
+                  <th className="p-3 text-right">Total</th>
+                  <th className="p-3 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="p-4 text-center text-gray-500">No sales orders found</td>
+                  </tr>
+                ) : (
+                  filteredOrders.map((order, index) => (
+                    <tr key={order.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                      <td className="p-3 text-purple-700">{order.id}</td>
+                      <td className="p-3">{order.employee}</td>
+                      <td className="p-3">{order.dateSold}</td>
+                      <td className="p-3">{order.customer}</td>
+                      <td className="p-3">
+                        <span className={`px-2 rounded-full ${
+                          order.type === "Walk-In" ? "bg-emerald-100 text-emerald-800" : "bg-yellow-100 text-yellow-800"
+                        }`}>
+                          {order.type}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">₱{formatPrice(order.total)}</td>
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => viewOrderDetails(order)}
+                          className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
+                        >
+                          View details
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-    )}
+      
+      {/* Create Sales Order Modal */}
+     {showCreateModal && (
+  <div className="fixed inset-0 flex items-center justify-center z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+    <div className="bg-white rounded-lg shadow-xl w-[95%] max-w-7xl max-h-[95vh] flex flex-col">
+      {/* Header section with close button */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-gray-800">Create Sales Order</h2>
+          <button 
+            onClick={() => {
+              setShowCreateModal(false);
+              setCart([]);
+              setSelectedCustomer("");
+              setPaymentMethod("");
+              setReferenceNumber("");
+              setCardLastFourDigits("");
+              setBankName("");
+            }}
+            className="text-white hover:text-black"
+          >
+            <X className="h-6 w-6 bg-red-500 rounded" />
+          </button>
+        </div>
+        
+        {/* Order information section - horizontally aligned layout */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-4">
+          {/* First row - Order details with Customer selection */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-600">Sales Order ID:</label>
+            <p className="font-semibold">{newOrderId}</p>
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-600">Employee:</label>
+            <p className="font-semibold">sales@pgmicro.com</p>
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-600">Date:</label>
+            <p className="font-semibold">{new Date().toISOString().split('T')[0]}</p>
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-600">Status:</label>
+            <p className="font-semibold">{orderType}</p>
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-600">Time:</label>
+            <p className="font-semibold">
+              {new Date().toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: true 
+              })}
+            </p>
+          </div>
+          {/* Customer selection moved to first row alongside time */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-600">Select Customer:</label>
+            <select
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+              className="p-1 border rounded w-full"
+              required
+            >
+              <option value="">Select Customer</option>
+              {customers.map(customer => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Second row - Payment Method and Payment Details side by side */}
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium text-gray-600">Payment Method:</label>
+            <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="p-1 border rounded w-full"
+                required
+            >
+                <option value="">Select Payment Method</option>
+                <option value="Cash">Cash</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Cheque">Cheque</option>
+              </select>
+          </div>
+          
+          {/* Payment Details inline */}
+                  <div className="md:col-span-3">
+          {paymentMethod && paymentMethod !== "Cash" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-600">Payment Details:</label>
+              <div className="border rounded p-2 bg-gray-50">
+                <div className="max-w-xs">
+                {renderPaymentDetailsFields()}
+              </div>
+            </div>
+            </div>
+          )}
+        </div>
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-hidden flex flex-col md:flex-row p-4">
+        {/* Product Selection */}
+        <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
+          <div className="mb-2">
+            <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="p-2 border rounded w-full"
+            >
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="border rounded p-2 h-[350px] flex flex-col">
+            <h3 className="font-semibold mb-2">Available Products:</h3>
+            <div className="flex-1 overflow-y-auto">
+              {filteredProducts.length === 0 ? (
+                <p className="text-gray-500 italic text-center p-4">No products available</p>
+              ) : (
+                <div className="space-y-2">
+                  {filteredProducts.map(product => (
+                    product.saleStatus !== "Sold" && (
+                      <div 
+                        key={product.id} 
+                        className="p-3 border rounded bg-white flex justify-between items-center"
+                        style={{minHeight: "80px"}}
+                      >
+                        <div>
+                          <p className="font-semibold">{product.category || "Unknown Category"}</p>
+                          <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
+                          <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
+                          <p>{product.sellingPrice || "Price not available"}</p>
+                        </div>
+                        <button
+                          onClick={() => addToCart(product)}
+                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                        >
+                          Add to Cart
+                        </button>
+                      </div>
+                    )
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Shopping Cart */}
+        <div className="md:w-1/2 pl-0 md:pl-2">
+          <div className="border rounded flex flex-col h-[420px]">
+            <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
+            <div className="flex-1 overflow-y-auto">
+              {cart.length === 0 ? (
+                <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
+              ) : (
+                <table className="min-w-full">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="p-2 text-left">Item ID</th>
+                      <th className="p-2 text-left">Brand</th>
+                      <th className="p-2 text-left">Model</th>
+                      <th className="p-2 text-right">Price</th>
+                      <th className="p-2 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map(item => (
+                      <tr key={item.id} className="border-b">
+                        <td className="p-2">{item.id}</td>
+                        <td className="p-2">{item.brand}</td>
+                        <td className="p-2">{item.model}</td>
+                        <td className="p-2 text-right">{item.sellingPrice}</td>
+                        <td className="p-2 text-center">
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="bg-gray-100 p-2 border-t">
+              <div className="font-semibold text-right">
+                Total: ₱{totalAmount.toFixed(2)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-2 border-t border-gray-200 flex justify-end space-x-3">           
+        <button
+          onClick={handleCreateOrder}
+          disabled={!selectedCustomer || cart.length === 0 || !paymentMethod}
+          className={`px-4 py-2 rounded text-white w-32 ${
+            !selectedCustomer || cart.length === 0 || !paymentMethod
+              ? "bg-green-300 cursor-not-allowed"
+              : "bg-green-600 hover:bg-green-700"
+          }`}
+        >
+          Create Order
+        </button>
+      </div>
+    </div>
   </div>
-);
+)}
+    </div>
+  );
 };
+
 
 export default SalesOrderPage;
