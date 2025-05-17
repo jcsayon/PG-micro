@@ -1,6 +1,7 @@
 from django.db import models
 
 
+
 class Employee(models.Model):
     name = models.TextField()
     role = models.TextField()
@@ -54,11 +55,17 @@ class DamageProduct(models.Model):
 
 
 class Account(models.Model):
-    employee = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='account', null=True, blank=True)
-    username = models.EmailField(unique=True)
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
+    employee = models.ForeignKey("sia.Employee", on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=50, choices=[("Active", "Active"), ("Inactive", "Inactive")])
     role = models.CharField(max_length=50)
-    status = models.CharField(max_length=10, choices=[("Active", "Active"), ("Inactive", "Inactive")])
+    accessible_pages = models.JSONField(null=True, blank=True)
+
+    def __str__(self):
+        return self.username
+
 
 
 # ------------------------

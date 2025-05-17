@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import Sidebar_Primary from "../../components/Sidebar_Primary";
 import { ROLES } from '../../utils/roleConfig';
 
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+
 // Get status badge class - Simplified to just Active and Inactive
 const getStatusBadgeClass = (status) => {
   switch(status) {
@@ -72,45 +75,22 @@ const UserManagementPage = () => {
   const currentUserRole = "Admin";
 
   // Initialize employees from local storage
-  const [employees, setEmployees] = useState(() => {
-    const storedEmployees = localStorage.getItem('employees');
-    if (storedEmployees) {
-      return JSON.parse(storedEmployees);
+  const [employees, setEmployees] = useState([]);
+
+  const fetchEmployees = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/employees/`);
+      const data = await res.json();
+      setEmployees(data);
+    } catch (err) {
+      console.error("Error fetching employees:", err);
     }
-    // Default employees if none in local storage
-    return [
-      { 
-        id: 1, 
-        firstName: "Admin",
-        lastName: "User",
-        email: "admin@pgmicro.com",
-        phone: "555-123-4567",
-        position: "System Administrator",
-        joinDate: "2023-01-15",
-        hasAccount: true
-      },
-      { 
-        id: 2, 
-        firstName: "Inventory",
-        lastName: "Manager",
-        email: "inventory@pgmicro.com",
-        phone: "555-234-5678",
-        position: "Inventory Manager",
-        joinDate: "2023-02-20",
-        hasAccount: true
-      },
-      { 
-        id: 3, 
-        firstName: "Sales",
-        lastName: "Representative",
-        email: "sales@pgmicro.com",
-        phone: "555-345-6789",
-        position: "Sales Representative",
-        joinDate: "2023-03-10",
-        hasAccount: true
-      },
-    ];
-  });
+  };
+  
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+  
 
   // Save employees to local storage whenever employees change
   useEffect(() => {
@@ -118,42 +98,22 @@ const UserManagementPage = () => {
   }, [employees]);
 
   // Initialize users from local storage
-  const [users, setUsers] = useState(() => {
-    const storedUsers = localStorage.getItem('users');
-    if (storedUsers) {
-      return JSON.parse(storedUsers);
+  const [users, setUsers] = useState([]);
+
+  const fetchAccounts = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/accounts/`);
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      console.error("Error fetching accounts:", err);
     }
-    // Default users if none in local storage
-    return [
-      { 
-        id: 1, 
-        username: "admin@pgmicro.com", 
-        role: ROLES.ADMIN, 
-        password: "admin123", 
-        status: "Active",
-        employeeId: 1,
-        accessiblePages: getAccessiblePagesByRole(ROLES.ADMIN)
-      },
-      { 
-        id: 2, 
-        username: "inventory@pgmicro.com", 
-        role: ROLES.INVENTORY, 
-        password: "inventory123", 
-        status: "Active",
-        employeeId: 2,
-        accessiblePages: getAccessiblePagesByRole(ROLES.INVENTORY)
-      },
-      { 
-        id: 3, 
-        username: "sales@pgmicro.com", 
-        role: ROLES.SALES, 
-        password: "sales123", 
-        status: "Active",
-        employeeId: 3,
-        accessiblePages: getAccessiblePagesByRole(ROLES.SALES)
-      },
-    ];
-  });
+  };
+  
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+  
 
   // Save users to local storage whenever users change
   useEffect(() => {
@@ -296,88 +256,42 @@ const handleUserChange = (e) => {
   };
 
   // Handle adding or updating employee
-  const handleAddEmployee = () => {
+  const handleAddEmployee = async () => {
     if (!employeeForm.firstName || !employeeForm.lastName || !employeeForm.email) {
       alert("Please fill all required fields");
       return;
     }
-    
-    const normalizedEmail = employeeForm.email.trim().toLowerCase();
-    
-    // Check for duplicate emails
-    if (employees.some(emp => 
-      emp.email.toLowerCase() === normalizedEmail && 
-      (!isEditingEmployee || emp.id !== selectedEmployee?.id)
-    )) {
-      alert("Email already exists");
-      return;
-    }
-
-    if (isEditingEmployee && selectedEmployee) {
-      // Update existing employee
-      const updatedEmployees = employees.map(emp => 
-        emp.id === selectedEmployee.id 
-          ? { 
-              ...emp, 
-              firstName: employeeForm.firstName.trim(),
-              lastName: employeeForm.lastName.trim(),
-              email: normalizedEmail,
-              phone: employeeForm.phone.trim(),
-              position: employeeForm.position.trim(),
-              joinDate: employeeForm.joinDate
-            } 
-          : emp
-      );
-      
-      setEmployees(updatedEmployees);
-      setIsEditingEmployee(false);
-      setSelectedEmployee(null);
-      setIsAddingEmployee(false);
-    } else {
-      // Add new employee
-      const newEmployee = {
-        id: Date.now(), // Use timestamp as unique ID
-        firstName: employeeForm.firstName.trim(),
-        lastName: employeeForm.lastName.trim(),
-        email: normalizedEmail,
-        phone: employeeForm.phone.trim(),
-        position: employeeForm.position.trim(),
-        joinDate: employeeForm.joinDate,
-        hasAccount: false
-      };
-      
-      setEmployees([...employees, newEmployee]);
-      
-      // Reset form
+  
+    const newEmployee = {
+      name: `${employeeForm.firstName} ${employeeForm.lastName}`,
+      role: employeeForm.position,
+      employee_status: "Active"
+    };
+  
+    try {
+      await fetch(`${API_BASE_URL}/employees/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEmployee)
+      });
+  
+      await fetchEmployees(); // Refresh list
       resetForms();
+    } catch (err) {
+      console.error("Failed to add employee:", err);
+      alert("Error saving employee");
     }
   };
+  
 
   // Handle adding new user after employee creation
-  const handleAddUser = () => {
-  if (!userForm.username || (!isEditing && !userForm.password)) {
-    alert("Please fill all required fields");
-    return;
-  }
-  
-  const normalizedUsername = userForm.username.trim().toLowerCase();
-  
-  // Check for duplicate usernames
-  if (users.some(user => 
-    user.username.toLowerCase() === normalizedUsername && 
-    (!isEditing || user.id !== selectedUser?.id)
-  )) {
-    alert("Username already exists");
-    return;
-  }
-    
-    // Password validation for new accounts
-    if (!isEditing && userForm.password.length !== 8) {
-      setPasswordError("Password must be exactly 8 characters long");
+  const handleAddUser = async () => {
+    if (!userForm.username || (!isEditing && !userForm.password)) {
+      alert("Please fill all required fields");
       return;
     }
   
-    // Build accessible pages from module selections
+    const normalizedUsername = userForm.username.trim().toLowerCase();
     const accessiblePages = ['dashboard'];
     if (userForm.modules.admin) accessiblePages.push('user-management');
     if (userForm.modules.sales) accessiblePages.push('sales');
@@ -385,57 +299,39 @@ const handleUserChange = (e) => {
     if (userForm.modules.returnWarranty) accessiblePages.push('return-warranty');
     if (userForm.modules.purchaseOrders) accessiblePages.push('purchase-orders');
     if (userForm.modules.reports) accessiblePages.push('reports');
-    
-    // Determine primary role based on modules
-    let role = userForm.role;
-    if (userForm.modules.admin) {
-      role = ROLES.ADMIN;
-    }
   
-    if (isEditing && selectedUser) {
-      // Update existing user
-      const updatedUsers = users.map(user => 
-        user.id === selectedUser.id 
-          ? { 
-              ...user, 
-              username: normalizedUsername,
-              password: userForm.password === "********" ? user.password : userForm.password.trim(),
-              role: role,
-              status: userForm.status,
-              accessiblePages: accessiblePages
-            } 
-          : user
-      );
-      
-      setUsers(updatedUsers);
-      setIsEditing(false);
-      setSelectedUser(null);
-    } else {
-      // Add new user for the selected employee
-      const newUser = {
-        id: Date.now(),
-        username: normalizedUsername,
-        password: userForm.password.trim(),
-        role: role,
-        status: userForm.status,
-        employeeId: selectedEmployee.id,
-        accessiblePages: accessiblePages
-      };
-      
-      // Update employee hasAccount status
-      const updatedEmployees = employees.map(emp => 
-        emp.id === selectedEmployee.id 
-          ? { ...emp, hasAccount: true } 
-          : emp
-      );
-      
-      setEmployees(updatedEmployees);
-      setUsers([...users, newUser]);
+    const accountPayload = {
+      employee: selectedEmployee.id,
+      username: normalizedUsername,
+      password: userForm.password,
+      role: userForm.role,
+      status: userForm.status,
+      accessible_pages: accessiblePages
+    };
+  
+    try {
+      await fetch(`${API_BASE_URL}/accounts/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(accountPayload)
+      });
+  
+      // Optionally patch employee status
+      await fetch(`${API_BASE_URL}/employees/${selectedEmployee.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_status: "Active" }) // or a boolean has_account: true
+      });
+  
+      await fetchAccounts(); // Refresh
+      await fetchEmployees(); // To reflect has_account
+      resetForms();
+    } catch (err) {
+      console.error("Failed to add user:", err);
+      alert("Error saving user");
     }
-    
-    // Reset forms and states
-    resetForms();
   };
+  
 
   // Reset all forms and modal states
   const resetForms = () => {
@@ -494,21 +390,28 @@ const handleUserChange = (e) => {
   };
 
   // Confirm delete employee
-  const confirmDeleteEmployee = () => {
-    // Also delete associated user account if exists
-    if (selectedEmployee.hasAccount) {
-      const userToDelete = users.find(user => user.employeeId === selectedEmployee.id);
-      if (userToDelete) {
-        const updatedUsers = users.filter(user => user.id !== userToDelete.id);
-        setUsers(updatedUsers);
+  const confirmDeleteEmployee = async () => {
+    try {
+      if (selectedEmployee.hasAccount) {
+        const relatedUser = users.find(user => user.employee === selectedEmployee.id);
+        if (relatedUser) {
+          await fetch(`${API_BASE_URL}/accounts/${relatedUser.id}/`, { method: 'DELETE' });
+        }
       }
+  
+      await fetch(`${API_BASE_URL}/employees/${selectedEmployee.id}/`, {
+        method: 'DELETE'
+      });
+  
+      await fetchEmployees();
+      await fetchAccounts();
+      setShowDeleteEmployeeConfirm(false);
+      setSelectedEmployee(null);
+    } catch (err) {
+      console.error("Error deleting employee:", err);
     }
-    
-    const updatedEmployees = employees.filter(emp => emp.id !== selectedEmployee.id);
-    setEmployees(updatedEmployees);
-    setShowDeleteEmployeeConfirm(false);
-    setSelectedEmployee(null);
   };
+  
 
   // Handle edit user
   const handleEditClick = (user) => {
@@ -549,26 +452,18 @@ const handleUserChange = (e) => {
   };
 
   // Confirm delete user
-  const confirmDelete = () => {
-    const updatedUsers = users.filter(user => user.id !== selectedUser.id);
-    
-    // Also update employee hasAccount status
-    const userToDelete = selectedUser;
-    const employeeToUpdate = employees.find(emp => emp.id === userToDelete.employeeId);
-    
-    if (employeeToUpdate) {
-      const updatedEmployees = employees.map(emp => 
-        emp.id === employeeToUpdate.id 
-          ? { ...emp, hasAccount: false } 
-          : emp
-      );
-      setEmployees(updatedEmployees);
+  const confirmDelete = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/accounts/${selectedUser.id}/`, { method: 'DELETE' });
+  
+      await fetchAccounts();
+      setSelectedUser(null);
+      setShowDeleteConfirm(false);
+    } catch (err) {
+      console.error("Error deleting user:", err);
     }
-    
-    setUsers(updatedUsers);
-    setShowDeleteConfirm(false);
-    setSelectedUser(null);
   };
+  
 
   // Handle create account for employee
   const handleCreateAccountClick = (employee) => {
@@ -597,10 +492,15 @@ const handleUserChange = (e) => {
   );
 
   // Filter users based on search term
-  const filteredUsers = users.filter(user => 
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(user =>
+    user &&
+    (
+      (user.username || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.role || "").toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
+  
+  
 
   // Role color map - Enhanced with more vibrant colors
   const getRoleBadgeClass = (role) => {
