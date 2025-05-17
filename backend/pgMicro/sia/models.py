@@ -30,7 +30,7 @@ class Supplier(models.Model):
 
 
 class DamageProduct(models.Model):
-    inventory_item = models.ForeignKey('Inventory', on_delete=models.CASCADE, related_name='damages')
+    inventory_item = models.ForeignKey('Inventory', on_delete=models.CASCADE)
     damage_type = models.CharField(max_length=255)
     quantity_damaged = models.IntegerField()
     date_reported = models.DateTimeField(auto_now_add=True)

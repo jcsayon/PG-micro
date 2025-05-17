@@ -1,11 +1,13 @@
 import React from "react";
 import AppRoutes from "./routes/AppRoutes";
-
+import { ErrorBoundary } from "./pages/ErrorBoundary";
 const App = () => {
   return (
-    <div className="App">
-      <AppRoutes />
-    </div>
+    <ErrorBoundary>
+      <div className="App">
+        <AppRoutes />
+      </div>
+    </ErrorBoundary>
   );
 };
 

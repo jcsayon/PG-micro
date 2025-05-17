@@ -38,4 +38,5 @@ router.register(r'damage-products', DamageProductViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('damaged-inventory/', DamagedInventoryListView.as_view(), name="damaged-inventory"),  # ✅ direct access
+    path("api/", include(router.urls)),
 ]
