@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useMemo } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { ShoppingBag, AlertTriangle, Eye, FileText, X, Loader, Package, AlertOctagon } from "lucide-react";
 
@@ -22,6 +22,8 @@ const InventoryPage = ({ onInventoryUpdate }) => {
   const [categories, setCategories] = useState(["All"]);
   const [productsList, setProductsList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [categoryNameToIdMap, setCategoryNameToIdMap] = useState(new Map());
+
 
   const openInventoryModal = (item) => {
     setSelectedItem(item);
@@ -80,7 +82,7 @@ const InventoryPage = ({ onInventoryUpdate }) => {
 
   const loadInventoryData = async () => {
     setIsLoading(true);
-
+  
     try {
       const [inventoryData, damagedData, productsData, categoriesData] = await Promise.all([
         fetchInventory(),
@@ -88,24 +90,32 @@ const InventoryPage = ({ onInventoryUpdate }) => {
         fetchProducts(),
         fetchCategories()
       ]);
-
+  
+      const categoryNames = ["All", ...(categoriesData?.map(c => c.name) || [])];
+      setCategories(categoryNames); // ✅ set categories first
+      if (categoriesData) {
+        const categoryNames = ["All", ...categoriesData.map(c => c.name)];
+        const categoryMap = new Map();
+        categoriesData.forEach(cat => categoryMap.set(cat.name, cat.id));
+        setCategories(categoryNames);
+        setCategoryNameToIdMap(categoryMap); // this state already exists
+      }
+      
       if (inventoryData) {
         setProducts(inventoryData);
-        const stats = calculateCategoryStats(inventoryData);
+  
+        const stats = calculateCategoryStats(inventoryData, categoryNames); // ✅ compute stats now
         setCategoryStats(stats);
+  
         if (onInventoryUpdate) onInventoryUpdate(inventoryData);
       }
-
+  
       if (damagedData) {
         setDamagedProducts(damagedData);
       }
-
+  
       if (productsData) {
         setProductsList(productsData);
-      }
-
-      if (categoriesData) {
-        setCategories(["All", ...categoriesData.map(c => c.name)]);
       }
     } catch (error) {
       console.error("Error loading inventory data:", error);
@@ -113,33 +123,59 @@ const InventoryPage = ({ onInventoryUpdate }) => {
       setIsLoading(false);
     }
   };
+  
+
+const productMap = useMemo(() => {
+  const map = new Map();
+  productsList.forEach((p) => map.set(p.id, p));
+  return map;
+}, [productsList]);
+
 
   useEffect(() => {
     loadInventoryData();
   }, []);
 
-  const calculateCategoryStats = (productData) => {
+  const calculateCategoryStats = (productData, categoryList) => {
     const stats = {};
-    categories.forEach(cat => {
-      if (cat !== "All") {
-        const catProducts = productData.filter(p => p.product_category === cat);
-        const totalCount = catProducts.length;
+  
+    categoryList.forEach(cat => {
+      if (cat === "All") {
+        const totalCount = productData.length;
+        const availableCount = productData.filter(p => p.sale_status === "Not Sold").length;
+        stats["All"] = { quantity: totalCount, available: availableCount };
+      } else {
+        const categoryId = categoryNameToIdMap.get(cat);
+        const catProducts = productData.filter(p => {
+          const itemCategoryId = typeof p.product_category === 'object'
+            ? p.product_category.id
+            : p.product_category;
+          return itemCategoryId === categoryId;
+        });
+                const totalCount = catProducts.length;
         const availableCount = catProducts.filter(p => p.sale_status === "Not Sold").length;
         stats[cat] = { quantity: totalCount, available: availableCount };
       }
     });
-
-    const totalCount = productData.length;
-    const availableCount = productData.filter(p => p.sale_status === "Not Sold").length;
-
-    stats["All"] = { quantity: totalCount, available: availableCount };
-
+  
     return stats;
   };
+  
+  
 
-  const filteredProducts = products.filter(item =>
-    categoryFilter === "All" || item.product_category === categoryFilter
-  );
+  const filteredProducts = products.filter(item => {
+    if (categoryFilter === "All") return true;
+    return (item.category_name || "").trim().toLowerCase() === categoryFilter.trim().toLowerCase();
+  });
+  
+  console.log("First item:", products[0]);
+  console.log("Filtered product count:", filteredProducts.length);
+  if (filteredProducts.length === 0) {
+    console.warn("No products matched. Sample category values:");
+    products.forEach(p => console.log("Category name:", p.category_name)); // ✅ correct
+  }
+  
+  
 
   const findProductDetails = (productId) => {
     return productsList.find(p => p.id === productId) || {};
@@ -248,7 +284,8 @@ const InventoryPage = ({ onInventoryUpdate }) => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                 {filteredProducts.map((item) => {
-                      const productDetails = findProductDetails(item.product);
+                      const productDetails = productMap.get(item.product) || {};
+
                             return (
                           <tr key={item.id} className="text-sm hover:bg-blue-50 transition-colors duration-150">
                             <td className="px-4 py-3 font-medium text-gray-900">{item.id}</td>
@@ -360,7 +397,7 @@ const InventoryPage = ({ onInventoryUpdate }) => {
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 shadow-sm">
-                      <div className="text-xs font-medium uppercase text-gray-500 mb-1">Purchase Price</div>
+                      <div className="text-xs font-medium uppercase text-gray-500 mb-1">Purchase price</div>
                       <div className="font-semibold text-gray-800">{selectedItem.purchase_price || "N/A"}</div>
                     </div>
 

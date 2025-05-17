@@ -62,6 +62,10 @@ class ProductWarrantyViewSet(viewsets.ModelViewSet):
 # ------------------------
 class InventoryViewSet(viewsets.ModelViewSet):
     queryset = Inventory.objects.all()
+    serializer_class = InventorySerializer  # ✅ This must be set
+
+class InventoryViewSet(viewsets.ModelViewSet):
+    queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
     permission_classes = [permissions.AllowAny]
 
