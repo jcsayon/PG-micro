@@ -7,21 +7,26 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = '__all__'
         
+from rest_framework import serializers
+from .models import Account
+
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ['id', 'email', 'password', 'role', 'status', 'accessible_pages']
+        fields = ['id', 'email', 'password', 'role', 'status', 'accessible_pages', 'employee']  # ← include all
         extra_kwargs = {
-            'password': {'write_only': True}
+            'password': {'write_only': True},
+            'accessible_pages': {'required': False},  # optional if needed
+            'status': {'required': False},  # optional
         }
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
-        instance = super().create(validated_data)
+        account = self.Meta.model(**validated_data)
         if password:
-            instance.set_password(password)  # 🔒 Hash the password
-            instance.save()
-        return instance
+            account.set_password(password)
+        account.save()
+        return account
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
@@ -33,17 +38,17 @@ class AccountSerializer(serializers.ModelSerializer):
         return instance
 
 
-    def validate_email(self, value):
-        if Account.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email already in use.")
-        return value
-
 class EmployeeSerializer(serializers.ModelSerializer):
-    account = AccountSerializer(read_only=True)  # ✅ Use the class, not a string
+    account = serializers.PrimaryKeyRelatedField(
+        queryset=Account.objects.all(),
+        required=False,
+        allow_null=True
+    )
 
     class Meta:
         model = Employee
         fields = '__all__'
+
 
 
 # ------------------------
