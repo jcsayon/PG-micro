@@ -233,56 +233,36 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
     setIsLoading(false);
   };
   
-  // Load sales orders from localStorage (fallback)
   const loadSalesOrdersFromLocalStorage = () => {
-    // Try to load from localStorage first
-    const savedOrders = localStorage.getItem('salesOrdersData');
-    
-    if (savedOrders) {
-      try {
-        const parsedOrders = JSON.parse(savedOrders);
-        setSalesOrders(parsedOrders);
-        
-        // Set next order ID based on highest existing ID
-        if (parsedOrders.length > 0) {
-          const orderNumbers = parsedOrders.map(order => 
-            parseInt(order.id.replace('#SO', ''))
-          );
-          const maxOrderNumber = Math.max(...orderNumbers);
-          setNewOrderId(`#SO${maxOrderNumber + 1}`);
-        } else {
-          setNewOrderId('#SO1001');
-        }
-      } catch (error) {
-        console.error("Error loading orders:", error);
-        loadInitialOrders(); // Fall back to mock data
-      }
-    } else {
-      // No saved orders found, load initial mock data
-      loadInitialOrders();
-    }
-  };
+  const savedOrders = localStorage.getItem('salesOrdersData');
 
-  // Load initial mock sales orders
-  const loadInitialOrders = () => {
-    const initialOrders = [
-      { id: "#SO1001", employee: "sales@pgmicro.com", dateSold: "2023-01-01", customer: "Juan Dela Cruz", type: "Walk-In", total: 10000.00 },
-      { id: "#SO1002", employee: "sales@pgmicro.com", dateSold: "2023-01-02", customer: "Maria Santos", type: "Contract", total: 11000.00 },
-      { id: "#SO1003", employee: "sales@pgmicro.com", dateSold: "2023-01-03", customer: "Juan Dela Cruz", type: "Walk-In", total: 12000.00 },
-      { id: "#SO1004", employee: "sales@pgmicro.com", dateSold: "2023-01-04", customer: "Maria Santos", type: "Contract", total: 13000.00 },
-      { id: "#SO1005", employee: "sales@pgmicro.com", dateSold: "2023-01-05", customer: "Juan Dela Cruz", type: "Walk-In", total: 14000.00 },
-      { id: "#SO1006", employee: "sales@pgmicro.com", dateSold: "2023-01-06", customer: "Maria Santos", type: "Contract", total: 15000.00 },
-      { id: "#SO1007", employee: "sales@pgmicro.com", dateSold: "2023-01-07", customer: "Juan Dela Cruz", type: "Walk-In", total: 16000.00 },
-      { id: "#SO1008", employee: "sales@pgmicro.com", dateSold: "2023-01-08", customer: "Maria Santos", type: "Contract", total: 17000.00 },
-      { id: "#SO1009", employee: "sales@pgmicro.com", dateSold: "2023-01-09", customer: "Juan Dela Cruz", type: "Walk-In", total: 18000.00 },
-      { id: "#SO1010", employee: "sales@pgmicro.com", dateSold: "2023-01-10", customer: "Maria Santos", type: "Contract", total: 19000.00 }
-    ];
-    
-    setSalesOrders(initialOrders);
-    // Save initial orders to localStorage
-    saveOrdersToLocalStorage(initialOrders);
-    setNewOrderId('#SO1011');
-  };
+  if (savedOrders) {
+    try {
+      const parsedOrders = JSON.parse(savedOrders);
+      setSalesOrders(parsedOrders);
+
+      if (parsedOrders.length > 0) {
+        const orderNumbers = parsedOrders.map(order =>
+          parseInt(order.id.replace('#SO', ''))
+        );
+        const maxOrderNumber = Math.max(...orderNumbers);
+        setNewOrderId(`#SO${maxOrderNumber + 1}`);
+      } else {
+        setNewOrderId('#SO1001');
+      }
+    } catch (error) {
+      console.error("Error loading orders:", error);
+      // Removed: loadInitialOrders();
+      setSalesOrders([]);
+      setNewOrderId('#SO1001');
+    }
+  } else {
+    setSalesOrders([]);
+    setNewOrderId('#SO1001');
+  }
+};
+
+
 
   //---------------------------------------------
   // CALCULATION & UTILITY FUNCTIONS
