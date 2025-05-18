@@ -58,14 +58,12 @@ class DamageProduct(models.Model):
 
 
 class Account(models.Model):
-    email = models.TextField(unique=True)
-    password = models.TextField()
-    status = models.TextField(default="Active")
-    role = models.TextField()
-    accessible_pages = models.JSONField(default=list)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)  # for hashed password
+    role = models.CharField(max_length=50)
+    status = models.CharField(max_length=20, default='Active')  # Add if not present
+    accessible_pages = models.JSONField(default=list, blank=True)  # ← Required for permissions
 
-    def __str__(self):
-        return self.email
 
 
 

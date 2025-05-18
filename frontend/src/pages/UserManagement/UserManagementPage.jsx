@@ -90,7 +90,7 @@ useEffect(() => {
 
   // Debug ROLES on component mount
   useEffect(() => {
-    console.log("ROLES object:", ROLES);
+    //console.log("ROLES object:", ROLES);
   }, []);
 
   // Current logged-in user (would typically come from auth context)
@@ -154,7 +154,7 @@ useEffect(() => {
           email: user.email,
           role: user.role,
           password: user.password,
-          status: user.status !== null && user.status !== undefined ? user.status : "Inactive",
+          status: user.status || "Active",
           employeeId: user.employee_id,
           accessiblePages: user.accessible_pages || getAccessiblePagesByRole(user.role),
         }));
@@ -394,111 +394,146 @@ const handleUserChange = (e) => {
   
 
   // Handle adding new user after employee creation
-  const handleAddUser = async () => {
-    if (!userForm.email) {
-      alert("Email is required.");
+const handleAddUser = async () => {
+  if (!userForm.email) {
+    alert("Email is required.");
+    return;
+  }
+
+  if (!userForm.password || userForm.password.length !== 8) {
+    alert("Password must be exactly 8 characters long.");
+    return;
+  }
+
+  try {
+    const payload = {
+      email: userForm.email.trim(),
+      role: userForm.role,
+      status: userForm.status,
+      accessible_pages: ['dashboard'].concat(
+        Object.entries(userForm.modules)
+          .filter(([_, value]) => value)
+          .map(([key]) => {
+            switch (key) {
+              case 'admin': return 'user-management';
+              case 'sales': return 'sales';
+              case 'inventory': return 'inventory';
+              case 'returnWarranty': return 'return-warranty';
+              case 'purchaseOrders': return 'purchase-orders';
+              case 'reports': return 'reports';
+              default: return null;
+            }
+          }).filter(Boolean)
+      ),
+      password: userForm.password.trim(),
+    };
+
+    console.debug("📦 Add User Payload:", payload);
+
+    const response = await fetch(ACCOUNT_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      console.error("❌ Backend error (Add User):", errorResponse);
+      throw new Error("Failed to add user account.");
+    }
+
+    const savedUser = await response.json();
+
+    if (selectedEmployee) {
+      await fetch(`${EMPLOYEE_API}${selectedEmployee.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account: savedUser.id }),
+      });
+    }
+
+    setUsers(prev => [...prev, savedUser]);
+    setEmployees(prev => prev.map(emp =>
+      emp.id === selectedEmployee.id ? { ...emp, hasAccount: true } : emp
+    ));
+
+    resetForms();
+    alert("✅ User account created!");
+
+  } catch (error) {
+    console.error("🔥 Error adding user:", error);
+    alert("Failed to add user.");
+  }
+};
+
+const handleUpdateUser = async () => {
+  if (!userForm.email) {
+    alert("Email is required.");
+    return;
+  }
+
+  try {
+    // Prepare the updated payload
+    const updatedPayload = {
+      email: userForm.email.trim(),
+      role: userForm.role,
+      accessible_pages: ['dashboard'].concat(
+        Object.entries(userForm.modules)
+          .filter(([_, value]) => value)
+          .map(([key]) => {
+            switch (key) {
+              case 'admin': return 'user-management';
+              case 'sales': return 'sales';
+              case 'inventory': return 'inventory';
+              case 'returnWarranty': return 'return-warranty';
+              case 'purchaseOrders': return 'purchase-orders';
+              case 'reports': return 'reports';
+              default: return null;
+            }
+          }).filter(Boolean)
+      ),
+    };
+
+    // Check if there are changes in role or accessible pages
+    const hasRoleChanged = selectedUser.role !== userForm.role;
+    const hasModulesChanged = JSON.stringify(selectedUser.accessible_pages) !== JSON.stringify(updatedPayload.accessible_pages);
+
+    // Always update the email, but only proceed if role or modules have changed
+    if (!hasRoleChanged && !hasModulesChanged) {
+      alert("No changes detected in role or module access.");
       return;
     }
-  
-    try {
-      // Prepare payload
-      const payload = {
-        email: userForm.email.trim(),
-        role: userForm.role,
-        status: userForm.status,
-        accessible_pages: ['dashboard'].concat(
-          Object.entries(userForm.modules)
-            .filter(([_, value]) => value)
-            .map(([key]) => {
-              switch (key) {
-                case 'admin': return 'user-management';
-                case 'sales': return 'sales';
-                case 'inventory': return 'inventory';
-                case 'returnWarranty': return 'return-warranty';
-                case 'purchaseOrders': return 'purchase-orders';
-                case 'reports': return 'reports';
-                default: return null;
-              }
-            }).filter(Boolean)
-        ),
-      };
-  
-      // Include password only when creating or explicitly changed
-      if (!isEditing || (userForm.password && userForm.password !== "********")) {
-        if (userForm.password.length !== 8) {
-          alert("Password must be exactly 8 characters long.");
-          return;
-        }
-        payload.password = userForm.password.trim();
-      }
-  
-      let response;
-  
-      if (isEditing && selectedUser) {
-        // UPDATE (PATCH) existing user
-        response = await fetch(`${ACCOUNT_API}${selectedUser.id}/`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        // CREATE (POST) new user
-        if (!userForm.password) {
-          alert("Password is required to create a new user.");
-          return;
-        }
-  
-        response = await fetch(ACCOUNT_API, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-      }
-  
-      if (!response.ok) {
-        const errorResponse = await response.json();
-        console.error("❌ Backend error:", errorResponse);
-        throw new Error("Failed to save user account.");
-      }
-  
-      const savedUser = await response.json();
-  
-// After account creation
-if (!isEditing && selectedEmployee) {
-  await fetch(`${EMPLOYEE_API}${selectedEmployee.id}/`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ account: savedUser.id }), // 🔥 FK reference
-  });
-}
 
-  
-      // Update frontend state
-      if (isEditing) {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === savedUser.id ? savedUser : u))
-        );
-      } else {
-        setUsers((prev) => [...prev, savedUser]);
-        setEmployees((prev) =>
-          prev.map(emp =>
-            emp.id === selectedEmployee.id ? { ...emp, hasAccount: true } : emp
-          )
-        );
-      }
-  
-      resetForms();
-      alert(isEditing ? "✅ User account updated!" : "✅ User account created!");
-  
-    } catch (error) {
-      console.error("🔥 Error saving user:", error);
-      alert("Failed to save user.");
+    console.debug("📦 Update User Payload:", updatedPayload);
+
+    const response = await fetch(`${ACCOUNT_API}${selectedUser.id}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedPayload),
+    });
+
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      console.error("❌ Backend error (Update User):", errorResponse);
+      throw new Error("Failed to update user account.");
     }
-  };
+
+    const updatedUser = await response.json();
+
+    // Update the user in the state
+    setUsers((prev) =>
+      prev.map((user) => (user.id === updatedUser.id ? updatedUser : user))
+    );
+
+    resetForms();
+    alert("✅ User account updated!");
+
+  } catch (error) {
+    console.error("🔥 Error updating user:", error);
+    alert("Failed to update user.");
+  }
+};
+
   
   
     
@@ -1074,7 +1109,7 @@ const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
         Cancel
       </button>
       <button
-        onClick={handleAddUser}
+        onClick={isEditing ? handleUpdateUser : handleAddUser}
         className="bg-indigo-600 text-white font-medium px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg"
       >
         {isEditing ? "Update Account" : "Create Account"}
@@ -1319,7 +1354,7 @@ const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
       <thead>
         <tr className="bg-slate-50 text-left">
           <th className="py-4 px-6 text-sm font-medium text-slate-600">EMAIL</th>
-          <th className="py-4 px-6 text-sm font-medium text-slate-600">EMPLOYEE</th>
+          {/* <th className="py-4 px-6 text-sm font-medium text-slate-600">EMPLOYEE</th> */}
           <th className="py-4 px-6 text-sm font-medium text-slate-600">ROLE</th>
           <th className="py-4 px-6 text-sm font-medium text-slate-600">STATUS</th>
           <th className="py-4 px-6 text-sm font-medium text-slate-600">PERMISSIONS</th>
@@ -1341,7 +1376,7 @@ const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
                 <td className="py-4 px-6">
                   <div className="font-medium text-slate-800">{user.email}</div>
                 </td>
-                <td className="py-4 px-6">
+                {/* <td className="py-4 px-6">
                   {relatedEmployee ? (
                     <div className="text-slate-600">
                       {relatedEmployee.firstName} {relatedEmployee.lastName}
@@ -1349,7 +1384,7 @@ const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
                   ) : (
                     <span className="text-red-500 text-sm italic">No employee linked</span>
                   )}
-                </td>
+                </td> */}
 
                 <td className="py-4 px-6">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(user.role)}`}>
