@@ -117,7 +117,7 @@ const InventoryPage = ({ onInventoryUpdate }) => {
   useEffect(() => {
     loadInventoryData();
   }, []);
-  
+
   useEffect(() => {
   const stats = calculateCategoryStats(products);
   setCategoryStats(stats);
@@ -126,22 +126,35 @@ const InventoryPage = ({ onInventoryUpdate }) => {
 
   const calculateCategoryStats = (productData) => {
   const stats = {};
+  const LOW_STOCK_THRESHOLD = 8;
+
   categories.forEach(cat => {
     if (cat !== "All") {
       const catProducts = productData.filter(p => p.category === cat);
       const totalCount = catProducts.length;
-      const availableCount = totalCount; // All products are considered available
-      stats[cat] = { quantity: totalCount, available: availableCount };
+      const availableCount = totalCount;
+
+      stats[cat] = {
+        quantity: totalCount,
+        available: availableCount,
+        lowStock: availableCount <= LOW_STOCK_THRESHOLD
+      };
     }
   });
 
+  // Calculate stats for "All" category
   const totalCount = productData.length;
   const availableCount = totalCount;
 
-  stats["All"] = { quantity: totalCount, available: availableCount };
+  stats["All"] = {
+    quantity: totalCount,
+    available: availableCount,
+    lowStock: availableCount <= LOW_STOCK_THRESHOLD
+  };
 
   return stats;
 };
+
 
 
   const filteredProducts = products.filter(item =>
@@ -189,44 +202,54 @@ const InventoryPage = ({ onInventoryUpdate }) => {
 
           {/* Filter + Summary */}
           {activeTab === "available" && (
-            <div className="flex flex-wrap items-center gap-4 mb-2">
-              <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 shadow-sm">
-                <label htmlFor="category-filter" className="ml-2 mr-2 text-gray-600 font-medium">Category:</label>
-                <select
-                  id="category-filter"
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="p-2 border-0 rounded-md bg-white focus:ring-2 focus:ring-blue-300 focus:outline-none"
-                >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
+  <>
+    <div className="flex flex-wrap items-center gap-4 mb-2">
+      <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-200 shadow-sm">
+        <label htmlFor="category-filter" className="ml-2 mr-2 text-gray-600 font-medium">Category:</label>
+        <select
+          id="category-filter"
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="p-2 border-0 rounded-md bg-white focus:ring-2 focus:ring-blue-300 focus:outline-none"
+        >
+          {categories.map(cat => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
 
-              {/* Product Summary */}
-              <div className="flex items-center bg-blue-50 rounded-lg p-3 border border-blue-100 shadow-sm">
-                <div className="flex flex-wrap items-center gap-6">
-                  <div>
-                    <span className="text-gray-500 text-sm">Total Products</span>
-                    <div className="font-semibold text-lg text-blue-700">{categoryStats[categoryFilter]?.quantity || 0}</div>
-                  </div>
-                  <div className="hidden sm:block h-10 w-px bg-blue-200"></div>
-                  <div>
-                    <span className="text-gray-500 text-sm">Available</span>
-                    <div className="font-semibold text-lg text-green-600">{categoryStats[categoryFilter]?.available || 0}</div>
-                  </div>
-                  <div className="hidden sm:block h-10 w-px bg-blue-200"></div>
-                  <div>
-                    <span className="text-gray-500 text-sm">Sold</span>
-                    <div className="font-semibold text-lg text-red-600">
-                      {(categoryStats[categoryFilter]?.quantity || 0) - (categoryStats[categoryFilter]?.available || 0)}
-                    </div>
-                  </div>
-                </div>
-              </div>
+      {/* Product Summary */}
+      <div className="flex items-center bg-blue-50 rounded-lg p-3 border border-blue-100 shadow-sm">
+        <div className="flex flex-wrap items-center gap-6">
+          <div>
+            <span className="text-gray-500 text-sm">Total Products</span>
+            <div className="font-semibold text-lg text-blue-700">{categoryStats[categoryFilter]?.quantity || 0}</div>
+          </div>
+          <div className="hidden sm:block h-10 w-px bg-blue-200"></div>
+          <div>
+            <span className="text-gray-500 text-sm">Available</span>
+            <div className="font-semibold text-lg text-green-600">{categoryStats[categoryFilter]?.available || 0}</div>
+          </div>
+          <div className="hidden sm:block h-10 w-px bg-blue-200"></div>
+          <div>
+            <span className="text-gray-500 text-sm">Sold</span>
+            <div className="font-semibold text-lg text-red-600">
+              {(categoryStats[categoryFilter]?.quantity || 0) - (categoryStats[categoryFilter]?.available || 0)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+          {/* ✅ Low stock warning */}
+          {categoryStats[categoryFilter]?.lowStock && (
+            <div className="mb-2 text-sm text-red-600 font-medium px-1">
+              ⚠️ Low stock warning: Only {categoryStats[categoryFilter]?.available} item(s) left in "{categoryFilter}" category.
             </div>
           )}
+        </>
+      )}
+
         </div>
 
         {/* Loading */}

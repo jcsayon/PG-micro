@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import { Search, Edit, Trash } from "lucide-react";
 
-// Define the customer storage key
-const CUSTOMER_STORAGE_KEY = 'customerData';
 
 // Function to get background color based on customer type
 function getBackgroundColor(value) {
@@ -15,6 +13,7 @@ function getBackgroundColor(value) {
 }
 
 const CustomerReturns = () => {
+  const [editingCustomerId, setEditingCustomerId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [formExpanded, setFormExpanded] = useState(true);
   const [customers, setCustomers] = useState([]);
@@ -32,68 +31,69 @@ const CustomerReturns = () => {
   }, []);
 
   // Function to load customers from localStorage
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+
   const loadCustomers = async () => {
     try {
-      const savedCustomers = localStorage.getItem(CUSTOMER_STORAGE_KEY);
-      
-      if (savedCustomers) {
-        const parsedCustomers = JSON.parse(savedCustomers);
-        setCustomers(parsedCustomers);
-      } else {
-        // Sample data if none exists
-        const sampleCustomers = [
-          {id: 1, name: "Juan Dela Cruz", address: "123 Main St, Davao City", email: "juan@example.com", contact: "0912-345-6789", type: "Walk-In"},
-          {id: 2, name: "Maria Santos", address: "456 IT Park, Cebu City", email: "maria@example.com", contact: "0901-234-5678", type: "Contract"},
-          {id: 3, name: "Jvon Clint Berdin", address: "789 Ayala Blvd, Manila", email: "jvon12@gmail.com", contact: "09126783249", type: "Walk-In"},
-          {id: 4, name: "Joshua Sayon", address: "101 Roxas Ave, Quezon City", email: "joshua12@gmail.com", contact: "09683451234", type: "Walk-In"},
-          {id: 5, name: "Marie Ceniza", address: "567 Mactan St, Cebu City", email: "marie13@gmail.com", contact: "34543576585", type: "Walk-In"},
-          {id: 6, name: "erteret", address: "890 Ramos Ave, Makati City", email: "ertert@gmail.com", contact: "34098543095", type: "Walk-In"},
-          {id: 7, name: "dfdfg", address: "234 Escario St, Cebu City", email: "fgdfg@gmail.com", contact: "09809809890", type: "Walk-In"},
-          {id: 8, name: "Dominic Bolivar", address: "678 Mango Ave, Cebu City", email: "dominic10@gmail.com", contact: "09124567893", type: "Walk-In"},
-        ];
-        setCustomers(sampleCustomers);
-        saveCustomersToLocalStorage(sampleCustomers);
-      }
+      const res = await fetch(`${API_BASE_URL}/customers/`);
+      const data = await res.json();
+      setCustomers(data);
     } catch (error) {
-      console.error("Error loading customer data:", error);
+      console.error("Failed to load customers from backend:", error);
     }
   };
+  
 
-  // Function to save customers to localStorage
-  const saveCustomersToLocalStorage = (customerData) => {
-    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(customerData));
-  };
 
-  // Function to handle adding new customer
-  const handleAddCustomer = () => {
-    // Validate required fields
+
+  const handleSaveCustomer = async () => {
     if (!newCustomer.name || !newCustomer.email) {
       alert("Please fill in all required fields");
       return;
     }
-    
-    // Create updated customers array with new customer
-    const updatedCustomers = [
-      ...customers,
-      {
-        ...newCustomer,
-        id: customers.length > 0 ? Math.max(...customers.map(c => c.id)) + 1 : 1
+  
+    const payload = {
+      name: newCustomer.name,
+      customer_type: newCustomer.type,
+      address: newCustomer.address,
+      phone_number: newCustomer.contact,
+      email: newCustomer.email,
+    };
+  
+    try {
+      if (editingCustomerId) {
+        // UPDATE
+        const res = await fetch(`${API_BASE_URL}/customers/${editingCustomerId}/`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error("Failed to update customer");
+        const updated = await res.json();
+  
+        setCustomers(prev => prev.map(c => c.id === updated.id ? updated : c));
+      } else {
+        // CREATE
+        const res = await fetch(`${API_BASE_URL}/customers/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error("Failed to create customer");
+        const created = await res.json();
+        setCustomers(prev => [...prev, created]);
       }
-    ];
-    
-    // Update state and localStorage
-    setCustomers(updatedCustomers);
-    saveCustomersToLocalStorage(updatedCustomers);
-    
-    // Reset form
-    setNewCustomer({
-      name: "", 
-      type: "Walk-In", 
-      email: "", 
-      address: "", 
-      contact: ""
-    });
+  
+      // Reset form
+      setNewCustomer({ name: "", type: "Walk-In", email: "", address: "", contact: "" });
+      setEditingCustomerId(null);
+    } catch (error) {
+      console.error("Error saving customer:", error);
+      alert("Error saving customer to backend.");
+    }
   };
+  
+  
 
   // Function to handle form clear
   const handleClearForm = () => {
@@ -108,16 +108,26 @@ const CustomerReturns = () => {
 
   // Function to handle edit customer
   const handleEditCustomer = (id) => {
-    // Implementation would go here
-    console.log("Edit customer", id);
+    const customerToEdit = customers.find(c => c.id === id);
+    if (customerToEdit) {
+      setNewCustomer({
+        name: customerToEdit.name,
+        type: customerToEdit.customer_type,
+        email: customerToEdit.email,
+        address: customerToEdit.address,
+        contact: customerToEdit.phone_number.toString()
+      });
+      setEditingCustomerId(id);
+    }
   };
+  
 
   // Function to handle delete customer
   const handleDeleteCustomer = (id) => {
     if (window.confirm("Are you sure you want to delete this customer?")) {
       const updatedCustomers = customers.filter(customer => customer.id !== id);
       setCustomers(updatedCustomers);
-      saveCustomersToLocalStorage(updatedCustomers);
+
     }
   };
 
@@ -144,7 +154,6 @@ const CustomerReturns = () => {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Client Directory</h1>
-          <p className="text-gray-600">Add, view, and manage your client relationships</p>
         </div>
 
         {/* Main Content */}
@@ -238,11 +247,12 @@ const CustomerReturns = () => {
                       Clear
                     </button>
                     <button 
-                      className="px-4 py-2 bg-purple-700 text-white rounded-md hover:bg-purple-800"
-                      onClick={handleAddCustomer}
-                    >
-                      Save
-                    </button>
+                        className="px-4 py-2 bg-purple-700 text-white rounded-md hover:bg-purple-800"
+                        onClick={handleSaveCustomer}
+                      >
+                        {editingCustomerId ? "Update" : "Save"}
+                      </button>
+
                   </div>
                 </div>
               </div>
@@ -311,7 +321,7 @@ const CustomerReturns = () => {
                               ? "bg-green-100 text-green-800" 
                               : "bg-yellow-100 text-yellow-800"
                           }`}>
-                            {customer.type}
+                            {customer.customer_type}
                           </span>
                         </div>
                         <div className="col-span-2 text-right">

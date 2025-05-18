@@ -104,36 +104,26 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
     };
   }, []);
 
-  // Load inventory data from localStorage or API
-  const loadInventoryData = () => {
-    setIsLoading(true);
-    console.log("Loading inventory data...");
-    
-    /* 
-    // When API is ready, uncomment this section
-    fetchInventory().then(inventoryData => {
-      if (inventoryData) {
-        // Filter out sold and damaged items
-        const availableItems = inventoryData.filter(item => 
-          item.saleStatus !== "Sold" && item.saleStatus !== "Damaged"
-        );
-        setAvailableProducts(availableItems);
-      } else {
-        // Fallback to localStorage if API fails
-        loadInventoryFromLocalStorage();
-      }
-      setIsLoading(false);
-    }).catch(error => {
-      console.error("Error loading inventory from API:", error);
-      loadInventoryFromLocalStorage();
-      setIsLoading(false);
-    });
-    */
-    
-    // For now, load from localStorage
-    loadInventoryFromLocalStorage();
+  const loadInventoryData = async () => {
+  setIsLoading(true);
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'}/inventory/`);
+    if (!response.ok) throw new Error("Failed to fetch inventory");
+
+    const inventoryData = await response.json();
+
+    // Filter out sold and damaged products if needed
+    const availableItems = inventoryData; // temporarily skip filtering
+
+    setAvailableProducts(availableItems);
+  } catch (error) {
+    console.error("Error loading inventory from API:", error);
+    setAvailableProducts([]); // fallback: show nothing if error
+  } finally {
     setIsLoading(false);
-  };
+  }
+};
+
   
   // Load inventory from localStorage (fallback)
   const loadInventoryFromLocalStorage = () => {
@@ -145,10 +135,7 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
         console.log(`Loaded ${parsedInventory.length} inventory items from localStorage`);
         
         // Only show available (not sold) products
-        const availableItems = parsedInventory.filter(item => 
-          item.saleStatus !== "Sold" && item.saleStatus !== "Damaged"
-        );
-        
+        const availableItems = inventoryData; // temporarily skip filtering   
         setAvailableProducts(availableItems);
       } catch (error) {
         console.error("Error parsing inventory data:", error);
@@ -1055,7 +1042,10 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
             </button>
             
             <button 
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                loadInventoryData(); // prefetch inventory
+                setShowCreateModal(true); // then show modal
+              }}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center"
             >
               <Plus className="h-4 w-4 mr-1" /> Create SO
@@ -1228,103 +1218,105 @@ const SalesOrderPage = ({ inventoryData, updateInventoryStatus }) => {
       </div>
       
       <div className="flex-1 overflow-hidden flex flex-col md:flex-row p-4">
-        {/* Product Selection */}
-        <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
-          <div className="mb-2">
-            <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="p-2 border rounded w-full"
-            >
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="border rounded p-2 h-[350px] flex flex-col">
-            <h3 className="font-semibold mb-2">Available Products:</h3>
-            <div className="flex-1 overflow-y-auto">
-              {filteredProducts.length === 0 ? (
-                <p className="text-gray-500 italic text-center p-4">No products available</p>
-              ) : (
-                <div className="space-y-2">
-                  {filteredProducts.map(product => (
-                    product.saleStatus !== "Sold" && (
-                      <div 
-                        key={product.id} 
-                        className="p-3 border rounded bg-white flex justify-between items-center"
-                        style={{minHeight: "80px"}}
-                      >
-                        <div>
-                          <p className="font-semibold">{product.category || "Unknown Category"}</p>
-                          <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
-                          <p className="text-sm">Serial: {product.serialNumber || "N/A"}</p>
-                          <p>{product.sellingPrice || "Price not available"}</p>
-                        </div>
-                        <button
-                          onClick={() => addToCart(product)}
-                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                        >
-                          Add to Cart
-                        </button>
-                      </div>
-                    )
-                  ))}
+  {/* Product Selection */}
+  <div className="md:w-1/2 pr-0 md:pr-2 mb-4 md:mb-0">
+    <div className="mb-2">
+      <label className="block text-sm font-medium text-gray-600 mb-1">Category Filter:</label>
+      <select
+        value={categoryFilter}
+        onChange={(e) => setCategoryFilter(e.target.value)}
+        className="p-2 border rounded w-full"
+      >
+        {categories.map(category => (
+          <option key={category} value={category}>{category}</option>
+        ))}
+      </select>
+    </div>
+    
+    <div className="border rounded p-2 h-[350px] flex flex-col">
+      <h3 className="font-semibold mb-2">Available Products:</h3>
+      <div className="flex-1 overflow-y-auto">
+        {isLoading ? (
+          <p className="text-gray-500 italic text-center p-4">Loading products...</p>
+        ) : filteredProducts.length === 0 ? (
+          <p className="text-gray-500 italic text-center p-4">No products available</p>
+        ) : (
+          <div className="space-y-2">
+            {filteredProducts.map(product => (
+              product.saleStatus !== "Sold" && (
+                <div 
+                  key={product.id} 
+                  className="p-3 border rounded bg-white flex justify-between items-center"
+                  style={{minHeight: "80px"}}
+                >
+                  <div>
+                    <p className="font-semibold">{product.category || "Unknown Category"}</p>
+                    <p>{product.brand || "Unknown Brand"} {product.model || ""}</p>
+                    <p className="text-sm">Serial: {product.serial_number || "N/A"}</p>
+                    <p>₱{product.selling_price ? formatPrice(product.selling_price) : "Price not available"}</p>
+                  </div>
+                  <button
+                    onClick={() => addToCart(product)}
+                    className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                  >
+                    Add to Cart
+                  </button>
                 </div>
-              )}
-            </div>
+              )
+            ))}
           </div>
-        </div>
-        
-        {/* Shopping Cart */}
-        <div className="md:w-1/2 pl-0 md:pl-2">
-          <div className="border rounded flex flex-col h-[420px]">
-            <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
-            <div className="flex-1 overflow-y-auto">
-              {cart.length === 0 ? (
-                <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
-              ) : (
-                <table className="min-w-full">
-                  <thead className="bg-gray-100 sticky top-0">
-                    <tr>
-                      <th className="p-2 text-left">Item ID</th>
-                      <th className="p-2 text-left">Brand</th>
-                      <th className="p-2 text-left">Model</th>
-                      <th className="p-2 text-right">Price</th>
-                      <th className="p-2 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cart.map(item => (
-                      <tr key={item.id} className="border-b">
-                        <td className="p-2">{item.id}</td>
-                        <td className="p-2">{item.brand}</td>
-                        <td className="p-2">{item.model}</td>
-                        <td className="p-2 text-right">{item.sellingPrice}</td>
-                        <td className="p-2 text-center">
-                          <button
-                            onClick={() => removeFromCart(item.id)}
-                            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-            <div className="bg-gray-100 p-2 border-t">
-              <div className="font-semibold text-right">
-                Total: ₱{totalAmount.toFixed(2)}
-              </div>
-            </div>
-          </div>
+        )}
+      </div>
+    </div>
+  </div>
+  
+  {/* Shopping Cart */}
+  <div className="md:w-1/2 pl-0 md:pl-2">
+    <div className="border rounded flex flex-col h-[420px]">
+      <h3 className="font-semibold p-2 border-b bg-gray-100">Cart:</h3>
+      <div className="flex-1 overflow-y-auto">
+        {cart.length === 0 ? (
+          <p className="text-gray-500 italic text-center p-4 my-6">Your cart is empty</p>
+        ) : (
+          <table className="min-w-full">
+            <thead className="bg-gray-100 sticky top-0">
+              <tr>
+                <th className="p-2 text-left">Item ID</th>
+                <th className="p-2 text-left">Brand</th>
+                <th className="p-2 text-left">Model</th>
+                <th className="p-2 text-right">Price</th>
+                <th className="p-2 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cart.map(item => (
+                <tr key={item.id} className="border-b">
+                  <td className="p-2">{item.id}</td>
+                  <td className="p-2">{item.brand}</td>
+                  <td className="p-2">{item.model}</td>
+                  <td className="p-2 text-right">{item.sellingPrice}</td>
+                  <td className="p-2 text-center">
+                    <button
+                      onClick={() => removeFromCart(item.id)}
+                      className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 w-16"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <div className="bg-gray-100 p-2 border-t">
+        <div className="font-semibold text-right">
+          Total: ₱{totalAmount.toFixed(2)}
         </div>
       </div>
+    </div>
+  </div>
+</div>
       
       <div className="p-2 border-t border-gray-200 flex justify-end space-x-3">           
         <button
