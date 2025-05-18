@@ -171,7 +171,7 @@ const productMap = useMemo(() => {
   console.log("First item:", products[0]);
   console.log("Filtered product count:", filteredProducts.length);
   if (filteredProducts.length === 0) {
-    console.warn("No products matched. Sample category values:");
+    // console.warn("No products matched. Sample category values:");
     products.forEach(p => console.log("Category name:", p.category_name)); // ✅ correct
   }
   
