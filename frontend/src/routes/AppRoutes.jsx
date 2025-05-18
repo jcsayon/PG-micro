@@ -21,7 +21,6 @@ import CustomerSales from "../pages/Sales/CustomerSales";
 // Returns
 import ReturnWarrantyPage from "../pages/Returns/ReturnWarrantyPage";
 import WarrantyList from "../pages/Returns/WarrantiesList";
-import CustomerReturns from "../pages/Returns/CustomerReturns";
 
 // Reports Module
 import ReportModule from "../pages/ReportModule/ReportModule";
@@ -239,17 +238,6 @@ const AppRoutes = () => {
           <ProtectedRoute
             element={<WarrantyList />}
             allowedRoles={[ROLES.ADMIN, ROLES.RETURNS, ROLES.WARRANTY_LIST]}
-          />
-        }
-      />
-
-      {/* New Route for Customer List Page */}
-      <Route
-        path="/customer-returns"
-        element={
-          <ProtectedRoute
-            element={<CustomerReturns />}
-            allowedRoles={[ROLES.ADMIN, ROLES.RETURNS]}
           />
         }
       />

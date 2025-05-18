@@ -90,16 +90,16 @@ const Sidebar_Primary = () => {
     { name: "Income List", path: "/income-list", icon: Wallet, isSubItem: true, parentName: "Sales", color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
     { name: "Customer Sales", path: "/customer-sales", icon: UserCircle, isSubItem: true, parentName: "Sales", color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
     { name: "Warranty List", path: "/warranties", icon: FileText, isSubItem: true, parentName: "Returns", color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
-    { name: "Customer Returns", path: "/customer-returns", icon: UserCircle, isSubItem: true, parentName: "Returns", color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } }
   ];
 
   // Allowed items by route group
   const groupAPaths = ["/dashboard", "/account-info", "/settings", "/user-management"];
-  const groupBPaths = ["/purchase-orders", "/sales", "/return-warranty", "/reports", "/income-list", "/customer-sales", "/warranties", "/customer-returns", "/product-list", "/supplier-po"];
+  const groupBPaths = ["/purchase-orders", "/sales", "/return-warranty", "/reports","/income-list", "/customer-sales", "/warranties","/product-list", "/supplier-po"];
   const groupCPaths = ["/inventory"];
 
   const groupAAllowed = ["Home", "Account Info", "Settings", "Inventory", "User Management"];
-  const groupBAllowed = ["Home", "Purchase Orders", "Sales", "Returns", "Inventory", "Reports", "Income List", "Customer Sales", "Warranty List", "Customer Returns", "Product List", "Supplier PO"];
+  const groupBAllowed = ["Home", "Purchase Orders", "Sales", "Returns", "Inventory", "Reports","Income List", "Customer Sales", "Warranty List","Product List", "Supplier PO"];
+
   const groupCAllowed = groupBAllowed;
 
   // Filter by group
