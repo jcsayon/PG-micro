@@ -4,7 +4,7 @@ from django.db import models
 class Employee(models.Model):
     name = models.TextField()
     role = models.TextField()
-    employee_status = models.TextField()
+    employee_status = models.TextField(default="Active")  # Add a default value
 
 
 class Customer(models.Model):
@@ -16,7 +16,10 @@ class Customer(models.Model):
 
 
 class ProductCategory(models.Model):
-    name = models.TextField()
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
 
 
 class Supplier(models.Model):
@@ -27,30 +30,56 @@ class Supplier(models.Model):
 
 
 class DamageProduct(models.Model):
-    date_reported = models.DateTimeField(auto_now_add=True)
+    inventory_item = models.ForeignKey('Inventory', on_delete=models.CASCADE, related_name='damages')
+    damage_type = models.CharField(max_length=255)
     quantity_damaged = models.IntegerField()
-    damage_type = models.TextField()
+    date_reported = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.inventory_item.product.name} - {self.damage_type}"
+
+    def save(self, *args, **kwargs):
+        if not self.pk:  # Only when first created
+            self.inventory_item.quantity_available -= self.quantity_damaged
+            if self.inventory_item.quantity_available < 0:
+                self.inventory_item.quantity_available = 0
+            self.inventory_item.save()
+        super().save(*args, **kwargs)
+
 
 
 class Account(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    username = models.TextField(unique=True)
-    password = models.TextField()
-    email = models.TextField(unique=True)
-    account_status = models.TextField()
+    employee = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='account', null=True, blank=True)
+    username = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
+    role = models.CharField(max_length=50)
+    status = models.CharField(max_length=10, choices=[("Active", "Active"), ("Inactive", "Inactive")])
 
 
+# ------------------------
+# PRODUCT MODEL
+# ------------------------
 class Product(models.Model):
-    category = models.ForeignKey(ProductCategory, on_delete=models.CASCADE)
-    name = models.TextField()
+    name = models.CharField(max_length=255)
     description = models.TextField()
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
     reorder_point = models.IntegerField()
-    warranty_duration = models.TextField()
-    model = models.TextField()
-    brand = models.TextField()
-    status = models.TextField()
+    warranty_duration = models.CharField(max_length=100)
+    model = models.CharField(max_length=255)
+    brand = models.CharField(max_length=100)
+    status = models.CharField(max_length=50)
 
+    # 🛠 This matches your Supabase schema column: `productcategory`
+    category = models.ForeignKey(
+        ProductCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        db_column='productcategory',  # This fixes the problem
+        related_name='products'
+    )
+
+    def __str__(self):
+        return self.name
 
 class ProductWarranty(models.Model):
     start_date = models.DateTimeField()
@@ -59,15 +88,24 @@ class ProductWarranty(models.Model):
 
 
 class Inventory(models.Model):
-    damage_product = models.ForeignKey(DamageProduct, on_delete=models.CASCADE)
-    date_received = models.DateTimeField(auto_now_add=True)
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        db_column='product',  # Match SQL column name
+        related_name='inventories'
+    )
+    date_received = models.DateTimeField()
     quantity_received = models.IntegerField()
     quantity_available = models.IntegerField()
-    stock_status = models.TextField()
-    location = models.TextField()
-    serial_number = models.TextField(unique=True)
+    stock_status = models.CharField(max_length=50)
+    location = models.CharField(max_length=255)
+    serial_number = models.CharField(max_length=255, unique=True)
     old_item = models.BooleanField()
     selling_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.product.name if self.product else 'No Product'} - {self.serial_number}"
 
 
 class Orders(models.Model):
@@ -175,4 +213,3 @@ class ReportModule(models.Model):
     total_expenses = models.DecimalField(max_digits=10, decimal_places=2)
     net_profit = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.TextField()
-

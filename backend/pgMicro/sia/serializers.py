@@ -1,50 +1,112 @@
 from rest_framework import serializers
 from .models import *
-
-class EmployeeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Employee
-        fields = '__all__'
+from .models import Customer
 
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = '__all__'
+        
+class EmployeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee
+        fields = '__all__'
 
+class AccountSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
+
+    class Meta:
+        model = Account
+        fields = ['id', 'employee', 'username', 'password', 'role', 'status']
+
+# ------------------------
+# PRODUCT CATEGORY SERIALIZER
+# ------------------------
 class ProductCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductCategory
         fields = '__all__'
+
 
 class SupplierSerializer(serializers.ModelSerializer):
     class Meta:
         model = Supplier
         fields = '__all__'
 
+# ------------------------
+# DAMAGE PRODUCT SERIALIZER
+# ------------------------
 class DamageProductSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='inventory_item.product.name', read_only=True)
+    serial_number = serializers.CharField(source='inventory_item.serial_number', read_only=True)
+
     class Meta:
         model = DamageProduct
-        fields = '__all__'
+        fields = [
+            'id',
+            'inventory_item',
+            'damage_type',
+            'quantity_damaged',
+            'date_reported',
+            'product_name',
+            'serial_number',
+        ]
+
+
 
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
         fields = '__all__'
 
+# ------------------------
+# PRODUCT SERIALIZER
+# ------------------------
 class ProductSerializer(serializers.ModelSerializer):
+    category = ProductCategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=ProductCategory.objects.all(),
+        source='category',  # still maps to `category` field
+        write_only=True
+    )
+
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = [
+            'id', 'name', 'description', 'purchase_price',
+            'reorder_point', 'warranty_duration', 'model',
+            'brand', 'status', 'category', 'category_id'
+        ]
+
+
 
 class ProductWarrantySerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductWarranty
         fields = '__all__'
 
+from rest_framework import serializers
+from .models import Inventory
+
 class InventorySerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    brand = serializers.CharField(source='product.brand', read_only=True)
+    model = serializers.CharField(source='product.model', read_only=True)
+    category = serializers.CharField(source='product.category.name', read_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+
     class Meta:
         model = Inventory
-        fields = '__all__'
+        fields = [
+            'id', 'serial_number', 'location', 'selling_price',
+            'quantity_received', 'quantity_available', 'stock_status',
+            'old_item', 'date_received', 'product',
+            'product_name', 'brand', 'model', 'category'
+        ]
+
+
+
+
 
 class OrdersSerializer(serializers.ModelSerializer):
     class Meta:
