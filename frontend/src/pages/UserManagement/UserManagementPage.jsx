@@ -68,6 +68,26 @@ const UserManagementPage = () => {
   const [isEditingEmployee, setIsEditingEmployee] = useState(false);
   const [showDeleteEmployeeConfirm, setShowDeleteEmployeeConfirm] = useState(false);
 
+
+  // ✅ Declare useState first
+const [users, setUsers] = useState([]);
+const [employees, setEmployees] = useState([]);
+
+// 🔍 Filter users before slicing
+const filteredUsers = users.filter(user => 
+  (user.email || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+  (user.role || "").toLowerCase().includes(searchTerm.toLowerCase())
+);
+
+  // 🔁 Pagination state
+const [currentPage, setCurrentPage] = useState(1);
+const rowsPerPage = 10;
+
+// 🔁 Reset to first page on tab switch or search
+useEffect(() => {
+  setCurrentPage(1);
+}, [activeTab, searchTerm]);
+
   // Debug ROLES on component mount
   useEffect(() => {
     console.log("ROLES object:", ROLES);
@@ -77,8 +97,6 @@ const UserManagementPage = () => {
   // For demo purposes, we'll set it as Admin
   const currentUserRole = "Admin";
 
-  // Initialize employees from local storage
-  const [employees, setEmployees] = useState([]);
 
 
   // Save employees to local storage whenever employees change
@@ -86,8 +104,7 @@ const UserManagementPage = () => {
     localStorage.setItem('employees', JSON.stringify(employees));
   }, [employees]);
 
-  // Initialize users from local storage
-  const [users, setUsers] = useState([]);
+
 
 
   // Save users to local storage whenever users change
@@ -112,28 +129,37 @@ const UserManagementPage = () => {
         const employeeData = await employeeRes.json();
         const userData = await userRes.json();
   
-        // Format employees
-        const formattedEmployees = employeeData.map((emp) => ({
-          id: emp.id,
-          firstName: emp.name?.split(" ")[0] || "",
-          lastName: emp.name?.split(" ").slice(1).join(" ") || "",
-          email: emp.email || "",
-          phone: emp.phone_number || "",
-          position: emp.role || "Employee",
-          joinDate: emp.join_date || "2023-01-01", // adjust if available
-          hasAccount: userData.some((user) => user.employee_id === emp.id),
-        }));
+        const formattedEmployees = employeeData.map((emp) => {
+          return {
+            id: emp.id,
+            fullName: emp.name || "",
+            firstName: emp.name?.split(" ")[0] || "",
+            lastName: emp.name?.split(" ").slice(1).join(" ") || "",
+            email: emp.account?.email || "",
+            phone: emp.phone_number || "",
+            position: emp.role || "Employee",
+            joinDate: emp.join_date || "2023-01-01",
+            hasAccount: !!emp.account,
+
+          };
+        });
+        
+        
+        
+        
   
         // Format users
         const formattedUsers = userData.map((user) => ({
           id: user.id,
-          username: user.username,
+          email: user.email,
           role: user.role,
           password: user.password,
-          status: user.status,
+          status: user.status !== null && user.status !== undefined ? user.status : "Inactive",
           employeeId: user.employee_id,
           accessiblePages: user.accessible_pages || getAccessiblePagesByRole(user.role),
         }));
+        
+        
   
         setEmployees(formattedEmployees);
         setUsers(formattedUsers);
@@ -144,24 +170,28 @@ const UserManagementPage = () => {
   
     fetchData();
   }, []);
-  
+  // ✅ Reset pagination to page 1 when switching tabs or searching
+useEffect(() => {
+  setCurrentPage(1);
+}, [activeTab, searchTerm]);
 
   // Employee form state
   const [employeeForm, setEmployeeForm] = useState({
     firstName: "",
     lastName: "",
-    email: "",
     phone: "",
-    position: "",
+    position: "Employee",
     joinDate: new Date().toISOString().split('T')[0],
   });
+  
 
   // User form state with module access - Simplified status options
   const [userForm, setUserForm] = useState({
-    username: "",
+  // now represents a display name / login name
+    email: "",     // explicitly separate
     password: "",
     role: ROLES.SALES,
-    status: "Active", // Default to Active
+    status: "Active",
     modules: {
       admin: false,
       sales: false,
@@ -171,6 +201,7 @@ const UserManagementPage = () => {
       reports: false
     }
   });
+  
 
   // Function to update module checkboxes based on selected role
   const updateModulesByRole = (role) => {
@@ -235,33 +266,43 @@ const UserManagementPage = () => {
     setEmployeeForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle user form input changes
-  const handleUserChange = (e) => {
-    const { name, value } = e.target;
-    
-    if (name === 'password' && !isEditing) {
-      // Validate password length
-      if (value.length !== 0 && value.length !== 8) {
-        setPasswordError("Password must be exactly 8 characters long");
-      } else {
-        setPasswordError("");
-      }
-    }
-    
-    if (name === 'role') {
-      // When role changes, update the modules automatically
-      const updatedModules = updateModulesByRole(value);
-      
-      setUserForm(prev => ({
-        ...prev,
-        [name]: value,
-        modules: updatedModules
-      }));
+// Handle user form input changes
+const handleUserChange = (e) => {
+  const { name, value } = e.target;
+
+  // Password validation
+  if (name === 'password' && !isEditing) {
+    if (value.length !== 0 && value.length !== 8) {
+      setPasswordError("Password must be exactly 8 characters long");
     } else {
-      // For other fields, just update the value
-      setUserForm(prev => ({ ...prev, [name]: value }));
+      setPasswordError("");
     }
-  };
+  }
+
+  // Email format validation (optional but useful)
+  if (name === 'email') {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (value && !emailRegex.test(value)) {
+      setPhoneError("Invalid email format");
+    } else {
+      setPhoneError("");  // reuse existing error state or create new emailError state
+    }
+  }
+
+  // Role-based module update
+  if (name === 'role') {
+    const updatedModules = updateModulesByRole(value);
+    setUserForm(prev => ({
+      ...prev,
+      role: value,
+      modules: updatedModules
+    }));
+  } else {
+    // Standard field update
+    setUserForm(prev => ({ ...prev, [name]: value }));
+  }
+};
+
   
   // Function to handle module checkbox changes
   const handleModuleChange = (module) => {
@@ -274,147 +315,193 @@ const UserManagementPage = () => {
     }));
   };
 
-  // Handle adding or updating employee
-  const handleAddEmployee = () => {
-    if (!employeeForm.firstName || !employeeForm.lastName || !employeeForm.email) {
-      alert("Please fill all required fields");
+  const handleAddEmployee = async () => {
+    const fullName = `${employeeForm.firstName.trim()} ${employeeForm.lastName.trim()}`;
+    const role = employeeForm.position.trim() || "Employee";
+  
+    if (!employeeForm.firstName || !employeeForm.lastName) {
+      alert("Please fill out First Name and Last Name.");
       return;
     }
-    
-    const normalizedEmail = employeeForm.email.trim().toLowerCase();
-    
-    // Check for duplicate emails
-    if (employees.some(emp => 
-      emp.email.toLowerCase() === normalizedEmail && 
-      (!isEditingEmployee || emp.id !== selectedEmployee?.id)
-    )) {
-      alert("Email already exists");
-      return;
-    }
-
-    if (isEditingEmployee && selectedEmployee) {
-      // Update existing employee
-      const updatedEmployees = employees.map(emp => 
-        emp.id === selectedEmployee.id 
-          ? { 
-              ...emp, 
-              firstName: employeeForm.firstName.trim(),
-              lastName: employeeForm.lastName.trim(),
-              email: normalizedEmail,
-              phone: employeeForm.phone.trim(),
-              position: employeeForm.position.trim(),
-              joinDate: employeeForm.joinDate
-            } 
-          : emp
-      );
-      
-      setEmployees(updatedEmployees);
-      setIsEditingEmployee(false);
-      setSelectedEmployee(null);
-      setIsAddingEmployee(false);
-    } else {
-      // Add new employee
-      const newEmployee = {
-        id: Date.now(), // Use timestamp as unique ID
-        firstName: employeeForm.firstName.trim(),
-        lastName: employeeForm.lastName.trim(),
-        email: normalizedEmail,
-        phone: employeeForm.phone.trim(),
-        position: employeeForm.position.trim(),
-        joinDate: employeeForm.joinDate,
-        hasAccount: false
-      };
-      
-      setEmployees([...employees, newEmployee]);
-      
-      // Reset form
+  
+    try {
+      if (isEditingEmployee && selectedEmployee) {
+        // 🔁 Update employee in backend
+        const response = await fetch(`${EMPLOYEE_API}${selectedEmployee.id}/`, {
+          method: "PUT", // or "PATCH"
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: fullName,
+            role: role,
+            employee_status: "Active"
+          }),
+        });
+  
+        if (!response.ok) throw new Error("Failed to update employee");
+  
+        const updatedEmp = await response.json();
+  
+        setEmployees((prev) =>
+          prev.map((emp) =>
+            emp.id === selectedEmployee.id
+              ? {
+                  ...emp,
+                  firstName: employeeForm.firstName,
+                  lastName: employeeForm.lastName,
+                  position: role,
+                  joinDate: employeeForm.joinDate,
+                }
+              : emp
+          )
+        );
+  
+      } else {
+        // ➕ Add employee to backend
+        const response = await fetch(EMPLOYEE_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: fullName,
+            role: role,
+            employee_status: "Active"
+          }),
+        });
+  
+        if (!response.ok) throw new Error("Failed to add employee");
+  
+        const newEmp = await response.json();
+  
+        setEmployees((prev) => [
+          ...prev,
+          {
+            id: newEmp.id,
+            firstName: employeeForm.firstName,
+            lastName: employeeForm.lastName,
+            position: role,
+            joinDate: employeeForm.joinDate,
+            hasAccount: false,
+          },
+        ]);
+      }
+  
       resetForms();
+      alert("Employee saved successfully!");
+    } catch (error) {
+      console.error("Error saving employee:", error);
+      alert("There was a problem saving the employee.");
     }
   };
+  
 
   // Handle adding new user after employee creation
-  const handleAddUser = () => {
-    if (!userForm.username || (!isEditing && !userForm.password)) {
-      alert("Please fill all required fields");
-      return;
-    }
-    
-    const normalizedUsername = userForm.username.trim().toLowerCase();
-    
-    // Check for duplicate usernames
-    if (users.some(user => 
-      user.username.toLowerCase() === normalizedUsername && 
-      (!isEditing || user.id !== selectedUser?.id)
-    )) {
-      alert("Username already exists");
-      return;
-    }
-      
-    // Password validation for new accounts
-    if (!isEditing && userForm.password.length !== 8) {
-      setPasswordError("Password must be exactly 8 characters long");
+  const handleAddUser = async () => {
+    if (!userForm.email) {
+      alert("Email is required.");
       return;
     }
   
-    // Build accessible pages from module selections
-    const accessiblePages = ['dashboard'];
-    if (userForm.modules.admin) accessiblePages.push('user-management');
-    if (userForm.modules.sales) accessiblePages.push('sales');
-    if (userForm.modules.inventory) accessiblePages.push('inventory');
-    if (userForm.modules.returnWarranty) accessiblePages.push('return-warranty');
-    if (userForm.modules.purchaseOrders) accessiblePages.push('purchase-orders');
-    if (userForm.modules.reports) accessiblePages.push('reports');
-    
-    // Determine primary role based on modules
-    let role = userForm.role;
-    if (userForm.modules.admin) {
-      role = ROLES.ADMIN;
-    }
-  
-    if (isEditing && selectedUser) {
-      // Update existing user
-      const updatedUsers = users.map(user => 
-        user.id === selectedUser.id 
-          ? { 
-              ...user, 
-              username: normalizedUsername,
-              password: userForm.password === "********" ? user.password : userForm.password.trim(),
-              role: role,
-              status: userForm.status,
-              accessiblePages: accessiblePages
-            } 
-          : user
-      );
-      
-      setUsers(updatedUsers);
-      setIsEditing(false);
-      setSelectedUser(null);
-    } else {
-      // Add new user for the selected employee
-      const newUser = {
-        id: Date.now(),
-        username: normalizedUsername,
-        password: userForm.password.trim(),
-        role: role,
+    try {
+      // Prepare payload
+      const payload = {
+        email: userForm.email.trim(),
+        role: userForm.role,
         status: userForm.status,
-        employeeId: selectedEmployee.id,
-        accessiblePages: accessiblePages
+        accessible_pages: ['dashboard'].concat(
+          Object.entries(userForm.modules)
+            .filter(([_, value]) => value)
+            .map(([key]) => {
+              switch (key) {
+                case 'admin': return 'user-management';
+                case 'sales': return 'sales';
+                case 'inventory': return 'inventory';
+                case 'returnWarranty': return 'return-warranty';
+                case 'purchaseOrders': return 'purchase-orders';
+                case 'reports': return 'reports';
+                default: return null;
+              }
+            }).filter(Boolean)
+        ),
       };
-      
-      // Update employee hasAccount status
-      const updatedEmployees = employees.map(emp => 
-        emp.id === selectedEmployee.id 
-          ? { ...emp, hasAccount: true } 
-          : emp
-      );
-      
-      setEmployees(updatedEmployees);
-      setUsers([...users, newUser]);
+  
+      // Include password only when creating or explicitly changed
+      if (!isEditing || (userForm.password && userForm.password !== "********")) {
+        if (userForm.password.length !== 8) {
+          alert("Password must be exactly 8 characters long.");
+          return;
+        }
+        payload.password = userForm.password.trim();
+      }
+  
+      let response;
+  
+      if (isEditing && selectedUser) {
+        // UPDATE (PATCH) existing user
+        response = await fetch(`${ACCOUNT_API}${selectedUser.id}/`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // CREATE (POST) new user
+        if (!userForm.password) {
+          alert("Password is required to create a new user.");
+          return;
+        }
+  
+        response = await fetch(ACCOUNT_API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+  
+      if (!response.ok) {
+        const errorResponse = await response.json();
+        console.error("❌ Backend error:", errorResponse);
+        throw new Error("Failed to save user account.");
+      }
+  
+      const savedUser = await response.json();
+  
+// After account creation
+if (!isEditing && selectedEmployee) {
+  await fetch(`${EMPLOYEE_API}${selectedEmployee.id}/`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ account: savedUser.id }), // 🔥 FK reference
+  });
+}
+
+  
+      // Update frontend state
+      if (isEditing) {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === savedUser.id ? savedUser : u))
+        );
+      } else {
+        setUsers((prev) => [...prev, savedUser]);
+        setEmployees((prev) =>
+          prev.map(emp =>
+            emp.id === selectedEmployee.id ? { ...emp, hasAccount: true } : emp
+          )
+        );
+      }
+  
+      resetForms();
+      alert(isEditing ? "✅ User account updated!" : "✅ User account created!");
+  
+    } catch (error) {
+      console.error("🔥 Error saving user:", error);
+      alert("Failed to save user.");
     }
-    
-    // Reset forms and states
-    resetForms();
   };
+  
+  
+    
 
   // Reset all forms and modal states
   const resetForms = () => {
@@ -435,7 +522,7 @@ const UserManagementPage = () => {
     const initialModules = updateModulesByRole(initialRole);
     
     setUserForm({
-      username: "",
+      email: "",
       password: "",
       role: initialRole,
       status: "Active",
@@ -472,22 +559,37 @@ const UserManagementPage = () => {
     setShowDeleteEmployeeConfirm(true);
   };
 
-  // Confirm delete employee
-  const confirmDeleteEmployee = () => {
-    // Also delete associated user account if exists
-    if (selectedEmployee.hasAccount) {
-      const userToDelete = users.find(user => user.employeeId === selectedEmployee.id);
-      if (userToDelete) {
-        const updatedUsers = users.filter(user => user.id !== userToDelete.id);
-        setUsers(updatedUsers);
+  const confirmDeleteEmployee = async () => {
+    try {
+      // 🔁 Delete from backend
+      const response = await fetch(`${EMPLOYEE_API}${selectedEmployee.id}/`, {
+        method: "DELETE",
+      });
+  
+      if (!response.ok) throw new Error("Failed to delete employee");
+  
+      // ✅ Update local state
+      setEmployees((prev) =>
+        prev.filter((emp) => emp.id !== selectedEmployee.id)
+      );
+  
+      // ✅ Also delete associated user if exists
+      if (selectedEmployee.hasAccount) {
+        const userToDelete = users.find((u) => u.employeeId === selectedEmployee.id);
+        if (userToDelete) {
+          setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+        }
       }
+  
+      setShowDeleteEmployeeConfirm(false);
+      setSelectedEmployee(null);
+      alert("Employee deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      alert("There was a problem deleting the employee.");
     }
-    
-    const updatedEmployees = employees.filter(emp => emp.id !== selectedEmployee.id);
-    setEmployees(updatedEmployees);
-    setShowDeleteEmployeeConfirm(false);
-    setSelectedEmployee(null);
   };
+  
 
   // Handle edit user
   const handleEditClick = (user) => {
@@ -506,7 +608,7 @@ const UserManagementPage = () => {
     };
     
     setUserForm({
-      username: user.username,
+      email: user.email,
       password: "********", // Don't show actual password
       role: user.role,
       status: user.status,
@@ -528,58 +630,86 @@ const UserManagementPage = () => {
   };
 
   // Confirm delete user
-  const confirmDelete = () => {
-    const updatedUsers = users.filter(user => user.id !== selectedUser.id);
-    
-    // Also update employee hasAccount status
-    const userToDelete = selectedUser;
-    const employeeToUpdate = employees.find(emp => emp.id === userToDelete.employeeId);
-    
-    if (employeeToUpdate) {
-      const updatedEmployees = employees.map(emp => 
-        emp.id === employeeToUpdate.id 
-          ? { ...emp, hasAccount: false } 
-          : emp
-      );
-      setEmployees(updatedEmployees);
+  const confirmDelete = async () => {
+    if (!selectedUser || !selectedUser.id) {
+      alert("No user selected for deletion.");
+      return;
     }
-    
-    setUsers(updatedUsers);
-    setShowDeleteConfirm(false);
-    setSelectedUser(null);
+  
+    try {
+      // ✅ DELETE request to backend
+      const response = await fetch(`${ACCOUNT_API}${selectedUser.id}/`, {
+        method: "DELETE",
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to delete user from backend");
+      }
+  
+      // ✅ Remove from frontend state
+      setUsers(prev => prev.filter(user => user.id !== selectedUser.id));
+  
+      // ✅ Update linked employee's `hasAccount`
+      const employeeToUpdate = employees.find(emp => emp.id === selectedUser.employeeId);
+      if (employeeToUpdate) {
+        setEmployees(prev => prev.map(emp =>
+          emp.id === employeeToUpdate.id
+            ? { ...emp, hasAccount: false }
+            : emp
+        ));
+      }
+  
+      setShowDeleteConfirm(false);
+      setSelectedUser(null);
+      alert("User account deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      alert("Failed to delete user account.");
+    }
   };
+  
 
-  // Handle create account for employee
   const handleCreateAccountClick = (employee) => {
-    const initialRole = ROLES.SALES; // Default role
+    const initialRole = ROLES.SALES;
     const initialModules = updateModulesByRole(initialRole);
-    
+  
     setSelectedEmployee(employee);
+  
     setUserForm({
-      username: employee.email,
+      email: employee.email || "",
       password: "",
       role: initialRole,
       status: "Active",
       modules: initialModules
     });
-    
+  
     setIsAddingUser(true);
-    setActiveTab("accounts"); // Switch to accounts tab when creating an account
+    setIsEditing(false);
+    setActiveTab("accounts");
   };
+  
 
   // Filter employees based on search term
   const filteredEmployees = employees.filter(emp => 
-    emp.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    emp.lastName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    emp.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    emp.position?.toLowerCase().includes(searchTerm.toLowerCase())
+    (emp.firstName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (emp.lastName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (emp.email || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (emp.position || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+// Employee pagination
+const indexOfLastEmployee = currentPage * rowsPerPage;
+const indexOfFirstEmployee = indexOfLastEmployee - rowsPerPage;
+const currentEmployees = filteredEmployees.slice(indexOfFirstEmployee, indexOfLastEmployee);
 
-  // Filter users based on search term
-  const filteredUsers = users.filter(user => 
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+// User pagination
+const indexOfLastUser = currentPage * rowsPerPage;
+const indexOfFirstUser = indexOfLastUser - rowsPerPage;
+const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+
+
+
+  
 
   // Role color map - Enhanced with more vibrant colors
   const getRoleBadgeClass = (role) => {
@@ -717,41 +847,29 @@ const UserManagementPage = () => {
                     />
                   </div>
                   
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-slate-700">Email *</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={employeeForm.email}
-                      onChange={handleEmployeeChange}
-                      placeholder="Enter email address"
-                      className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="flex flex-col gap-2">
-  <label className="text-sm font-medium text-slate-700">Phone Number</label>
-  <input
-    name="phone"
-    value={employeeForm.phone}
-    onChange={handleEmployeeChange}
-    placeholder="Enter phone number (e.g., +639XXXXXXXXX)"
-    className={`border ${phoneError ? "border-red-500" : "border-slate-200"} p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm`}
-  />
-  {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
-</div>
 
-<div className="flex flex-col gap-2">
-  <label className="text-sm font-medium text-slate-700">Position</label>
-  <input
-    name="position"
-    value={employeeForm.position}
-    onChange={handleEmployeeChange}
-    placeholder="Enter job position"
-    className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-  />
-</div>
+                  
+
+
+                    <div className="flex flex-col gap-2">
+                      <label className="text-sm font-medium text-slate-700">Position</label>
+                      <select
+                        name="position"
+                        value={employeeForm.position}
+                        onChange={handleEmployeeChange}
+                        className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm bg-white"
+                      >
+                        <option value="">Select a position</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Inventory">Inventory</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Returns">Returns</option>
+                        <option value="Purchase Order">Purchase Order</option>
+                        <option value="Warranty List">Warranty List</option>
+                        <option value="Employee">Employee</option>
+                      </select>
+                    </div>
+
 
 <div className="flex flex-col gap-2">
   <label className="text-sm font-medium text-slate-700">Join Date</label>
@@ -812,17 +930,21 @@ const UserManagementPage = () => {
     )}
     
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-slate-700">Username / Email</label>
+        <label className="text-sm font-medium text-slate-700">Email Address</label>
         <input
-          name="username"
-          value={userForm.username}
+          name="email"
+          value={userForm.email}
           onChange={handleUserChange}
-          placeholder="Enter email address"
+          placeholder="Enter valid email address"
+          type="email"
           className="border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
         />
       </div>
-      
+
+
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-slate-700">Password</label>
         <div className="relative">
@@ -1043,22 +1165,29 @@ const UserManagementPage = () => {
           <th className="py-4 px-6 text-sm font-medium text-slate-600">EMAIL</th>
           <th className="py-4 px-6 text-sm font-medium text-slate-600">POSITION</th>
           <th className="py-4 px-6 text-sm font-medium text-slate-600">HIRE DATE</th>
-          <th className="py-4 px-6 text-sm font-medium text-slate-600">PHONE NUMBER</th>
+          {/* <th className="py-4 px-6 text-sm font-medium text-slate-600">PHONE NUMBER</th> */}
           <th className="py-4 px-6 text-sm font-medium text-slate-600 text-right">ACTIONS</th>
         </tr>
       </thead>
       <tbody className="divide-y divide-slate-100">
         {filteredEmployees.length > 0 ? (
-          filteredEmployees.map((employee) => (
+          currentEmployees.map((employee) => (
             <tr
               key={employee.id}
               className="hover:bg-slate-50 transition-colors duration-150"
             >
               <td className="py-4 px-6">
-                <div className="font-medium text-slate-800">{employee.firstName} {employee.lastName}</div>
+              <div className="font-medium text-slate-800">
+                {employee.firstName && employee.lastName
+                  ? `${employee.firstName} ${employee.lastName}`
+                  : employee.fullName || "—"}
+              </div>
               </td>
               <td className="py-4 px-6 text-slate-600">
-                {employee.email}
+                {(() => {
+                  const user = users.find((u) => u.employeeId === employee.id);
+                  return user ? user.email : <span className="text-slate-400 text-sm">—</span>;
+                })()}
               </td>
               <td className="py-4 px-6 text-slate-600">
                 {employee.position || <span className="text-slate-400 text-sm">—</span>}
@@ -1066,11 +1195,21 @@ const UserManagementPage = () => {
               <td className="py-4 px-6 text-slate-600">
                 {new Date(employee.joinDate).toLocaleDateString()}
               </td>
-              <td className="py-4 px-6 text-slate-600">
+              {/* <td className="py-4 px-6 text-slate-600">
                 {employee.phone || <span className="text-slate-400 text-sm">—</span>}
-              </td>
+              </td> */}
               <td className="py-4 px-6 text-right">
                 <div className="flex items-center justify-end gap-2">
+                {!employee.hasAccount && (
+                    <button
+                      onClick={() => handleCreateAccountClick(employee)}
+                      className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-emerald-600 transition-colors"
+                      aria-label="Create Account"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </button>
+                  )}
+
                   {currentUserRole === "Admin" && (
                     <>
                       <button 
@@ -1111,9 +1250,32 @@ const UserManagementPage = () => {
     </table>
   </div>
   
-  <div className="p-4 bg-slate-50 border-t border-slate-100 text-sm text-slate-500 font-medium">
-    Showing {filteredEmployees.length} of {employees.length} employees
+  <div className="p-4 bg-slate-50 border-t border-slate-100 text-sm text-slate-500 font-medium flex justify-between items-center">
+  <span>
+    Showing {Math.min(rowsPerPage, filteredEmployees.length - (currentPage - 1) * rowsPerPage)} of {filteredEmployees.length} employees
+  </span>
+  <div className="flex gap-2">
+    <button
+      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+      disabled={currentPage === 1}
+      className="px-3 py-1 border rounded-md disabled:opacity-50"
+    >
+      Prev
+    </button>
+    <span>Page {currentPage}</span>
+    <button
+      onClick={() => {
+        const totalPages = Math.ceil(filteredEmployees.length / rowsPerPage);
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+      }}
+      disabled={currentPage === Math.ceil(filteredEmployees.length / rowsPerPage)}
+      className="px-3 py-1 border rounded-md disabled:opacity-50"
+    >
+      Next
+    </button>
   </div>
+</div>
+
 </div>
 ) : (
 /* Users Table */
@@ -1156,7 +1318,7 @@ const UserManagementPage = () => {
     <table className="w-full">
       <thead>
         <tr className="bg-slate-50 text-left">
-          <th className="py-4 px-6 text-sm font-medium text-slate-600">USERNAME</th>
+          <th className="py-4 px-6 text-sm font-medium text-slate-600">EMAIL</th>
           <th className="py-4 px-6 text-sm font-medium text-slate-600">EMPLOYEE</th>
           <th className="py-4 px-6 text-sm font-medium text-slate-600">ROLE</th>
           <th className="py-4 px-6 text-sm font-medium text-slate-600">STATUS</th>
@@ -1166,23 +1328,29 @@ const UserManagementPage = () => {
       </thead>
       <tbody className="divide-y divide-slate-100">
         {filteredUsers.length > 0 ? (
-          filteredUsers.map((user) => {
-            const relatedEmployee = employees.find(emp => emp.id === user.employeeId);
+          currentUsers.map((user) => {
+            console.log("Users:", users);
+            console.log("Employees:", employees);
+            console.log("Filtered Users:", filteredUsers);
+            const relatedEmployee = employees.find(emp => Number(emp.id) === Number(user.employee_id));
             return (
               <tr
                 key={user.id}
                 className="hover:bg-slate-50 transition-colors duration-150"
               >
                 <td className="py-4 px-6">
-                  <div className="font-medium text-slate-800">{user.username}</div>
+                  <div className="font-medium text-slate-800">{user.email}</div>
                 </td>
                 <td className="py-4 px-6">
                   {relatedEmployee ? (
-                    <div className="text-slate-600">{relatedEmployee.firstName} {relatedEmployee.lastName}</div>
+                    <div className="text-slate-600">
+                      {relatedEmployee.firstName} {relatedEmployee.lastName}
+                    </div>
                   ) : (
                     <span className="text-red-500 text-sm italic">No employee linked</span>
                   )}
                 </td>
+
                 <td className="py-4 px-6">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeClass(user.role)}`}>
                     {user.role}
@@ -1247,9 +1415,32 @@ const UserManagementPage = () => {
     </table>
   </div>
   
-  <div className="p-4 bg-slate-50 border-t border-slate-100 text-sm text-slate-500 font-medium">
-    Showing {filteredUsers.length} of {users.length} users
+  <div className="p-4 bg-slate-50 border-t border-slate-100 text-sm text-slate-500 font-medium flex justify-between items-center">
+  <span>
+    Showing {Math.min(rowsPerPage, filteredUsers.length - (currentPage - 1) * rowsPerPage)} of {filteredUsers.length} users
+  </span>
+  <div className="flex gap-2">
+    <button
+      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+      disabled={currentPage === 1}
+      className="px-3 py-1 border rounded-md disabled:opacity-50"
+    >
+      Prev
+    </button>
+    <span>Page {currentPage}</span>
+    <button
+      onClick={() => {
+        const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
+        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+      }}
+      disabled={currentPage === Math.ceil(filteredUsers.length / rowsPerPage)}
+      className="px-3 py-1 border rounded-md disabled:opacity-50"
+    >
+      Next
+    </button>
   </div>
+</div>
+
 </div>
 )}
 </div>

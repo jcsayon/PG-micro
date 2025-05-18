@@ -5,8 +5,11 @@ from django.db import models
 class Employee(models.Model):
     name = models.TextField()
     role = models.TextField()
-    employee_status = models.TextField(default="Active")  # Add a default value
+    employee_status = models.TextField(default="Active")
+    account = models.OneToOneField("Account", on_delete=models.SET_NULL, null=True, blank=True)  # ✅ FK here
 
+    def __str__(self):
+        return self.name
 
 class Customer(models.Model):
     name = models.TextField()
@@ -55,16 +58,14 @@ class DamageProduct(models.Model):
 
 
 class Account(models.Model):
-    username = models.CharField(max_length=150, unique=True)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)
-    employee = models.ForeignKey("sia.Employee", on_delete=models.SET_NULL, null=True, blank=True)
-    status = models.CharField(max_length=50, choices=[("Active", "Active"), ("Inactive", "Inactive")])
-    role = models.CharField(max_length=50)
-    accessible_pages = models.JSONField(null=True, blank=True)
+    email = models.TextField(unique=True)
+    password = models.TextField()
+    status = models.TextField(default="Active")
+    role = models.TextField()
+    accessible_pages = models.JSONField(default=list)
 
     def __str__(self):
-        return self.username
+        return self.email
 
 
 

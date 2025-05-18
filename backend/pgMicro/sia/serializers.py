@@ -7,17 +7,44 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = '__all__'
         
+class AccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ['id', 'email', 'password', 'role', 'status', 'accessible_pages']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        instance = super().create(validated_data)
+        if password:
+            instance.set_password(password)  # 🔒 Hash the password
+            instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
+
+
+    def validate_email(self, value):
+        if Account.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email already in use.")
+        return value
+
 class EmployeeSerializer(serializers.ModelSerializer):
+    account = AccountSerializer(read_only=True)  # ✅ Use the class, not a string
+
     class Meta:
         model = Employee
         fields = '__all__'
 
-class AccountSerializer(serializers.ModelSerializer):
-    employee = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all())
-
-    class Meta:
-        model = Account
-        fields = ['id', 'employee', 'username', 'password', 'role', 'status']
 
 # ------------------------
 # PRODUCT CATEGORY SERIALIZER
@@ -59,10 +86,21 @@ class DamageProductSerializer(serializers.ModelSerializer):
 
 
 
+
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = '__all__'
+        fields = ['id', 'email', 'role']
+
+    def get_employee_name(self, obj):
+        return obj.employee.name if obj.employee else None
+    
+    def validate_email(self, value):
+        if Account.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email already in use.")
+        return value
+
+
 
 # ------------------------
 # PRODUCT SERIALIZER
