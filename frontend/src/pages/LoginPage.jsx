@@ -73,95 +73,41 @@ const LoginPage = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     setError("");
-
-    // Comprehensive logging
-    console.group("Login Attempt");
-    console.log("Raw Email Input:", email);
-    console.log("Raw Password Input:", password);
-
-    // Trim and validate inputs
+  
     const trimmedEmail = (email || "").trim().toLowerCase();
     const trimmedPassword = (password || "").trim();
-
-    console.log("Trimmed Email:", trimmedEmail);
-    console.log("Trimmed Password:", trimmedPassword);
-
-    try {
-      // Retrieve users from local storage
-      const storedUsersString = localStorage.getItem("users");
-      console.log("Stored Users JSON:", storedUsersString);
-
-      if (!storedUsersString) {
-        console.log("No users found in localStorage, using defaults");
-        localStorage.setItem("users", JSON.stringify(defaultUsers));
+  
+    const users = defaultUsers;
+  
+    const matchedUser = users.find(
+      (u) =>
+        u.username?.toLowerCase() === trimmedEmail &&
+        u.password === trimmedPassword
+    );
+  
+    if (matchedUser) {
+      sessionStorage.setItem("isAuthenticated", "true");
+      sessionStorage.setItem("userRole", matchedUser.role);
+      sessionStorage.setItem("userEmail", matchedUser.username);
+  
+      switch (matchedUser.role) {
+        case ROLES.ADMIN:
+          navigate("/dashboard");
+          break;
+        case ROLES.SALES:
+          navigate("/sales");
+          break;
+        case ROLES.INVENTORY:
+          navigate("/inventory");
+          break;
+        case ROLES.RETURNS:
+          navigate("/return-warranty");
+          break;
+        default:
+          navigate("/dashboard");
       }
-
-      // Use stored users if available, otherwise fallback to defaults
-      let users = defaultUsers;
-      try {
-        const parsedUsers = JSON.parse(storedUsersString);
-        if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
-          users = parsedUsers;
-          console.log("Successfully parsed users from localStorage");
-        }
-      } catch (parseError) {
-        console.error("Error parsing users from localStorage:", parseError);
-        // Continue with default users
-      }
-
-      // Debug each user's credential check
-      users.forEach((user, index) => {
-        console.log(`User ${index + 1}:`, {
-          username: user.username,
-          storedPassword: user.password,
-          inputPassword: trimmedPassword,
-          passwordMatch: user.password === trimmedPassword,
-          usernameMatch: user.username.toLowerCase() === trimmedEmail
-        });
-      });
-
-      // Find matching user with exact comparison
-      const matchedUser = users.find(
-        (u) => u.username.toLowerCase() === trimmedEmail && 
-              u.password === trimmedPassword
-      );
-
-      console.log("Matched User:", matchedUser);
-      console.groupEnd();
-
-      if (matchedUser) {
-        // Authentication successful
-        sessionStorage.setItem("isAuthenticated", "true");
-        sessionStorage.setItem("userRole", matchedUser.role);
-        sessionStorage.setItem("userEmail", matchedUser.username);
-
-        // Navigate based on role
-        switch (matchedUser.role) {
-          case ROLES.ADMIN:
-            navigate("/dashboard");
-            break;
-          case ROLES.SALES:
-            navigate("/sales");
-            break;
-          case ROLES.INVENTORY:
-            navigate("/inventory");
-            break;
-          case ROLES.RETURNS:
-            navigate("/return-warranty");
-            break;
-          default:
-            navigate("/dashboard");
-        }
-      } else {
-        console.error("No matching user found", {
-          inputEmail: trimmedEmail,
-          inputPassword: trimmedPassword
-        });
-        setError("Invalid email or password!");
-      }
-    } catch (error) {
-      console.error("Unexpected Login Error:", error);
-      setError("An unexpected error occurred. Please try again.");
+    } else {
+      setError("Invalid email or password!");
     }
   };
   
