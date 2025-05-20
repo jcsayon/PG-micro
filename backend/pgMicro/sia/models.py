@@ -1,6 +1,5 @@
+# LOCATION C:\Users\17738\Documents\PG-micro-ambit-2\PG-micro\backend\pgMicro\sia\models.py
 from django.db import models
-
-
 
 class Employee(models.Model):
     name = models.TextField()
@@ -227,3 +226,33 @@ class ReportModule(models.Model):
     net_profit = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.TextField()
 
+class GoogleApiCredential(models.Model):
+    # If you want one central set of credentials for the system
+    # You might have a BooleanField to mark it as the 'active' one.
+    # For simplicity, we'll assume one entry for now.
+
+    # If you want to link to an employee/user:
+    # employee = models.OneToOneField(Employee, on_delete=models.CASCADE, null=True, blank=True)
+    # user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True) # If using Django's User model
+
+    refresh_token = models.CharField(max_length=255, unique=True, help_text="Google OAuth Refresh Token")
+    access_token = models.CharField(max_length=255, null=True, blank=True, help_text="Google OAuth Access Token (can be null, refresh token is primary)")
+    expires_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp when the access token expires")
+    # Optional: store the email associated with these credentials
+    email_address = models.EmailField(unique=True, help_text="The email address associated with these Google credentials")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Google API Credential"
+        verbose_name_plural = "Google API Credentials"
+
+    def __str__(self):
+        return f"Google Credential for {self.email_address}"
+
+    def save(self, *args, **kwargs):
+        # Basic validation to ensure an access token doesn't exist without an expiry
+        if self.access_token and not self.expires_at:
+            # You might want to log a warning or raise an error here
+            print("Warning: Access token saved without expiry timestamp.")
+        super().save(*args, **kwargs)
