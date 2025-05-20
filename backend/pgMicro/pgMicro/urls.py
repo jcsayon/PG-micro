@@ -1,3 +1,4 @@
+#LOCATION C:\Users\17738\Documents\PG-micro-ambitous\PG-micro\backend\pgMicro\pgMicro\urls.py
 """
 URL configuration for pgMicro project.
 

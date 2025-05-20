@@ -1,3 +1,4 @@
+#LOCATION C:\Users\17738\Documents\PG-micro-ambitous\PG-micro\backend\pgMicro\pgMicro\settings.py
 """
 Django settings for pgMicro project.
 
@@ -11,10 +12,31 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# --- Add the python-dotenv loading here ---
+from dotenv import load_dotenv
+# Assuming your .env file is in the 'backend' directory, alongside manage.py
+load_dotenv(os.path.join(BASE_DIR.parent, '.env'))
+# -----------------------------------------
+
+
+# Access the environment variables
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+GOOGLE_OAUTH_REDIRECT_URI = os.environ.get('GOOGLE_OAUTH_REDIRECT_URI')
+
+# You might want to add checks to ensure they are loaded (recommended)
+if not all([GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT_URI]):
+    print("Warning: Google API credentials (Client ID, Secret, Redirect URI) not fully loaded from environment variables.")
+    # In production, you might want to raise an exception here
+    # raise EnvironmentError("Required Google API environment variables are not set.")
+
+# Define the URL of your frontend application
+FRONTEND_URL = 'http://localhost:5173' # Or whatever port your frontend is running on
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -135,3 +157,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+# EMAIL
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")

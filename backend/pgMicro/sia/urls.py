@@ -1,3 +1,4 @@
+#LOCATION C:\Users\17738\Documents\PG-micro-ambitous\PG-micro\backend\pgMicro\sia\urls.py
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
 from .views import (
@@ -7,7 +8,10 @@ from .views import (
     OrderPaymentViewSet, ReturnsViewSet, RefundViewSet, ReplacementViewSet,
     PurchaseOrderViewSet, PurchaseOrderDetailsViewSet, PurchaseOrderPaymentViewSet,
     PurchaseOrderTrackingViewSet, ExpensesViewSet, IncomeViewSet, ReportModuleViewSet,
-    DamagedInventoryListView, DamageProductViewSet  # ✅ this one is not router-registered
+    DamagedInventoryListView, DamageProductViewSet,  # ✅ this one is not router-registered
+    # Import your new OAuth views here
+    google_oauth_initiate, # Assuming you name your initiate view this
+    google_oauth_callback, # Assuming you name your callback view this
 )
 
 router = DefaultRouter()
@@ -39,4 +43,8 @@ urlpatterns = [
     path('', include(router.urls)),
     path('damaged-inventory/', DamagedInventoryListView.as_view(), name="damaged-inventory"),  # ✅ direct access
     path("api/", include(router.urls)),
+    # --- Add URL patterns for your OAuth views ---
+    path('auth/google/initiate', google_oauth_initiate, name='google_oauth_initiate'),
+    path('auth/google/callback', google_oauth_callback, name='google_oauth_callback'), # This must match your GOOGLE_OAUTH_REDIRECT_URI path
+    # ---------------------------------------------
 ]

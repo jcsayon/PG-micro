@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import DashboardLayout from "../../layouts/DashboardLayout";
 import { Search, Edit, Trash2, ChevronDown, Loader, User } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
@@ -137,7 +136,6 @@ const CustomerSales = () => {
       .substring(0, 2);
 
   return (
-    <DashboardLayout>
       <div className="p-4 h-screen flex flex-col">
         <div className="mb-3 flex justify-between items-center">
           <div>
@@ -343,7 +341,6 @@ const CustomerSales = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 };
 

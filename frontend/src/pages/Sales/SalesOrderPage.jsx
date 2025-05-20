@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
-import DashboardLayout from "../../layouts/DashboardLayout";
 import { X, RefreshCw, Plus } from "lucide-react";
 
 const CUSTOMER_API     = "http://localhost:8000/api/customers/";
@@ -348,7 +347,6 @@ const SalesOrderPage = () => {
 
  // ─── RENDER ─────────────────────────────────────────────────────────────
  return (
-  <DashboardLayout>
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header & Controls */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
@@ -659,7 +657,6 @@ const SalesOrderPage = () => {
         </table>
       </div>
     </div>
-  </DashboardLayout>
 );
 
 };

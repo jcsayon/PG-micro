@@ -117,11 +117,6 @@ class InventorySerializer(serializers.ModelSerializer):
             'description', 'purchase_price'  # ✅ include these
         ]
 
-
-
-
-
-
 class OrdersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Orders
