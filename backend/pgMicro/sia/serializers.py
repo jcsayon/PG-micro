@@ -1,21 +1,25 @@
 from rest_framework import serializers
 from .models import *
 from .models import Customer
+from django.contrib.auth.hashers import make_password
+from rest_framework.validators import UniqueValidator
+from .models import Account
+
+
+from .models import Employee, Account
 
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = '__all__'
         
-from rest_framework import serializers
-from .models import Account
 
-from django.contrib.auth.hashers import make_password
 
-from rest_framework import serializers
-from django.contrib.auth.hashers import make_password
-from rest_framework.validators import UniqueValidator
-from .models import Account
+
+
+
+
+
 
 class AccountSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -56,16 +60,23 @@ class AccountSerializer(serializers.ModelSerializer):
 
 
 
+
+
 class EmployeeSerializer(serializers.ModelSerializer):
     account = serializers.PrimaryKeyRelatedField(
         queryset=Account.objects.all(),
         required=False,
         allow_null=True
     )
+    email = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
-        fields = '__all__'
+        fields = ['id', 'name', 'role', 'employee_status', 'account', 'email']  # 👈 explicitly list 'email'
+
+    def get_email(self, obj):
+        return obj.account.email if obj.account else None
+
 
 
 

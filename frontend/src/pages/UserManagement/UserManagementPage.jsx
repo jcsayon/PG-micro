@@ -135,7 +135,7 @@ useEffect(() => {
             fullName: emp.name || "",
             firstName: emp.name?.split(" ")[0] || "",
             lastName: emp.name?.split(" ").slice(1).join(" ") || "",
-            email: emp.account?.email || "",
+            email: emp.email || (emp.account?.email || ""),
             phone: emp.phone_number || "",
             position: emp.role || "Employee",
             joinDate: emp.join_date || "2023-01-01",
@@ -1211,11 +1211,13 @@ const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
               </div>
               </td>
               <td className="py-4 px-6 text-slate-600">
-                {(() => {
-                  const user = users.find((u) => u.employeeId === employee.id);
-                  return user ? user.email : <span className="text-slate-400 text-sm">—</span>;
-                })()}
+                {employee.email ? (
+                  <span>{employee.email}</span>
+                ) : (
+                  <span className="text-slate-400 text-sm">—</span>
+                )}
               </td>
+
               <td className="py-4 px-6 text-slate-600">
                 {employee.position || <span className="text-slate-400 text-sm">—</span>}
               </td>
