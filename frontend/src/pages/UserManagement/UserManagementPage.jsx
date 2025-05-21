@@ -473,10 +473,10 @@ const handleUpdateUser = async () => {
   }
 
   try {
-    // Prepare the updated payload
     const updatedPayload = {
       email: userForm.email.trim(),
       role: userForm.role,
+      status: userForm.status,
       accessible_pages: ['dashboard'].concat(
         Object.entries(userForm.modules)
           .filter(([_, value]) => value)
@@ -494,17 +494,10 @@ const handleUpdateUser = async () => {
       ),
     };
 
-    // Check if there are changes in role or accessible pages
-    const hasRoleChanged = selectedUser.role !== userForm.role;
-    const hasModulesChanged = JSON.stringify(selectedUser.accessible_pages) !== JSON.stringify(updatedPayload.accessible_pages);
-
-    // Always update the email, but only proceed if role or modules have changed
-    if (!hasRoleChanged && !hasModulesChanged) {
-      alert("No changes detected in role or module access.");
-      return;
+    // 🔐 Include password if user typed a new one
+    if (userForm.password && userForm.password !== "********") {
+      updatedPayload.password = userForm.password.trim();
     }
-
-    console.debug("📦 Update User Payload:", updatedPayload);
 
     const response = await fetch(`${ACCOUNT_API}${selectedUser.id}/`, {
       method: 'PATCH',
@@ -519,20 +512,19 @@ const handleUpdateUser = async () => {
     }
 
     const updatedUser = await response.json();
-
-    // Update the user in the state
     setUsers((prev) =>
       prev.map((user) => (user.id === updatedUser.id ? updatedUser : user))
     );
 
     resetForms();
     alert("✅ User account updated!");
-
   } catch (error) {
     console.error("🔥 Error updating user:", error);
     alert("Failed to update user.");
   }
 };
+
+
 
   
   

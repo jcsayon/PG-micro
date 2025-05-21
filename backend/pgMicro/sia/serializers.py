@@ -10,32 +10,50 @@ class CustomerSerializer(serializers.ModelSerializer):
 from rest_framework import serializers
 from .models import Account
 
+from django.contrib.auth.hashers import make_password
+
+from rest_framework import serializers
+from django.contrib.auth.hashers import make_password
+from rest_framework.validators import UniqueValidator
+from .models import Account
+
 class AccountSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        validators=[UniqueValidator(queryset=Account.objects.all(), message="Email already in use.")]
+    )
+    password = serializers.CharField(write_only=False)  # Show in HTML form and hash on save
+    accessible_pages = serializers.ListField(
+        child=serializers.CharField(), required=False
+    )
+
     class Meta:
         model = Account
-        fields = ['id', 'email', 'password', 'role', 'status', 'accessible_pages', 'employee']  # ← include all
+        fields = ['id', 'email', 'password', 'role', 'status', 'accessible_pages', 'employee']
         extra_kwargs = {
-            'password': {'write_only': True},
-            'accessible_pages': {'required': False},  # optional if needed
-            'status': {'required': False},  # optional
+            'status': {'required': False, 'default': 'Active'},
+            'employee': {'required': False, 'allow_null': True},
         }
+
+    def validate_email(self, value):
+        if self.instance and self.instance.email == value:
+            return value
+        return value
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
-        account = self.Meta.model(**validated_data)
         if password:
-            account.set_password(password)
-        account.save()
-        return account
+            validated_data['password'] = make_password(password)
+        return Account.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         if password:
-            instance.set_password(password)
+            instance.password = make_password(password)
         instance.save()
         return instance
+
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -92,18 +110,7 @@ class DamageProductSerializer(serializers.ModelSerializer):
 
 
 
-class AccountSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Account
-        fields = ['id', 'email', 'role']
 
-    def get_employee_name(self, obj):
-        return obj.employee.name if obj.employee else None
-    
-    def validate_email(self, value):
-        if Account.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email already in use.")
-        return value
 
 
 

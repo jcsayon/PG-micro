@@ -75,8 +75,8 @@ const Sidebar_Primary = () => {
   // All menu items with Lucide icons
   const allMenuItems = [
     { name: "Home", path: "/dashboard", icon: Home, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
-    { name: "Account Info", path: "/account-info", icon: User, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
-    { name: "Settings", path: "/settings", icon: Settings, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    // { name: "Account Info", path: "/account-info", icon: User, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
+    // { name: "Settings", path: "/settings", icon: Settings, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
     { name: "Inventory", path: "/inventory", icon: Package, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
     { name: "User Management", path: "/user-management", icon: Users, adminOnly: true, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
     { name: "Sales", path: "/sales", icon: DollarSign, color: { default: "text-purple-100", hover: "hover:bg-purple-600", active: "bg-purple-500 text-white" } },
